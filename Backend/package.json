@@ -1,0 +1,20 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "PORT=3000 node ./bin/www",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "express-async-handler": "^1.2.0",
+    "http-errors": "^2.0.0",
+    "mongodb": "^5.9.2",
+    "mongoose": "^8.3.2"
+  }
+}
