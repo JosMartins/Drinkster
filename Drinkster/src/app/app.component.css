@@ -1,0 +1,19 @@
+/* General styling for the entire page */
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Fredoka One', sans-serif;
+}
+
+/* Container to center content and set background */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-image: url('/assets/background.png'); /* Example background image */
+  background-size: contain;
+  background-position: center;
+}
+

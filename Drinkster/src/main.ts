@@ -1,6 +1,17 @@
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 import { bootstrapApplication } from '@angular/platform-browser';
-import { appConfig } from './app/app.config';
+import { provideRouter } from '@angular/router';
+import { importProvidersFrom } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { AppComponent } from './app/app.component';
+import { GameConfigComponent } from './app/game-config/game-config.component';
 
-bootstrapApplication(AppComponent, appConfig)
-  .catch((err) => console.error(err));
+import { routes } from './app/app.routes';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideRouter(routes), // Provide the router with routes
+    importProvidersFrom(FormsModule) // Import necessary modules
+  ]
+})
+  .catch(err => console.error(err));

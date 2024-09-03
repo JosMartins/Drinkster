@@ -1,0 +1,38 @@
+.content {
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background for better text visibility */
+  padding: 30px;
+  border-radius: 15px;
+}
+
+/* Title styling */
+.title {
+  font-size: 4em;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+/* Subtitle styling */
+.subtitle {
+  font-size: 1.5em;
+  color: #ffffff;
+  margin-bottom: 60px;
+}
+
+/* Start button styling */
+.start-button {
+  padding: 15px 30px;
+  font-size: 1.5em;
+  color: #ffffff;
+  background-color: #ff4081; /* Pink button color */
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+/* Start button hover effect */
+.start-button:hover {
+  cursor: pointer;
+  background-color: #e91e63; /* Darker pink on hover */
+}

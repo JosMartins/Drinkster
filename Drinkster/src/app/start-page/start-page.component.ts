@@ -1,4 +1,5 @@
-import {Component, OnInit} from '@angular/core';
+import { Component } from '@angular/core';
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-start-page',
@@ -9,4 +10,11 @@ import {Component, OnInit} from '@angular/core';
 })
 export class StartPageComponent {
 
+  constructor(private router: Router) { }
+
+
+  configGame() {
+    // Navigate to the game configuration page
+    this.router.navigate(['/config']);
+  }
 }
