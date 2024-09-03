@@ -32,6 +32,7 @@
       </label>
     </div>
     <button (click)="removePlayer(i)" class="remove-btn">X</button>
+
   </div>
 
   <button (click)="addPlayer()" class="add-player-btn">Add Player</button>
@@ -48,5 +49,12 @@
     </button>
   </div>
 
+  <div class="difficulty-config">
+    <button (click)="openDifficultyModal()">Configure Difficulty</button>
+  </div>
+
+
+
   <button (click)="startGame()" class="start-btn">Start Game</button>
 </div>
+

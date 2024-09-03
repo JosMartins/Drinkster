@@ -41,6 +41,37 @@ exports.add_challenge = asyncHandler(async (req, res, next) => {
     }
 });
 
+//Add all challenges from a list
+exports.add_all_challenges = asyncHandler(async (req, res, next) => {
+    console.log("Saved all challenges");
+
+    const challenges = req.body;
+    console.log(challenges);
+
+    if (challenges === null) {
+        return res.status(400).json({ error: 'No challenges' });
+    }
+
+    try {
+        for (const element of challenges) {
+            const challengeObj = new Challenge(element);
+            if (challengeObj.challenge === null) {
+                return res.status(400).json({error: 'No text in challenge string'});
+            }
+
+            const existing = await Challenge.findOne({challenge: element.challenge });
+            if (existing) {
+                return res.status(400).json({ error: 'Challenge already exists' });
+            }
+            await challengeObj.save();
+        }
+        res.status(201).json({ message: 'All challenges added successfully' });
+    } catch (error) {
+        next(error);
+    }
+
+});
+
 //Gets an easy challenge
 exports.get_easy_challenge = asyncHandler( async (req, res, next) => {
     console.log('Easy Challenge Requested.');

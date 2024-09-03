@@ -12,8 +12,8 @@ body, html {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-image: url('/assets/background.png'); /* Example background image */
-  background-size: contain;
+  background-image: url('/assets/background.png');
   background-position: center;
+
 }
 
