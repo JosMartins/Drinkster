@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const express = require("express");
-const createError = require('http-errors');
 const cors = require('cors');
 const path = require('path');
 
@@ -28,9 +27,8 @@ app.use('/', initRouter);
 app.use('/challenge', challengeRouter);
 
 app.use(function (err, req, res, next) {
-    console.error(err.stack); // Log the error stack trace for debugging
+    console.error(err.stack);
 
-    // Customize the error message based on the error type
     let errorMessage = 'An unexpected error occurred';
     if (err.message) {
         errorMessage = err.message;
@@ -40,5 +38,7 @@ app.use(function (err, req, res, next) {
     res.json({ error: errorMessage });
 });
 
-app.listen(3001)
+app.listen(3432, () => {
+    console.log("Server is up and running on port 3432");
+});
 module.exports = app;

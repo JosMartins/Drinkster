@@ -6,6 +6,7 @@ import {Difficulty} from "../difficulty";
 import {Game} from "../game";
 import { MatDialog } from '@angular/material/dialog';
 import { DifficultyDialogComponent } from '../difficulty-dialog/difficulty-dialog.component';
+import {Router} from "@angular/router";
 
 
 
@@ -19,7 +20,7 @@ import { DifficultyDialogComponent } from '../difficulty-dialog/difficulty-dialo
 })
 export class GameConfigComponent {
 
-  constructor(public dialog: MatDialog) { }
+  constructor(public dialog: MatDialog, private router: Router) { }
 
 
   players: Player[] = [{ name: '', gender: 'M' }];
@@ -46,19 +47,29 @@ export class GameConfigComponent {
     const game: Game = { players: this.players, extremeMode: this.extremeMode, difficultyValues: this.difficultyValues };
     sessionStorage.setItem('game', JSON.stringify(game));
     console.log(sessionStorage.getItem('game'));
-    // Implement navigation or game start logic here
+    this.router.navigate(['/game']);
   }
 
 
   openDifficultyModal() {
+    //change based on extremeMode
+      this.difficultyValues = this.extremeMode ? {easy: 0.30, medium: 0.28, hard: 0.27, extreme: 0.15} : {
+        easy: 0.35,
+        medium: 0.35,
+        hard: 0.3,
+        extreme: 0
+      }
+
     const dialogRef = this.dialog.open(DifficultyDialogComponent, {
-      width: '250px',
-      data: this.difficultyValues
+      width: '350px',
+      data: {extremeMode: this.extremeMode, difficulty: this.difficultyValues}
+
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         this.difficultyValues = result;
+        sessionStorage.setItem("difficulty", JSON.stringify(this.difficultyValues));
       }
     });
   }

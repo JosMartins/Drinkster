@@ -1,0 +1,18 @@
+<div class="challenge-container">
+
+  <!-- Difficulty Section -->
+  <div class="difficulty-section">
+    <span *ngIf="challenge" [ngClass]="getDifficultyWord(challenge.difficulty).toLowerCase()" >{{ getDifficultyWord(challenge.difficulty) }}</span>
+  </div>
+
+  
+  <!-- Challenge Section -->
+  <div class="challenge-section" *ngIf="challenge">
+    <p>{{ challenge.challenge }}</p>
+  </div>
+
+  <!-- Next Button -->
+  <div class="next-button-section">
+    <button (click)="nextChallenge()">Next</button>
+  </div>
+</div>

@@ -8,9 +8,11 @@ import { GameConfigComponent } from './app/game-config/game-config.component';
 
 import { routes } from './app/app.routes';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { provideHttpClient } from '@angular/common/http';
 
 bootstrapApplication(AppComponent, {
   providers: [
+    provideHttpClient(), // Provide the HttpClient
     provideRouter(routes), // Provide the router with routes
     importProvidersFrom(FormsModule), provideAnimationsAsync() // Import necessary modules
   ]

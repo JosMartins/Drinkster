@@ -1,28 +1,28 @@
-<div class="mat-dialog-container">
+
 <h2 mat-dialog-title class="dialog-header">Configure Difficulty</h2>
 <div mat-dialog-content class="dialog-content">
   <form class="dialog-content">
     <mat-form-field class="mat-form-field">
       <mat-label>Easy</mat-label>
-      <input matInput [(ngModel)]="difficulty.easy" name="easy" type="number" min="0" max="1" step="0.01">
+      <input matInput [(ngModel)]="difficulty.easy" name="easy" type="number" min="0" max="100" step="1">
     </mat-form-field>
     <mat-form-field>
       <mat-label>Medium</mat-label>
-      <input matInput [(ngModel)]="difficulty.medium" name="medium" type="number" min="0" max="1" step="0.01">
+      <input matInput [(ngModel)]="difficulty.medium" name="medium" type="number" min="0" max="100" step="1">
     </mat-form-field>
     <mat-form-field>
       <mat-label>Hard</mat-label>
-      <input matInput [(ngModel)]="difficulty.hard" name="hard" type="number" min="0" max="1" step="0.01">
+      <input matInput [(ngModel)]="difficulty.hard" name="hard" type="number" min="0" max="100" step="1">
     </mat-form-field>
-    <mat-form-field>
+    <mat-form-field *ngIf="extremeMode">
       <mat-label>Extreme</mat-label>
-      <input matInput [(ngModel)]="difficulty.extreme" name="extreme" type="number" min="0" max="1" step="0.01">
+      <input matInput [(ngModel)]="difficulty.extreme" name="extreme" type="number" min="0" max="100" step="1">
     </mat-form-field>
   </form>
+  <div *ngIf="errorMsg" class="error-message">{{ errorMsg }}</div>
 </div>
-<div mat-dialog-actions>
+<div mat-dialog-actions class="dialog-actions">
   <button mat-button class="mat-button" (click)="onCancel()">Cancel</button>
   <button mat-button class="mat-button" (click)="onSave()">Save</button>
 </div>
 
-</div>

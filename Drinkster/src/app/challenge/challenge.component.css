@@ -1,0 +1,89 @@
+.challenge-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background for better text visibility */
+    border-radius: 15px;
+    width: 90%;
+    max-width: 1400px;
+    margin: 0 auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .difficulty-section {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  
+  .challenge-section {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    text-align: center;
+    color: white;
+    font-size: x-large;
+    margin-bottom: 70px;
+  }
+  
+  .next-button-section {
+    display: flex;
+    justify-content: center;
+    scale: 1.5;
+  }
+  
+  .next-button-section button {
+    padding: 10px 20px;
+    background-color: #6200ea;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .next-button-section button:hover {
+    background-color: #3700b3;
+  }
+  
+
+.easy {
+  animation: easyAnimation 1s infinite alternate;
+}
+
+.medium {
+  animation: mediumAnimation 1s infinite alternate;
+}
+
+.hard {
+  animation: hardAnimation 1s infinite alternate;
+}
+
+.extreme {
+  animation: extremeAnimation 1s infinite alternate;
+}
+
+@keyframes easyAnimation {
+  from { color: green; }
+  to { color: lightgreen; }
+}
+
+@keyframes mediumAnimation {
+  from { color: yellow; }
+  to { color: gold; }
+}
+
+@keyframes hardAnimation {
+  from { color: orange; }
+  to { color: darkorange; }
+}
+
+@keyframes extremeAnimation {
+  from { color: red; }
+  to { color: darkred; }
+}
