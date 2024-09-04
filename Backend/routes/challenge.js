@@ -27,3 +27,5 @@ router.post('/add',challenge_controller.add_challenge);
 //Saves all challenges from a list
 router.post('/add-all',challenge_controller.add_all_challenges);
 module.exports = router;
+
+router.delete('/delete/:id',challenge_controller.delete_challenge);

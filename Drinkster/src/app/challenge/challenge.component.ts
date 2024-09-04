@@ -38,12 +38,24 @@ export class ChallengeComponent {
     this.challengeService.getChallenge(difficultyLevel).subscribe(
       (data) => {
         this.challenge = data;
-
         //replace the first occurence of {player} ONLY  with name from game
         let plTurn = Math.floor(this.round % this.game.players.length);
-        console.log(plTurn);
-        this.challenge.challenge = this.challenge.challenge.replace('{Player}', this.game.players[plTurn].name);
-        this.round++;
+        console.log(this.challenge.challenge);
+        console.log(this.challenge.challenge.includes('{Player}'));
+        if (this.challenge.challenge.includes('{Player}')) {
+          let player1 = this.game.players[plTurn].name;
+
+          if (this.challenge.challenge.includes('{Player2}')) { 
+            let otherPlayers = this.game.players.filter(player => player.name !== player1);
+            let randomIndex = Math.floor(Math.random() * otherPlayers.length);
+            let player2 = otherPlayers[randomIndex].name;
+            this.challenge.challenge = this.challenge.challenge.replaceAll('{Player2}', player2);
+          }
+          
+          this.challenge.challenge = this.challenge.challenge.replaceAll('{Player}', player1);
+          this.round++;
+        }
+        
       },
       (error) => {
         console.error('Error fetching challenge:', error);

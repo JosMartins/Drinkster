@@ -131,3 +131,20 @@ exports.get_all_challenges = asyncHandler( async(req, res, next) => {
 
     res.send(allChallenges);
 })
+
+//delete a challenge
+exports.delete_challenge = asyncHandler(async (req, res, next) => {
+    console.log('Deleted a challenge');
+    const challengeId = req.params.id;
+
+    console.log(challengeId);
+    try {
+        const deletedChallenge = await Challenge.findByIdAndDelete(challengeId);
+        if (!deletedChallenge) {
+            return res.status(404).json({ error: 'Challenge not found' });
+        }
+        res.status(200).json({ message: 'Challenge deleted successfully' });
+    } catch (error) {
+        next(error);
+    }
+});
