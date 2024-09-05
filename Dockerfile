@@ -8,9 +8,8 @@ WORKDIR /app
 COPY backend/package*.json ./backend/
 RUN cd backend && npm install
 
-# Build the backend (if necessary)
+
 COPY backend/ ./backend/
-RUN cd backend && npm run build
 
 # Copy and install frontend dependencies
 COPY frontend/package*.json ./frontend/
@@ -24,7 +23,7 @@ RUN cd frontend && npm run build --prod
 FROM nginx:alpine
 
 # Copy the frontend from the build stage
-COPY --from=build-env /app/frontend/dist/your-angular-app /usr/share/nginx/html
+COPY --from=build-env /app/frontend/Drinkster /usr/share/nginx/html
 
 # Copy custom Nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
@@ -40,3 +39,4 @@ EXPOSE 80
 
 # Start Nginx and Node.js backend
 CMD nginx && node ./backend/index.js
+
