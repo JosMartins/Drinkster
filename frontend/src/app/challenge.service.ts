@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class ChallengeService {
 
-  private apiUrl = 'http://localhost:3432';
+  private apiUrl = 'http://autistassv.ddns.net:25569/api';
 
   constructor(private http: HttpClient) { }
 
@@ -27,4 +27,6 @@ export class ChallengeService {
         return this.http.get<any>(`${this.apiUrl}/challenge`);
     }
   }
+
 }
+

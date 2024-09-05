@@ -8,7 +8,7 @@ WORKDIR /app
 COPY backend/package*.json ./backend/
 RUN cd backend && npm install
 
-
+# Copy backend code
 COPY backend/ ./backend/
 
 # Copy and install frontend dependencies
@@ -17,26 +17,26 @@ RUN cd frontend && npm install
 
 # Build the frontend
 COPY frontend/ ./frontend/
-RUN cd frontend && npm run build --prod
+RUN cd frontend && npm run build --omit dev
 
-# Final base image
-FROM nginx:alpine
+# Final base image with both Node.js and Nginx
+FROM node:18
 
-# Copy the frontend from the build stage
-COPY --from=build-env /app/frontend/Drinkster /usr/share/nginx/html
+# Install Nginx
+RUN apt-get update && apt-get install -y nginx
 
-# Copy custom Nginx configuration
+# Set up Nginx
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Copy the backend code
+# Copy the frontend build output
+COPY --from=build-env /app/frontend/dist/drinkster /usr/share/nginx/html
+
+# Copy backend code
 COPY --from=build-env /app/backend /app/backend
 
-# Set working directory to backend
-WORKDIR /app/backend
-
-# Expose only the Nginx port
+# Expose ports
 EXPOSE 80
+EXPOSE 3432
 
-# Start Nginx and Node.js backend
-CMD nginx && node ./backend/index.js
-
+# Start both Nginx and Node.js backend
+CMD ["sh", "-c", "service nginx start && node /app/backend/app.js"]

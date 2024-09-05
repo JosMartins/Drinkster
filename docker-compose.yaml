@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "25569:80"
+    depends_on:
+      - backend
+    networks:
+      - drinkster-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3432:3432"
+    environment:
+      - MONGO_URI=mongodb://host.docker.internal:27017
+    networks:
+      - drinkster-network
+
+networks:
+  drinkster-network:
+    driver: bridge

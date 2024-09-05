@@ -11,9 +11,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-const db ="mongodb://127.0.0.1:27017/test";
 
-const mongoDB = "mongodb://127.0.0.1:27017/test";
+const mongoDB = "mongodb://192.168.1.66:27017/test";
 
 
 
@@ -24,7 +23,7 @@ async function main() {
 }
 
 app.use('/', initRouter);
-app.use('/challenge', challengeRouter);
+app.use('/api/challenge', challengeRouter);
 
 app.use(function (err, req, res, next) {
     console.error(err.stack);
@@ -32,6 +31,10 @@ app.use(function (err, req, res, next) {
     let errorMessage = 'An unexpected error occurred';
     if (err.message) {
         errorMessage = err.message;
+    }
+
+    if (err.status === 502) {
+        errorMessage = 'Backend service is unavailable';
     }
 
     res.status(err.status || 500);
