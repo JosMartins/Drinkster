@@ -17,6 +17,7 @@ export class ChallengeComponent {
   challenge: any;
   game!: Game;
   round: number = 0;
+  lastIds: Array<any> = new Array();
 
   constructor(
     private challengeService: ChallengeService,
@@ -38,6 +39,18 @@ export class ChallengeComponent {
     this.challengeService.getChallenge(difficultyLevel).subscribe(
       (data) => {
         this.challenge = data;
+        //check if it is in the last questions array
+        if (this.lastIds.includes(data._id)) {
+          return this.loadChallenge();
+        } else {
+          if (this.lastIds.length >= this.game.remembered) {
+            this.lastIds.pop();  
+          }
+          this.lastIds.unshift(data._id)
+          console.log(this.lastIds);
+        }
+
+        
         //replace the first occurence of {player} ONLY  with name from game
         let plTurn = Math.floor(this.round % this.game.players.length);
         console.log(this.challenge.challenge);

@@ -49,6 +49,13 @@
     </button>
   </div>
 
+  <div>
+    <label for="remember" class="extreme-mode-text">Number Of Challenges to remember: </label>
+    <input type="number" 
+    [(ngModel)]="numberOfRememberedChal"
+    class="input-field">
+  </div>
+
   <div class="difficulty-config">
     <button (click)="openDifficultyModal()">Configure Difficulty</button>
   </div>

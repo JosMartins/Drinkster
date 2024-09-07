@@ -26,6 +26,7 @@ export class GameConfigComponent {
   players: Player[] = [{ name: '', gender: 'M' }];
   extremeMode: boolean = false;
   difficultyValues : Difficulty = { easy: 0.30, medium: 0.28, hard:0.27, extreme: 0.15 }; //DEFAULT VALUES
+  numberOfRememberedChal: number = 20
 
 
   addPlayer() {
@@ -44,7 +45,7 @@ export class GameConfigComponent {
 
   startGame() {
     //create the game object and save it to session storage
-    const game: Game = { players: this.players, extremeMode: this.extremeMode, difficultyValues: this.difficultyValues };
+    const game: Game = { players: this.players, extremeMode: this.extremeMode, difficultyValues: this.difficultyValues, remembered: this.numberOfRememberedChal};
     sessionStorage.setItem('game', JSON.stringify(game));
     console.log(sessionStorage.getItem('game'));
     this.router.navigate(['/game']);
