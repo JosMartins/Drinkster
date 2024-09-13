@@ -13,6 +13,6 @@
 
   <!-- Next Button -->
   <div class="next-button-section">
-    <button (click)="nextChallenge()">Next</button>
+    <button (click)="nextChallenge()" [disabled]="isLoading">Next</button>
   </div>
 </div>

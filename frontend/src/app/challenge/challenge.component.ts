@@ -18,6 +18,7 @@ export class ChallengeComponent {
   game!: Game;
   round: number = 0;
   lastIds: Array<any> = new Array();
+  isLoading: boolean = false;
 
   constructor(
     private challengeService: ChallengeService,
@@ -35,6 +36,7 @@ export class ChallengeComponent {
 
 
   loadChallenge(): void {
+    this.isLoading = true;
     const difficultyLevel = this.getDifficultyLevel();
     this.challengeService.getChallenge(difficultyLevel).subscribe(
       (data) => {
@@ -54,24 +56,35 @@ export class ChallengeComponent {
         //replace the first occurence of {player} ONLY  with name from game
         let plTurn = Math.floor(this.round % this.game.players.length);
         console.log(this.challenge.challenge);
-        console.log(this.challenge.challenge.includes('{Player}'));
+        console.log(this.challenge.sexes);
         if (this.challenge.challenge.includes('{Player}')) {
+          if (this.challenge.sexes[0] === 'All' || this.challenge.sexes[0] === this.game.players[plTurn].gender) {
+            this.challenge.challenge = this.challenge.challenge.replaceAll('{Player}', this.game.players[plTurn].name);
+            this.round++;
+          } else {
+            this.loadChallenge();
+          }
           let player1 = this.game.players[plTurn].name;
 
-          if (this.challenge.challenge.includes('{Player2}')) { 
+          if (this.challenge.challenge.includes('{Player2}')) {
             let otherPlayers = this.game.players.filter(player => player.name !== player1);
-            let randomIndex = Math.floor(Math.random() * otherPlayers.length);
-            let player2 = otherPlayers[randomIndex].name;
-            this.challenge.challenge = this.challenge.challenge.replaceAll('{Player2}', player2);
+              let randomIndex = Math.floor(Math.random() * otherPlayers.length);
+              
+            if (this.challenge.sexes[1] === 'All' || this.challenge.sexes[1] === this.game.players[randomIndex].gender) {
+              let player2 = otherPlayers[randomIndex].name;
+              this.challenge.challenge = this.challenge.challenge.replaceAll('{Player2}', player2);
+            } else {
+              return this.loadChallenge();
+            }
           }
-          
-          this.challenge.challenge = this.challenge.challenge.replaceAll('{Player}', player1);
-          this.round++;
         }
-        
       },
       (error) => {
         console.error('Error fetching challenge:', error);
+        this.isLoading = false;
+      },
+      () =>  {
+        this.isLoading = false;
       }
     );
   }
@@ -97,7 +110,10 @@ export class ChallengeComponent {
   }
 
   nextChallenge(): void {
-    this.loadChallenge();
+    if (!this.isLoading) {
+      this.loadChallenge();
+
+    }
   }
 
 
