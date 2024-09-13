@@ -22,7 +22,7 @@ export class ChallengeComponent {
   isLoading: boolean = false;
   requestCooldown: boolean = false;
   writtenChallenge: Challenge | null = null;
-
+  difficultyCounts: any;
   private chance = new Chance();
 
   constructor(
@@ -32,6 +32,11 @@ export class ChallengeComponent {
     const savedGame = sessionStorage.getItem('game');
     if (savedGame) {
       this.game = JSON.parse(savedGame);
+      this.challengeService.getStats().subscribe(
+        (data) => {
+          this.difficultyCounts = data;
+        });
+        
       this.loadChallenge(); // Initiate challenge loading
     } else {
       this.router.navigate(['/config']);
@@ -118,10 +123,10 @@ export class ChallengeComponent {
 
   getDifficultyLevel(): string {
     const choices = {
-      easy: this.game.difficultyValues.easy,
-      medium: this.game.difficultyValues.medium,
-      hard: this.game.difficultyValues.hard,
-      extreme: this.game.difficultyValues.extreme,
+      easy: this.game.difficultyValues.easy * this.difficultyCounts.easyChallenges,
+      medium: this.game.difficultyValues.medium * this.difficultyCounts.mediumChallenges,
+      hard: this.game.difficultyValues.hard * this.difficultyCounts.hardChallenges,
+      extreme: this.game.difficultyValues.extreme * this.difficultyCounts.extremeChallenges,
     };
 
     return this.chance.weighted(Object.keys(choices), Object.values(choices));
@@ -132,7 +137,7 @@ export class ChallengeComponent {
       this.loadChallenge();
       setTimeout(() => {
         this.requestCooldown = false;
-      }, 1250); // Cooldown to prevent immediate repeat requests
+      }, 1000); // Cooldown to prevent immediate repeat requests
     }
   }
 
