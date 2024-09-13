@@ -51,15 +51,27 @@
     </button>
   </div>
 
-  <div>
-    <label for="remember" class="extreme-mode-text">Number Of Challenges to remember: </label>
+  <div class="toggle-container">
+    <label for="extremeMode" class="extreme-mode-text">No Probabilities Mode</label>
+    <button
+      id="extremeMode"
+      (click)="toggleProbabilitiesMode()"
+      [class.active]="probabilitiesMode"
+      class="slider-button"
+    >
+      <span class="slider-circle"></span>
+    </button>
+  </div>
+
+  <div class="remember-challenges">
+    <label for="remember" class="rememberChallenges">Number Of Challenges to remember: </label>
     <input type="number" 
     [(ngModel)]="numberOfRememberedChal"
     class="input-field">
   </div>
 
-  <div class="difficulty-config">
-    <button (click)="openDifficultyModal()">Configure Difficulty</button>
+  <div>
+    <button class="difficulty-config" (click)="openDifficultyModal()">Configure Difficulty</button>
   </div>
 
 

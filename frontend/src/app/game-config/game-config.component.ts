@@ -29,6 +29,7 @@ export class GameConfigComponent {
   extremeMode: boolean = false;
   difficultyValues : Difficulty = DEFAULT_DIFFICULTY_EXTREME;
   numberOfRememberedChal: number = 20
+  probabilitiesMode: boolean = false;
 
 
 
@@ -46,6 +47,10 @@ export class GameConfigComponent {
     this.extremeMode = !this.extremeMode;
   }
 
+  toggleProbabilitiesMode() {
+    this.probabilitiesMode = !this.probabilitiesMode;
+  }
+
   startGame() {
     //create the game object and save it to session storage
     sessionStorage.clear();
@@ -54,7 +59,7 @@ export class GameConfigComponent {
     if (!this.extremeMode && this.difficultyValues.extreme > 0) {
       this.difficultyValues= DEFAULT_DIFFICULTY_NO_EXTREME;
     }
-    const game: Game = { players: this.players, extremeMode: this.extremeMode, difficultyValues: this.difficultyValues, remembered: this.numberOfRememberedChal};
+    const game: Game = { players: this.players, extremeMode: this.extremeMode, difficultyValues: this.difficultyValues, remembered: this.numberOfRememberedChal, probabilitiesMode: this.probabilitiesMode};
     sessionStorage.setItem('game', JSON.stringify(game));
     console.log(sessionStorage.getItem('game'));
     this.router.navigate(['/game']);
@@ -76,7 +81,6 @@ export class GameConfigComponent {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         this.difficultyValues = result;
-        sessionStorage.setItem("difficulty", JSON.stringify(this.difficultyValues));
       }
     });
   }

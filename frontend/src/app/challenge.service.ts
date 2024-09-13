@@ -7,7 +7,8 @@ import { Observable } from 'rxjs';
 })
 export class ChallengeService {
 
-  private apiUrl = 'http://autistassv.ddns.net:25569/api';
+  //private apiUrl = 'http://autistassv.ddns.net:25569/api';
+  private apiUrl = 'http://localhost:3432/api'; //testing
 
   constructor(private http: HttpClient) { }
 

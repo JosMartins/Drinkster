@@ -2,13 +2,13 @@
 
   <!-- Difficulty Section -->
   <div class="difficulty-section">
-    <span *ngIf="challenge" [ngClass]="getDifficultyWord(challenge.difficulty).toLowerCase()" >{{ getDifficultyWord(challenge.difficulty) }}</span>
+    <span *ngIf="writtenChallenge" [ngClass]="getDifficultyWord(writtenChallenge.difficulty).toLowerCase()" >{{ getDifficultyWord(writtenChallenge.difficulty) }}</span>
   </div>
 
   
   <!-- Challenge Section -->
-  <div class="challenge-section" *ngIf="challenge">
-    <p>{{ challenge.challenge }}</p>
+  <div class="challenge-section" *ngIf="writtenChallenge">
+    <p>{{ writtenChallenge.challenge }}</p>
   </div>
 
   <!-- Next Button -->

@@ -6,4 +6,5 @@ export interface Game {
   extremeMode: boolean;
   difficultyValues: Difficulty;
   remembered: number;
+  probabilitiesMode: boolean;
 }
