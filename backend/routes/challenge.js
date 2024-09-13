@@ -20,12 +20,16 @@ router.get('/extreme',challenge_controller.get_extreme_challenge);
 //Get all Challenges
 router.get('/all', challenge_controller.get_all_challenges);
 
-
 //Save a challenge
 router.post('/add',challenge_controller.add_challenge);
 
 //Saves all challenges from a list
 router.post('/add-all',challenge_controller.add_all_challenges);
-module.exports = router;
 
+//Delete a challenge
 router.delete('/delete/:id',challenge_controller.delete_challenge);
+
+//Get Challenge Stats
+router.get('/stats',challenge_controller.challenge_stats);
+
+module.exports = router;
