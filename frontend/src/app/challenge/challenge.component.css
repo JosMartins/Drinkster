@@ -68,6 +68,15 @@
   animation: extremeAnimation 1s infinite alternate;
 }
 
+.round-number {
+  align-items: center;
+  color: lightblue;
+  font-size: 30px;
+  font-weight: bold;
+  margin-right: 10px;
+  margin-bottom: 25px;
+}
+
 @keyframes easyAnimation {
   from { color: green; }
   to { color: lightgreen; }

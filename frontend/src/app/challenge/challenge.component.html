@@ -1,5 +1,9 @@
 <div class="challenge-container">
 
+  <div class="round-number">
+    <span>Round: {{trueRound}}</span>
+  </div>
+
   <!-- Difficulty Section -->
   <div class="difficulty-section">
     <span *ngIf="writtenChallenge" [ngClass]="getDifficultyWord(writtenChallenge.difficulty).toLowerCase()" >{{ getDifficultyWord(writtenChallenge.difficulty) }}</span>

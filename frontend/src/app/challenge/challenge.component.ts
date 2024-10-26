@@ -18,6 +18,7 @@ export class ChallengeComponent {
 
   game!: Game;
   round: number = 0;
+  trueRound: number = 0;
   lastIds: Array<any> = [];
   isLoading: boolean = false;
   requestCooldown: boolean = false;
@@ -34,7 +35,6 @@ export class ChallengeComponent {
       this.game = JSON.parse(savedGame);
       this.challengeService.getStats().subscribe(
         (data) => {
-          this.difficultyCounts = data;
         });
         
       this.loadChallenge(); // Initiate challenge loading
@@ -81,10 +81,6 @@ export class ChallengeComponent {
 
   handleChallenge(chal: Challenge): void {
     this.resetRequestState();
-    if (this.lastIds.length >= this.game.remembered) {
-      this.lastIds.pop();
-    }
-    this.lastIds.unshift(chal._id);
 
     let plTurn = Math.floor(this.round % this.game.players.length);
     if (chal.challenge.includes('{Player}')) {
@@ -112,8 +108,13 @@ export class ChallengeComponent {
       }
     }
 
+    if (this.lastIds.length >= this.game.remembered) {
+      this.lastIds.pop();
+    }
+    this.lastIds.unshift(chal._id);
+
     this.writtenChallenge = chal;
-    console.log(this.writtenChallenge);
+    this.trueRound++;
   }
 
   resetRequestState(): void {
@@ -123,10 +124,10 @@ export class ChallengeComponent {
 
   getDifficultyLevel(): string {
     const choices = {
-      easy: this.game.difficultyValues.easy * this.difficultyCounts.easyChallenges,
-      medium: this.game.difficultyValues.medium * this.difficultyCounts.mediumChallenges,
-      hard: this.game.difficultyValues.hard * this.difficultyCounts.hardChallenges,
-      extreme: this.game.difficultyValues.extreme * this.difficultyCounts.extremeChallenges,
+      easy: this.game.difficultyValues.easy,
+      medium: this.game.difficultyValues.medium,
+      hard: this.game.difficultyValues.hard,
+      extreme: this.game.difficultyValues.extreme
     };
 
     return this.chance.weighted(Object.keys(choices), Object.values(choices));
@@ -137,7 +138,7 @@ export class ChallengeComponent {
       this.loadChallenge();
       setTimeout(() => {
         this.requestCooldown = false;
-      }, 1000); // Cooldown to prevent immediate repeat requests
+      }, 1250); // Cooldown to prevent immediate repeat requests
     }
   }
 
