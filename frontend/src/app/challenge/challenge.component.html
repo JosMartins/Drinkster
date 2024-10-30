@@ -1,3 +1,12 @@
+<div class="parent-container">
+
+<!-- Penalty Container -->
+<div class="penalty-container" *ngIf="penalties.length > 0">
+  <span class="penalty-title" >Penalties</span>
+  <p *ngFor="let penalty of penalties" class="penalty-item">{{ penaltyToString(penalty) }}</p>
+</div>
+
+<!-- Challenge Container -->
 <div class="challenge-container">
 
   <div class="round-number">
@@ -19,4 +28,6 @@
   <div class="next-button-section">
     <button (click)="nextChallenge()" [disabled]="isLoading">Next</button>
   </div>
+</div>
+
 </div>
