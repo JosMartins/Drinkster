@@ -26,8 +26,7 @@ export class ChallengeComponent {
   difficultyCounts: any;
   penalties: Array<Penalty> = [];
   penalty: Penalty | null = null;
-
-  challenge: any;
+  chal: Challenge | null = null;
   private readonly chance = new Chance();
 
   constructor(
@@ -62,7 +61,7 @@ export class ChallengeComponent {
     const difficultyLevel = this.game.probabilitiesMode ? 'none' : this.getDifficultyLevel();
     this.challengeService.getChallenge(difficultyLevel).subscribe(
       (data) => {
-        const chal: Challenge = {
+        this.chal = {
           _id: data._id,
           challenge: data.challenge,
           difficulty: data.difficulty,
@@ -70,11 +69,11 @@ export class ChallengeComponent {
         };
 
         // Handle challenge based on difficulty and state
-        if ((chal.difficulty === 4 && !this.game.extremeMode) || this.lastIds.includes(chal._id)) {
+        if ((this.chal.difficulty === 4 && !this.game.extremeMode) || this.lastIds.includes(this.chal._id)) {
           this.resetRequestState();
           this.loadChallenge(); // Recursive call to fetch another challenge
         } else {
-          this.handleChallenge(chal);
+          this.handleChallenge(this.chal);
         }
       },
       error => {
@@ -183,6 +182,7 @@ export class ChallengeComponent {
         this.penalties.push(this.penalty);
       }
       this.penalty = null;
+      this.chal = null;
       this.loadChallenge();
       setTimeout(() => {
         this.requestCooldown = false;
@@ -193,6 +193,7 @@ export class ChallengeComponent {
   drank(): void { //TODO change this so player has a drank counter
     this.loadChallenge();
     this.penalty = null;
+    this.chal = null;
   }
 
   getDifficultyWord(difficulty: number): string {

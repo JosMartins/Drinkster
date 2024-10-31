@@ -1,41 +1,48 @@
 <div class="parent-container">
 
-<!-- Penalty Container -->
-<div class="penalty-container" *ngIf="penalties.length > 0">
-  <span class="penalty-title" >Penalties</span>
-  <p *ngFor="let penalty of penalties" class="penalty-item">{{ penaltyToString(penalty) }}</p>
-</div>
-
-<!-- Challenge Container -->
-<div class="challenge-container">
-
-  <div class="round-number">
-    <span>Round: {{trueRound}}</span>
+  <!-- Penalty Container -->
+  <div class="penalty-container" *ngIf="penalties.length > 0">
+    <span class="penalty-title">Penalties</span>
+    <p *ngFor="let penalty of penalties" class="penalty-item">{{ penaltyToString(penalty) }}</p>
   </div>
 
-  <!-- Difficulty Section -->
-  <div class="difficulty-section">
-    <span *ngIf="writtenChallenge" [ngClass]="getDifficultyWord(writtenChallenge.difficulty).toLowerCase()" >{{ getDifficultyWord(writtenChallenge.difficulty) }}</span>
-  </div>
+  <!-- Challenge Container -->
+  <div class="challenge-container">
 
-  
-  <!-- Challenge Section -->
-  <div class="challenge-section" *ngIf="writtenChallenge">
-    <p>{{ writtenChallenge.challenge }}</p>
-  </div>
+    <div class="round-number">
+      <span>Round: {{trueRound}}</span>
+    </div>
 
-  <!-- Buttons Section -->
-<div class="button-container">
+    <!-- Difficulty Section -->
+    <div class="difficulty-section">
+      <span *ngIf="writtenChallenge" [ngClass]="getDifficultyWord(writtenChallenge.difficulty).toLowerCase()">{{
+        getDifficultyWord(writtenChallenge.difficulty) }}</span>
+    </div>
 
-  <div class="drank-button">
-    <button (click)="drank()" [disabled]="isLoading">Drank it</button>
-  </div>
-  <!-- Next Button -->
-  <div class="next-button-section">
-    <button (click)="didIt()" [disabled]="isLoading">Did it</button>
-  </div>
-</div>
 
-</div>
+    <!-- Challenge Section -->
+    <div class="challenge-section" *ngIf="writtenChallenge">
+      <p>{{ writtenChallenge.challenge }}</p>
+    </div>
+
+    <!-- Buttons Section -->
+    <div class="button-container" *ngIf="penalty">
+
+        <div class="drank-button">
+          <button (click)="drank()" [disabled]="isLoading">Drank it</button>
+        </div>
+        <!-- Next Button -->
+        <div class="next-button-section">
+          <button (click)="didIt()" [disabled]="isLoading">Did it</button>
+        </div>
+
+    </div>
+    <span class="next-button-section" *ngIf="!penalty">
+      <button (click)="didIt()" [disabled]="isLoading">Next</button>
+    </span>
+
+
+
+  </div>
 
 </div>
