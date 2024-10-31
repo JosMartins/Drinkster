@@ -25,7 +25,7 @@ export class GameConfigComponent {
   constructor(public dialog: MatDialog, private router: Router) { }
 
 
-  players: Player[] = [{ name: '', gender: 'M' }];
+  players: Player[] = [{ name: '', gender: 'M', drinked: 0 }];
   extremeMode: boolean = false;
   difficultyValues : Difficulty = DEFAULT_DIFFICULTY_EXTREME;
   numberOfRememberedChal: number = 20
@@ -34,7 +34,7 @@ export class GameConfigComponent {
 
 
   addPlayer() {
-    this.players.push({ name: '', gender: 'M' });
+    this.players.push({ name: '', gender: 'M', drinked: 0});
   }
 
   removePlayer(index: number) {

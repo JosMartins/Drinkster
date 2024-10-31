@@ -25,6 +25,9 @@ export class ChallengeComponent {
   writtenChallenge: Challenge | null = null;
   difficultyCounts: any;
   penalties: Array<Penalty> = [];
+  penalty: Penalty | null = null;
+
+  challenge: any;
   private readonly chance = new Chance();
 
   constructor(
@@ -83,19 +86,13 @@ export class ChallengeComponent {
 
   handleChallenge(chal: Challenge): void {
     this.resetRequestState();
-
-    let penalty: { description: string; players: string[]; penalty: number; persistance: number; } = {
-      description: '',//Unused for now but could be used to display the penalty
-      players: [],
-      penalty: 1,
-      persistance: 0
-    };
+    let penalty_players: Array<string> = [];
 
     let plTurn = Math.floor(this.round % this.game.players.length);
     if (chal.challenge.includes('{Player}')) {
       if (chal.sexes[0] === 'All' || chal.sexes[0] === this.game.players[plTurn].gender) {
         chal.challenge = chal.challenge.replaceAll('{Player}', this.game.players[plTurn].name);
-        penalty.players.push(this.game.players[plTurn].name);
+        penalty_players.push(this.game.players[plTurn].name);
 
         this.round++;
       } else {
@@ -106,7 +103,7 @@ export class ChallengeComponent {
 
     }
     let player1 = this.game.players[plTurn].name;
-    
+
 
     if (chal.challenge.includes('{Player2}')) {
       let otherPlayers = this.game.players.filter(player => player.name !== player1);
@@ -115,7 +112,7 @@ export class ChallengeComponent {
       if (chal.sexes[1] === 'All' || chal.sexes[1] === this.game.players[randomIndex].gender) {
         let player2 = otherPlayers[randomIndex].name;
         chal.challenge = chal.challenge.replaceAll('{Player2}', player2);
-        penalty.players.push(player2);
+        penalty_players.push(player2);
       } else {
         this.loadChallenge(); // Retry if conditions are not met
         return;
@@ -125,17 +122,21 @@ export class ChallengeComponent {
     if (chal.challenge.includes('rounds')) {
       const match = chal.challenge.match(/(\d+) rounds/);
       if (match) {
-        penalty.penalty = parseInt(match[1], 10) + 1;
+        this.penalty = {
+          description: '',
+          players: penalty_players,
+          penalty: parseInt(match[1], 10) + 1,
+          persistance: 0
+        }
       } else {
         console.error('No match found for rounds');
       }
 
-      this.penalties.push(penalty);
+    }
 
-      //Specific
-      if (chal.challenge.includes('From now on')) {
-        penalty.persistance = penalty.penalty;
-      }
+    //Specific
+    if (chal.challenge.includes('From now on') && this.penalty) {
+      this.penalty.persistance = this.penalty.penalty;
     }
 
     if (this.lastIds.length >= this.game.remembered) {
@@ -176,13 +177,22 @@ export class ChallengeComponent {
     return this.chance.weighted(Object.keys(choices), Object.values(choices));
   }
 
-  nextChallenge(): void {
+  didIt(): void {
     if (!this.isLoading && !this.requestCooldown) {
+      if (this.penalty && this.penalty.penalty !== 0) {
+        this.penalties.push(this.penalty);
+      }
+      this.penalty = null;
       this.loadChallenge();
       setTimeout(() => {
         this.requestCooldown = false;
       }, 1250); // Cooldown to prevent immediate repeat requests
     }
+  }
+
+  drank(): void { //TODO change this so player has a drank counter
+    this.loadChallenge();
+    this.penalty = null;
   }
 
   getDifficultyWord(difficulty: number): string {

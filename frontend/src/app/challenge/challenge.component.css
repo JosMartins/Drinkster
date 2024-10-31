@@ -5,57 +5,92 @@
 }
 
 .challenge-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background for better text visibility */
-    border-radius: 15px;
-    width: 90%;
-    max-width: 1400px;
-    margin: 0 auto;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  .difficulty-section {
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 20px;
-  }
-  
-  
-  .challenge-section {
-    flex-grow: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 18px;
-    text-align: center;
-    color: white;
-    margin-bottom: 70px;
-  }
-  
-  .next-button-section {
-    display: flex;
-    justify-content: center;
-    scale: 1.5;
-  }
-  
-  .next-button-section button {
-    padding: 10px 20px;
-    background-color: #6200ea;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  .next-button-section button:hover {
-    background-color: #3700b3;
-  }
-  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Semi-transparent background for better text visibility */
+  border-radius: 15px;
+  width: 90%;
+  max-width: 1400px;
+  margin: 0 auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.difficulty-section {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+
+.challenge-section {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  text-align: center;
+  color: white;
+  margin-bottom: 70px;
+}
+
+
+.button-container {
+  display: flex;
+  justify-content: space-between; /* Space between buttons */
+  padding: 4px 5px;
+}
+
+.button-container button {
+  flex: 1; /* Allow buttons to grow and shrink equally */
+  margin: 0 13px; /* Add margin between buttons */
+  padding: 10px 15px; /* Add padding to the buttons */
+  font-size: 0.9em; /* Make the buttons a bit smaller */
+}
+
+.next-button-section {
+  display: flex;
+  justify-content: center;
+  scale: 1.25;
+}
+
+.next-button-section button {
+  padding: 10px 20px;
+  background-color: #6200ea;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.next-button-section button:hover {
+  background-color: #3700b3;
+}
+
+.drank-button {
+  display: flex;
+  justify-content: center;
+  scale: 1.25;
+}
+
+.drank-button button {
+  padding: 5px 10px;
+  background-color: #ff6347; /* Darker tomato color on hover */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.drank-button button:hover {
+  background-color: #e5533d; /* Tomato color for drank button */
+}
+
 
 .easy {
   animation: easyAnimation 1s infinite alternate;
@@ -83,23 +118,43 @@
 }
 
 @keyframes easyAnimation {
-  from { color: green; }
-  to { color: lightgreen; }
+  from {
+    color: green;
+  }
+
+  to {
+    color: lightgreen;
+  }
 }
 
 @keyframes mediumAnimation {
-  from { color: yellow; }
-  to { color: gold; }
+  from {
+    color: yellow;
+  }
+
+  to {
+    color: gold;
+  }
 }
 
 @keyframes hardAnimation {
-  from { color: orange; }
-  to { color: darkorange; }
+  from {
+    color: orange;
+  }
+
+  to {
+    color: darkorange;
+  }
 }
 
 @keyframes extremeAnimation {
-  from { color: red; }
-  to { color: darkred; }
+  from {
+    color: red;
+  }
+
+  to {
+    color: darkred;
+  }
 }
 
 .penalty-container {
@@ -108,7 +163,8 @@
   flex-direction: column;
   align-items: center;
   padding: 20px;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background for better text visibility */
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Semi-transparent background for better text visibility */
   border-radius: 15px;
   width: 80%;
   margin: 0 auto;
@@ -116,8 +172,8 @@
   margin-bottom: 30px;
 }
 
-.penalty-title{
-  color:crimson;
+.penalty-title {
+  color: crimson;
   font-size: 24px;
   font-weight: bold;
   text-align: center;
@@ -132,11 +188,11 @@
 
   .challenge-container {
     width: 110%;
-    
+
     margin-bottom: 0;
   }
 
-  .penalty-container{
+  .penalty-container {
     width: 85%;
     margin-left: 50px;
   }
@@ -147,7 +203,8 @@
     flex-direction: column;
   }
 
-  .penalty-container, .challenge-container {
+  .penalty-container,
+  .challenge-container {
     width: 80%;
   }
 }

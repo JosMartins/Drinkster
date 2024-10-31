@@ -24,10 +24,18 @@
     <p>{{ writtenChallenge.challenge }}</p>
   </div>
 
+  <!-- Buttons Section -->
+<div class="button-container">
+
+  <div class="drank-button">
+    <button (click)="drank()" [disabled]="isLoading">Drank it</button>
+  </div>
   <!-- Next Button -->
   <div class="next-button-section">
-    <button (click)="nextChallenge()" [disabled]="isLoading">Next</button>
+    <button (click)="didIt()" [disabled]="isLoading">Did it</button>
   </div>
+</div>
+
 </div>
 
 </div>
