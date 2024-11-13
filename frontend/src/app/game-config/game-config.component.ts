@@ -9,8 +9,8 @@ import { DifficultyDialogComponent } from '../difficulty-dialog/difficulty-dialo
 import {Router} from "@angular/router";
 
 
-const DEFAULT_DIFFICULTY_NO_EXTREME: Difficulty = { easy: 0.30, medium: 0.28, hard:0.27, extreme: 0};
-const DEFAULT_DIFFICULTY_EXTREME: Difficulty = { easy: 0.30, medium: 0.28, hard:0.27, extreme: 0.15 };
+const DEFAULT_DIFFICULTY_NO_EXTREME: Difficulty = { easy: 0.20, medium: 0.35, hard:0.35, extreme: 0};
+const DEFAULT_DIFFICULTY_EXTREME: Difficulty = { easy: 0.25, medium: 0.30, hard:0.30, extreme: 0.15 };
 
 
 @Component({
@@ -22,15 +22,13 @@ const DEFAULT_DIFFICULTY_EXTREME: Difficulty = { easy: 0.30, medium: 0.28, hard:
 })
 export class GameConfigComponent {
 
-  constructor(public dialog: MatDialog, private router: Router) { }
-
+  constructor(public dialog: MatDialog, private readonly router: Router) { }
 
   players: Player[] = [{ name: '', gender: 'M', drinked: 0 }];
   extremeMode: boolean = false;
-  difficultyValues : Difficulty = DEFAULT_DIFFICULTY_EXTREME;
+  difficultyValues : Difficulty | null = null;
   numberOfRememberedChal: number = 20
   probabilitiesMode: boolean = false;
-
 
 
   addPlayer() {
@@ -45,6 +43,11 @@ export class GameConfigComponent {
 
   toggleExtremeMode() {
     this.extremeMode = !this.extremeMode;
+
+    if (this.difficultyValues === DEFAULT_DIFFICULTY_NO_EXTREME) {
+      this.difficultyValues = DEFAULT_DIFFICULTY_EXTREME;
+    }
+
   }
 
   toggleProbabilitiesMode() {
@@ -55,9 +58,8 @@ export class GameConfigComponent {
     //create the game object and save it to session storage
     sessionStorage.clear();
 
-    //this isnt quite how i wanted to do it, but it works for now TODO: fix this
-    if (!this.extremeMode && this.difficultyValues.extreme > 0) {
-      this.difficultyValues= DEFAULT_DIFFICULTY_NO_EXTREME;
+    if (this.difficultyValues == null) {
+      this.difficultyValues = this.extremeMode ? DEFAULT_DIFFICULTY_EXTREME : DEFAULT_DIFFICULTY_NO_EXTREME;
     }
     const game: Game = { players: this.players, extremeMode: this.extremeMode, difficultyValues: this.difficultyValues, remembered: this.numberOfRememberedChal, probabilitiesMode: this.probabilitiesMode};
     sessionStorage.setItem('game', JSON.stringify(game));
@@ -67,8 +69,8 @@ export class GameConfigComponent {
 
 
   openDifficultyModal() {
-    
-    if (this.difficultyValues) {
+    console.log(this.difficultyValues);
+    if (this.difficultyValues === null) {
       this.difficultyValues = this.extremeMode ? DEFAULT_DIFFICULTY_EXTREME : DEFAULT_DIFFICULTY_NO_EXTREME;
     }
 
