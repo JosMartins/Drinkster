@@ -9,6 +9,15 @@ services:
       - backend
     networks:
       - drinkster-network
+    volumes:
+      - type: bind
+        source: /etc/letsencrypt/live/autistassv.ddns.net/fullchain.pem
+        target: /conf/ssl/fullchain.pem
+        read_only: true
+      - type: bind
+        source: /etc/letsencrypt/live/autistassv.ddns.net/privkey.pem
+        target: /conf/ssl/privkey.pem
+        read_only: true
 
   backend:
     build:

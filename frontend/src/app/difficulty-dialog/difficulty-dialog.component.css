@@ -50,7 +50,12 @@ mat-form-field {
   background-color: #3700b3; /* Darker shade on hover */
 }
 
-.mat-dialog-container {
+.difficulty-dialog {
   border-radius: 8px; /* Round corners of the entire dialog */
   overflow: hidden; /* Ensure the rounded corners are visible */
+  background-color: transparent;
+}
+
+.parent {
+  background-color: rgba(53, 15, 6, 0.76);
 }
