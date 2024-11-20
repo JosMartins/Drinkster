@@ -13,3 +13,13 @@ const challengeSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model('Question', challengeSchema);
+
+/* **Challenge Example** (as a JSON)
+ *
+ * {
+ *   "challenge": "{Player} do Something.",
+ *    "difficulty": 1,
+ *    "sexes": ["All"]
+ * }
+ *
+*/

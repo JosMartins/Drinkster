@@ -16,7 +16,7 @@ export class ChalAddComponent {
   difficulty: number | null = null;
   message: string = '';
 
-  constructor(private http: HttpClient, private route: ActivatedRoute, private router: Router) {}
+  constructor(private readonly http: HttpClient, private readonly route: ActivatedRoute, private readonly router: Router) {}
   
   ngOnInit() {
     this.route.queryParams.subscribe(params => {

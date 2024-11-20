@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-const mongoDB = "mongodb://192.168.1.66:27017/test";
+const mongoDB = process.env.MONGO_URI;
 
 
 

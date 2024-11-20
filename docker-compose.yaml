@@ -4,7 +4,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "25569:80"
+    # Change the port here if you want to run the frontend on a different port. it should be <port>:443
+      - "25569:443"
     depends_on:
       - backend
     networks:
@@ -26,7 +27,16 @@ services:
     ports:
       - "3432:3432"
     environment:
-      - MONGO_URI=mongodb://host.docker.internal:27017
+      - MONGO_URI=mongodb://mongo:27017/drinkster
+    depends_on:
+      - mongo
+    networks:
+      - drinkster-network
+    
+  mongo:
+    image: mongo
+    volumes:
+      - drinkster-data:/data/db 
     networks:
       - drinkster-network
 
@@ -34,3 +44,6 @@ networks:
   drinkster-network:
     driver: bridge
 
+volumes:
+  drinkster-data:
+    driver: local
