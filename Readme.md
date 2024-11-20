@@ -8,10 +8,10 @@ Be it a party, a night out, or a casual gathering, Drinkster is the perfect comp
 
 ## Features
 
-- Randomized drinking challenges
-- Customizable game settings
-- User-submitted challenges (hidden)
-- Single Docker Compose setup for easy deployment
+- 🎲 Randomized drinking challenges to keep the fun unpredictable.
+- ⚙️ Customizable game settings for tailored experiences.
+- 📝 User-submitted challenges (hidden) for personalized twists.
+- 🐳 Easy deployment with a single Docker Compose setup.
 
 ## Installation
 
