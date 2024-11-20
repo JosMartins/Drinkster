@@ -48,6 +48,11 @@ Be it a party, a night out, or a casual gathering, Drinkster is the perfect comp
 
 3. Open your browser and navigate to `http://localhost:25569`
 
+### Customization
+ * Change Port
+    - To change the port, edit the `docker-compose.yml` file and change the `ports` configuration for the `web` service.
+    - For example, to change the port to `8080`, change the configuration to `8080:443`.
+
 
 ## License
 
