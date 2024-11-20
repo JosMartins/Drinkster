@@ -20,7 +20,9 @@ export class ChalAddComponent {
   
   ngOnInit() {
     this.route.queryParams.subscribe(params => {
-      if (params['secret'] !== 'joseget123') {
+      //This should be in a different file, but for the sake of simplicity... plus this is not easily accessible
+      let pass = 'passw';
+      if (params['secret'] !== pass) {
         this.router.navigate(['/']);  // Redirect to home if the secret code is wrong
       }
     });

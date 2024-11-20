@@ -63,13 +63,11 @@ export class GameConfigComponent {
     }
     const game: Game = { players: this.players, extremeMode: this.extremeMode, difficultyValues: this.difficultyValues, remembered: this.numberOfRememberedChal, probabilitiesMode: this.probabilitiesMode};
     sessionStorage.setItem('game', JSON.stringify(game));
-    console.log(sessionStorage.getItem('game'));
     this.router.navigate(['/game']);
   }
 
 
   openDifficultyModal() {
-    console.log(this.difficultyValues);
     if (this.difficultyValues === null) {
       this.difficultyValues = this.extremeMode ? DEFAULT_DIFFICULTY_EXTREME : DEFAULT_DIFFICULTY_NO_EXTREME;
     }

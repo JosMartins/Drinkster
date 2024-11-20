@@ -23,20 +23,33 @@ export class ChallengeComponent {
   isLoading: boolean = false;
   requestCooldown: boolean = false;
   writtenChallenge: Challenge | null = null;
-  difficultyCounts: any;
   penalties: Array<Penalty> = [];
   penalty: Penalty | null = null;
   chal: Challenge | null = null;
+  challengeCount!: { easyChallenges: number, mediumChallenges: number, hardChallenges: number, extremeChallenges: number, totalChallenges: number };
   private readonly chance = new Chance();
+
 
   constructor(
     private readonly challengeService: ChallengeService,
     private readonly router: Router
-  ) {
+  ) { }
 
-    if (this.getGameData()) {
-      this.loadChallenge(); // Initiate challenge loading
+  async ngOnInit() {
+
+    if (!this.getGameData()) {
+      this.router.navigate(['/config']);
+      return;
     }
+
+    await this.getStats();
+
+    this.loadChallenge();
+  }
+
+
+  async getStats(): Promise<void> {
+    this.challengeCount = await this.challengeService.getStats().toPromise();
   }
 
   getGameData(): boolean {
@@ -46,10 +59,9 @@ export class ChallengeComponent {
 
       return true;
     }
-
-    this.router.navigate(['/config']);
     return false;
   }
+
   loadChallenge(): void {
     if (this.requestCooldown || this.isLoading) {
       return;
@@ -166,12 +178,14 @@ export class ChallengeComponent {
   }
 
   getDifficultyLevel(): string {
+    
     const choices = {
-      easy: this.game.difficultyValues.easy,
-      medium: this.game.difficultyValues.medium,
-      hard: this.game.difficultyValues.hard,
-      extreme: this.game.difficultyValues.extreme
+      easy: this.game.difficultyValues.easy * (this.challengeCount.easyChallenges / this.challengeCount.totalChallenges),
+      medium: this.game.difficultyValues.medium * (this.challengeCount.mediumChallenges / this.challengeCount.totalChallenges),
+      hard: this.game.difficultyValues.hard * (this.challengeCount.hardChallenges / this.challengeCount.totalChallenges),
+      extreme: this.game.difficultyValues.extreme * (this.challengeCount.extremeChallenges / this.challengeCount.totalChallenges)
     };
+
 
     return this.chance.weighted(Object.keys(choices), Object.values(choices));
   }
@@ -214,4 +228,3 @@ export class ChallengeComponent {
     return `${penalty.penalty} rounds (${penalty.players.join(' & ')})`;
   }
 }
-
