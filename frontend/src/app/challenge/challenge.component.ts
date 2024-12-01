@@ -204,7 +204,7 @@ export class ChallengeComponent {
     }
   }
 
-  drank(): void { //TODO change this so player has a drank counter
+  drank(): void {
     this.loadChallenge();
     this.penalty = null;
     this.chal = null;
