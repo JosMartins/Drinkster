@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { ChallengeService } from '../challenge.service';
 
 @Component({
   selector: 'app-chaladd',
@@ -18,7 +19,7 @@ export class ChalAddComponent {
   sexes = {M: false, F: false}; 
   sexes2 = {M: false, F: false}; 
 
-  constructor(private readonly http: HttpClient, private readonly route: ActivatedRoute, private readonly router: Router) {}
+  constructor(private readonly challengeService: ChallengeService,private readonly http: HttpClient, private readonly router: Router) {}
 
   
 
@@ -38,7 +39,7 @@ export class ChalAddComponent {
       };
       console.log(newChallenge);
 
-      this.http.post('http://localhost:3432/challenge/add', newChallenge).subscribe(
+      this.challengeService.addChallenge(newChallenge).subscribe(
         (response: any) => {
           this.message = 'Challenge added successfully!\nId: ' + response._id;
           this.challenge = '';

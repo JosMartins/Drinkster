@@ -10,7 +10,7 @@ const routes: Routes = [
   { path: '', component: StartPageComponent }, // Route for start page
   { path: 'config', component: GameConfigComponent }, // Route for game config
   { path: 'game', component: ChallengeComponent }, //Route for game
-  { path: 'chaladd', component: ChalAddComponent}
+  { path: 'add', component: ChalAddComponent}
   // Add other routes as needed
 ];
 

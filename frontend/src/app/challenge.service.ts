@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class ChallengeService {
 
-  private readonly apiUrl = '/api'; //local
+  private readonly apiUrl = '/api';
 
   constructor(private readonly http: HttpClient) { }
 
@@ -32,5 +32,8 @@ export class ChallengeService {
     return this.http.get<any>(`${this.apiUrl}/challenge/stats`);
   }
 
+  addChallenge(challenge: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/challenge/add`, challenge);
+  }
 }
 

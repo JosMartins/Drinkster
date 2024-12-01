@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ChaladdComponent } from './chaladd.component';
+import { ChalAddComponent } from './chaladd.component';
 
 describe('ChaladdComponent', () => {
-  let component: ChaladdComponent;
-  let fixture: ComponentFixture<ChaladdComponent>;
+  let component: ChalAddComponent;
+  let fixture: ComponentFixture<ChalAddComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ChaladdComponent]
+      imports: [ChalAddComponent]
     })
     .compileComponents();
     
-    fixture = TestBed.createComponent(ChaladdComponent);
+    fixture = TestBed.createComponent(ChalAddComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
