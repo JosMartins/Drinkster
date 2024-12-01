@@ -5,18 +5,19 @@ services:
       dockerfile: Dockerfile
     ports:
     # Change the port here if you want to run the frontend on a different port. it should be <port>:443
-      - "25569:443"
+      - "<ypur-port>:443"
     depends_on:
       - backend
     networks:
       - drinkster-network
     volumes:
+    # Change both these values to the path of your ssl certificates on your host machine
       - type: bind
-        source: /etc/letsencrypt/live/autistassv.ddns.net/fullchain.pem
+        source: /path/to/host/fullchain.pem #1
         target: /conf/ssl/fullchain.pem
         read_only: true
       - type: bind
-        source: /etc/letsencrypt/live/autistassv.ddns.net/privkey.pem
+        source: /path/to/host/privkey.pem #2
         target: /conf/ssl/privkey.pem
         read_only: true
 
