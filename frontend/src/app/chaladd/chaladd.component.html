@@ -34,8 +34,32 @@
           Difficulty must be between 1 and 4.
         </div>
       </div>
-  
+
+      <div class="sexes" *ngIf="challenge.includes('{Player}')">
+        <label for="sex_M">Player 1 sexes:</label>
+        <label class="checkbox-label">
+          <input type="checkbox" name="sexes" value="M" [(ngModel)]="sexes.M" />
+          M
+        </label>
+        <label for="sex_F" class="checkbox-label">
+          <input type="checkbox" name="sexes" value="F" [(ngModel)]="sexes.F" />
+          F
+        </label>
+      </div>
+      <div class="sexes" *ngIf="challenge.includes('{Player2}')">
+        <label for="sex_M">Player 2 sexes:</label>
+        <label class="checkbox-label">
+          <input type="checkbox" name="sexes" value="M" [(ngModel)]="sexes2.M" />
+          M
+        </label>
+        <label class="checkbox-label" for="sex_F">
+          <input type="checkbox" name="sexes" value="F" [(ngModel)]="sexes2.F" />
+          F
+        </label>
+      </div>
+
       <button type="submit" [disabled]="chalForm.invalid">Add Challenge</button>
+    
     </form>
   
     <p *ngIf="message">{{ message }}</p>

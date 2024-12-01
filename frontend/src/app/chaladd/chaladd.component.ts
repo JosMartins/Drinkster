@@ -15,29 +15,32 @@ export class ChalAddComponent {
   challenge: string = '';
   difficulty: number | null = null;
   message: string = '';
+  sexes = {M: false, F: false}; 
+  sexes2 = {M: false, F: false}; 
 
   constructor(private readonly http: HttpClient, private readonly route: ActivatedRoute, private readonly router: Router) {}
+
   
-  ngOnInit() {
-    this.route.queryParams.subscribe(params => {
-      //This should be in a different file, but for the sake of simplicity... plus this is not easily accessible
-      let pass = 'passw';
-      if (params['secret'] !== pass) {
-        this.router.navigate(['/']);  // Redirect to home if the secret code is wrong
-      }
-    });
-  }
 
   onSubmit() {
+
+    if ((this.challenge.includes("{Player}") && this.sexes.M === false && this.sexes.F === false) ||
+      (this.challenge.includes("{Player2}") && this.sexes2.M === false && this.sexes2.F === false)) {
+      this.message = 'Please select sex.';
+      return;
+    }
+
     if (this.challenge && this.difficulty) {
       const newChallenge = {
         challenge: this.challenge,
-        difficulty: this.difficulty
+        difficulty: this.difficulty,
+        sexes: this.stringifySexes() 
       };
+      console.log(newChallenge);
 
       this.http.post('http://localhost:3432/challenge/add', newChallenge).subscribe(
-        (response) => {
-          this.message = 'Challenge added successfully!';
+        (response: any) => {
+          this.message = 'Challenge added successfully!\nId: ' + response._id;
           this.challenge = '';
           this.difficulty = null;
         },
@@ -47,6 +50,25 @@ export class ChalAddComponent {
         }
       );
     }
+  }
+
+  formatSexes( boolSexes: { M: boolean; F: boolean } ) {
+    let sexes = [];
+    if (boolSexes.M && boolSexes.F) {
+      sexes.push('All');
+    return sexes;
+    } else if (boolSexes.M) {
+      sexes.push('M');
+    } else if (boolSexes.F) {
+      sexes.push('F');
+    }
+
+    return sexes;
+  }
+
+  stringifySexes() {
+    return this.formatSexes(this.sexes).concat(
+            this.formatSexes(this.sexes2));
   }
 }
 

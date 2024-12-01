@@ -8,5 +8,5 @@ export const routes: Routes = [
   { path: '', component: StartPageComponent },
   { path: 'config', component: GameConfigComponent },
   { path: 'game', component: ChallengeComponent },
-  { path: 'chaladd', component: ChalAddComponent }
+  { path: 'add', component: ChalAddComponent }
 ];
