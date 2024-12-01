@@ -79,12 +79,12 @@ Be it a party, a night out, or a casual gathering, Drinkster is the perfect comp
         - The `sexes` field is only used if the challenge body contains `{Player}`.
         - Example: `["M","F"]` will only allow a challenge to be used when the first player is male and the second player is female.
 
-2. Do a POST request to `https://localhost:<ypur-port>/api/challenge/add-all` with the JSON file as the request body.
+2. Do a POST request to `https://localhost:<your-port>/api/challenge/add-all` with the JSON file as the request body.
     - You can use a tool like [Postman](https://www.postman.com/) to make the request.
  
 OR
 
-1. Go to https://localhost:<your-port>/add.
+1. Go to `https://localhost:<your-port>/add`.
     - This only allows to add a challenge at a time.
 
 ## License
