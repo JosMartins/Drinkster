@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     ports:
     # Change the port here if you want to run the frontend on a different port. it should be <port>:443
-      - "<ypur-port>:443"
+      - "<your-port>:443"
     depends_on:
       - backend
     networks:
