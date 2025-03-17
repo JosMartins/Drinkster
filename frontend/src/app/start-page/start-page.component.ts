@@ -10,7 +10,7 @@ import {Router} from "@angular/router";
 })
 export class StartPageComponent {
 
-  constructor(private router: Router) { }
+  constructor(private readonly router: Router) { }
 
 
   configGame() {

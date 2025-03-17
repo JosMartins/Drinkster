@@ -7,6 +7,7 @@ import { ChallengeService } from '../challenge.service';
 import Chance from 'chance';
 import { Challenge } from '../challenge';
 import { Penalty } from '../Penalty';
+import { firstValueFrom } from 'rxjs';
 @Component({
   selector: 'app-challenge',
   standalone: true,
@@ -49,7 +50,7 @@ export class ChallengeComponent {
 
 
   async getStats(): Promise<void> {
-    this.challengeCount = await this.challengeService.getStats().toPromise();
+    this.challengeCount = await firstValueFrom(this.challengeService.getStats());
   }
 
   getGameData(): boolean {
@@ -71,8 +72,8 @@ export class ChallengeComponent {
     this.requestCooldown = true;
 
     const difficultyLevel = this.game.probabilitiesMode ? 'none' : this.getDifficultyLevel();
-    this.challengeService.getChallenge(difficultyLevel).subscribe(
-      (data) => {
+    this.challengeService.getChallenge(difficultyLevel).subscribe({
+      next: (data) => {
         this.chal = {
           _id: data._id,
           challenge: data.challenge,
@@ -88,11 +89,11 @@ export class ChallengeComponent {
           this.handleChallenge(this.chal);
         }
       },
-      error => {
+      error: error => {
         console.error('Error fetching challenge:', error);
         this.resetRequestState();
       }
-    );
+  });
   }
 
   handleChallenge(chal: Challenge): void {
@@ -131,7 +132,8 @@ export class ChallengeComponent {
     }
 
     if (chal.challenge.includes('rounds')) {
-      const match = chal.challenge.match(/(\d+) rounds/);
+      const regex = /(\d+) rounds/;
+      const match = regex.exec(chal.challenge);
       if (match) {
         this.penalty = {
           description: '',
@@ -196,7 +198,6 @@ export class ChallengeComponent {
         this.penalties.push(this.penalty);
       }
       this.penalty = null;
-      this.chal = null;
       this.loadChallenge();
       setTimeout(() => {
         this.requestCooldown = false;
@@ -205,9 +206,11 @@ export class ChallengeComponent {
   }
 
   drank(): void {
-    this.loadChallenge();
     this.penalty = null;
-    this.chal = null;
+    this.loadChallenge();
+    setTimeout(() => {
+      this.requestCooldown = false;
+    }, 1250); // Cooldown to prevent immediate repeat requests
   }
 
   getDifficultyWord(difficulty: number): string {

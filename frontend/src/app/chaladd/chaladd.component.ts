@@ -39,17 +39,17 @@ export class ChalAddComponent {
       };
       console.log(newChallenge);
 
-      this.challengeService.addChallenge(newChallenge).subscribe(
-        (response: any) => {
+      this.challengeService.addChallenge(newChallenge).subscribe({
+        next: (response: any) => {
           this.message = 'Challenge added successfully!\nId: ' + response._id;
           this.challenge = '';
           this.difficulty = null;
         },
-        (error) => {
+        error: (error) => {
           this.message = 'Error adding challenge.';
           console.error(error);
         }
-      );
+    });
     }
   }
 
