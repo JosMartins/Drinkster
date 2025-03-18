@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Copy and install backend dependencies
 COPY ./package*.json ./backend/
-RUN cd backend && npm install
+RUN cd backend && npm install && npm run build --omit-dev
 
 # Copy backend code
 COPY . ./backend/
@@ -15,4 +15,4 @@ COPY . ./backend/
 EXPOSE 3432
 
 # Start the backend
-CMD ["node", "/app/backend/app.js"]
+CMD ["node", "/app/backend/dist/app.js"]

@@ -1,4 +1,4 @@
-import { Sex } from './sex';
+import { Sex } from '../types/sex';
 
 export interface DifficultyValues {
     easy: number;

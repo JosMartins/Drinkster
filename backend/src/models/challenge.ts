@@ -1,6 +1,6 @@
-import mongoosem {Document, Schema} from 'mongoose';
-import {Difficulty} from '../difficulty';
-import { Sex } from '../sex';
+import { Schema, model} from 'mongoose';
+import { Difficulty } from './difficulty';
+import { Sex } from '../types/sex';
 
 //Types
 
@@ -13,7 +13,7 @@ export interface IChallenge extends Document {
 
 
 //Schema
-const challengeSchema = new mongoose.Schema({
+const challengeSchema = new Schema({
 
     challenge: {type: String, required: true},
     //1 - easy, 2 - medium, 3 - hard, 4 - extreme
@@ -25,7 +25,8 @@ const challengeSchema = new mongoose.Schema({
     }]
 });
 
-export default mongoose.model<IChallenge>('Challenge', challengeSchema);
+export default model<IChallenge>('Challenge', challengeSchema);
+
 
 /* **Challenge Example** (as a JSON)
  *

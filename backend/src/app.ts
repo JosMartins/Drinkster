@@ -6,17 +6,17 @@ import http from 'http';
 import { Server, Socket } from 'socket.io';
 
 
-
 import * as roomFunctions from './roomFunctions';
 import initRouter from './routes/init';
 import challengeRouter from './routes/challenge';
-import { Player, PlayerConfig } from './models/player';
-import { GameRoom, GameRoomConfig } from './models/gameRoom';
+import { Player, PlayerConfig } from './types/player';
+import { GameRoom, GameRoomConfig } from './types/gameRoom';
 
 // TODO: Create interfaces in another file
 
 
 const app = express();
+/*
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
@@ -24,12 +24,16 @@ const io = new Server(server, {
         methods: ['GET', 'POST']
     }
 });
-
+*/
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-const mongoDB = process.env.MONGO_URI;
+const mongoDB = process.env.MONGO_URI ?? '';
+if (!mongoDB) {
+    throw new Error('MONGO_URI is not defined in the environment variables');
+}
+
 
 //Game Rooms
 const gameRooms = new Map<string,GameRoom>();
@@ -40,7 +44,7 @@ async function main() {
     await mongoose.connect(mongoDB);
     console.log("Connected to DB!");
 }
-
+/*
 //Socket IO
 io.on('connection', (socket) => {
     console.log('User connected');
@@ -52,30 +56,26 @@ io.on('connection', (socket) => {
     });
 
 });
-
+*/
 app.use('/', initRouter);
 app.use('/api/challenge', challengeRouter);
 
-app.use(function (err, req, res, next) {
+app.use(function (err: Error, req: Request, res: Response, next: NextFunction) {
     console.error(err.stack);
 
-    let errorMessage = 'An unexpected error occurred';
-    if (err.message) {
-        errorMessage = err.message;
-    }
+    //if (err.status === 502) {
+     //   errorMessage = 'Backend service is unavailable';
+    //}
 
-    if (err.status === 502) {
-        errorMessage = 'Backend service is unavailable';
-    }
-
-    res.status(err.status || 500);
-    res.json({ error: errorMessage });
+    res.status(500);
+    res.json({ error: err });
 });
 
 app.listen(3432, () => {
     console.log("Server is up and running on port 3432");
 });
-module.exports = app;
+
+export default app;
 
 
 /**

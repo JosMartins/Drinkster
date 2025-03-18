@@ -5,7 +5,7 @@ import { Difficulty } from '../models/difficulty';
 
 
 //Gets a random challenge
-export const get_challenge = asyncHandler(async (req, res, next) => {
+export const get_challenge = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     console.log("Challenge Requested.");
 
     const challenges = await Challenge.aggregate([{ $sample: { size: 1 } }]);
@@ -19,7 +19,7 @@ export const get_challenge = asyncHandler(async (req, res, next) => {
 })
 
 //Creates a challenge
-export const add_challenge = asyncHandler(async (req, res, next) => {
+export const add_challenge = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     console.log("Saved a challenge");
 
     const { challenge, difficulty, sexes } = req.body;
@@ -27,14 +27,16 @@ export const add_challenge = asyncHandler(async (req, res, next) => {
     console.log(difficulty);
 
     if (challenge === null) {
-        return res.status(400).json({ error: 'No text in challenge string' });
+        res.status(400).json({ error: 'No text in challenge string' });
+        return;
     }
 
     try {
         const challengeObj = new Challenge({ challenge, difficulty, sexes });
         const existing = await Challenge.findOne({ challenge: challenge });
         if (existing) {
-            return res.status(400).json({ error: 'Challenge already exists' });
+            res.status(400).json({ error: 'Challenge already exists' });
+            return;
         }
         await challengeObj.save();
         res.status(201).json(challengeObj);
@@ -44,26 +46,29 @@ export const add_challenge = asyncHandler(async (req, res, next) => {
 });
 
 //Add all challenges from a list
-export const add_all_challenges = asyncHandler(async (req, res, next) => {
+export const add_all_challenges = asyncHandler(async (req: Request, res: Response, next: NextFunction) => { 
     console.log("Saved all challenges");
 
     const challenges = req.body;
     console.log(challenges);
 
     if (challenges === null) {
-        return res.status(400).json({ error: 'No challenges' });
+        res.status(400).json({ error: 'No challenges' });
+        return;
     }
 
     try {
         for (const element of challenges) {
             const challengeObj = new Challenge(element);
             if (challengeObj.challenge === null) {
-                return res.status(400).json({ error: 'No text in challenge string' });
+                res.status(400).json({ error: 'No text in challenge string' });
+                return;
             }
 
             const existing = await Challenge.findOne({ challenge: element.challenge });
             if (existing) {
-                return res.status(400).json({ error: 'Challenge already exists' });
+                res.status(400).json({ error: 'Challenge already exists' });
+                return;
             }
             await challengeObj.save();
         }
@@ -75,7 +80,7 @@ export const add_all_challenges = asyncHandler(async (req, res, next) => {
 });
 
 //Gets an easy challenge
-export const get_easy_challenge = asyncHandler(async (req, res, next) => {
+export const get_easy_challenge = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     console.log('Easy Challenge Requested.');
 
     const easyChallenges = await Challenge.aggregate([{ $match: { difficulty: 1 } }, { $sample: { size: 1 } }])
@@ -88,7 +93,7 @@ export const get_easy_challenge = asyncHandler(async (req, res, next) => {
 });
 
 //Gets a medium challenge
-export const get_medium_challenge = asyncHandler(async (req, res, next) => {
+export const get_medium_challenge = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     console.log('Medium Challenge Requested.');
 
     const mediumChallenges = await Challenge.aggregate([{ $match: { difficulty: 2 } }, { $sample: { size: 1 } }])
@@ -101,7 +106,7 @@ export const get_medium_challenge = asyncHandler(async (req, res, next) => {
 });
 
 //Gets a hard challenge
-export const get_hard_challenge = asyncHandler(async (req, res, next) => {
+export const get_hard_challenge = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     console.log('Hard Challenge Requested.');
 
     const hardChallenges = await Challenge.aggregate([{ $match: { difficulty: 3 } }, { $sample: { size: 1 } }])
@@ -114,7 +119,7 @@ export const get_hard_challenge = asyncHandler(async (req, res, next) => {
 });
 
 //Gets an extreme challenge
-export const get_extreme_challenge = asyncHandler(async (req, res, next) => {
+export const get_extreme_challenge = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     console.log('Extreme Challenge Requested.');
 
     const extremeChallenges = await Challenge.aggregate([{ $match: { difficulty: 4 } }, { $sample: { size: 1 } }])
@@ -126,12 +131,12 @@ export const get_extreme_challenge = asyncHandler(async (req, res, next) => {
     }
 });
 
-export const get_all_challenges = asyncHandler(async (req, res, next) => {
+export const get_all_challenges = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     console.log('Got All Challenges');
-    let challenges;
+    let challenges: Array<IChallenge> = []; 
 
     if (req.query.difficulty) {
-        const difficulty = parseInt(req.query.difficulty);
+        const difficulty = parseInt(req.query.difficulty as string);
         challenges = await Challenge.find({ difficulty: difficulty });
 
     } else {
@@ -142,22 +147,23 @@ export const get_all_challenges = asyncHandler(async (req, res, next) => {
 })
 
 //delete a challenge
-export const delete_challenge = asyncHandler(async (req, res, next) => {
+export const delete_challenge = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 
     const challengeId = req.params.id;
     const password = req.query.pass;
 
     if (password !== "fax123") { //i know this is bad but i dont care
         console.log("Wrong Password");
-        return res.status(401).json({ error: 'Unauthorized' });
-
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
     }
 
     console.log(challengeId);
     try {
         const deletedChallenge = await Challenge.findByIdAndDelete(challengeId);
         if (!deletedChallenge) {
-            return res.status(404).json({ error: 'Challenge not found' });
+            res.status(404).json({ error: 'Challenge not found' });
+            return;
         }
         console.log('Deleted a challenge');
         res.status(200).json({ message: 'Challenge deleted successfully' });
@@ -167,7 +173,7 @@ export const delete_challenge = asyncHandler(async (req, res, next) => {
 });
 
 
-export const challenge_stats = asyncHandler(async (req, res, next) => {
+export const challenge_stats = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     console.log('Got Challenge Stats');
     let easyChallenges = await Challenge.countDocuments({ difficulty: Difficulty.EASY });
     let mediumChallenges = await Challenge.countDocuments({ difficulty: Difficulty.MEDIUM });

@@ -1,6 +1,6 @@
 import { Player , PlayerConfig } from './player';
 
-export interface RoomConfig {
+export interface GameRoomConfig {
     roomName: string;
     private: boolean;
     password?: string;
@@ -14,5 +14,5 @@ export interface GameRoom {
     password?: string;
     players: Array<Player>;
     status: 'waiting' | 'playing' | 'finished';
-    createdAt: date;
+    createdAt: Date;
 }
