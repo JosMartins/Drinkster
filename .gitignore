@@ -48,3 +48,6 @@ Backend/someQuests.json
 
 #Certs
 certbot
+
+# docker-compose (configured for local)
+docker-compose.yml
