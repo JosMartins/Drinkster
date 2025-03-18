@@ -50,4 +50,4 @@ Backend/someQuests.json
 certbot
 
 # docker-compose (configured for local)
-docker-compose.yml
+docker-compose.yaml
