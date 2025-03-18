@@ -1,5 +1,18 @@
-const mongoose = require('mongoose')
+import mongoosem {Document, Schema} from 'mongoose';
+import {Difficulty} from '../difficulty';
+import { Sex } from '../sex';
 
+//Types
+
+//Interface
+export interface IChallenge extends Document {
+    challenge: string;
+    difficulty: Difficulty;
+    sexes: Array<Sex | 'All'>;
+}
+
+
+//Schema
 const challengeSchema = new mongoose.Schema({
 
     challenge: {type: String, required: true},
@@ -12,7 +25,7 @@ const challengeSchema = new mongoose.Schema({
     }]
 });
 
-module.exports = mongoose.model('Question', challengeSchema);
+export default mongoose.model<IChallenge>('Challenge', challengeSchema);
 
 /* **Challenge Example** (as a JSON)
  *

@@ -1,9 +1,11 @@
-const Challenge = require('../models/challenge');
-const asyncHandler = require('express-async-handler');
-const { json } = require('express');
+import {Request, Response, NextFunction} from 'express';
+import asyncHandler from 'express-async-handler';
+import Challenge, { IChallenge } from '../models/challenge';
+import { Difficulty } from '../models/difficulty';
+
 
 //Gets a random challenge
-exports.get_challenge = asyncHandler(async (req, res, next) => {
+export const get_challenge = asyncHandler(async (req, res, next) => {
     console.log("Challenge Requested.");
 
     const challenges = await Challenge.aggregate([{ $sample: { size: 1 } }]);
@@ -17,7 +19,7 @@ exports.get_challenge = asyncHandler(async (req, res, next) => {
 })
 
 //Creates a challenge
-exports.add_challenge = asyncHandler(async (req, res, next) => {
+export const add_challenge = asyncHandler(async (req, res, next) => {
     console.log("Saved a challenge");
 
     const { challenge, difficulty, sexes } = req.body;
@@ -42,7 +44,7 @@ exports.add_challenge = asyncHandler(async (req, res, next) => {
 });
 
 //Add all challenges from a list
-exports.add_all_challenges = asyncHandler(async (req, res, next) => {
+export const add_all_challenges = asyncHandler(async (req, res, next) => {
     console.log("Saved all challenges");
 
     const challenges = req.body;
@@ -73,7 +75,7 @@ exports.add_all_challenges = asyncHandler(async (req, res, next) => {
 });
 
 //Gets an easy challenge
-exports.get_easy_challenge = asyncHandler(async (req, res, next) => {
+export const get_easy_challenge = asyncHandler(async (req, res, next) => {
     console.log('Easy Challenge Requested.');
 
     const easyChallenges = await Challenge.aggregate([{ $match: { difficulty: 1 } }, { $sample: { size: 1 } }])
@@ -86,7 +88,7 @@ exports.get_easy_challenge = asyncHandler(async (req, res, next) => {
 });
 
 //Gets a medium challenge
-exports.get_medium_challenge = asyncHandler(async (req, res, next) => {
+export const get_medium_challenge = asyncHandler(async (req, res, next) => {
     console.log('Medium Challenge Requested.');
 
     const mediumChallenges = await Challenge.aggregate([{ $match: { difficulty: 2 } }, { $sample: { size: 1 } }])
@@ -99,7 +101,7 @@ exports.get_medium_challenge = asyncHandler(async (req, res, next) => {
 });
 
 //Gets a hard challenge
-exports.get_hard_challenge = asyncHandler(async (req, res, next) => {
+export const get_hard_challenge = asyncHandler(async (req, res, next) => {
     console.log('Hard Challenge Requested.');
 
     const hardChallenges = await Challenge.aggregate([{ $match: { difficulty: 3 } }, { $sample: { size: 1 } }])
@@ -112,7 +114,7 @@ exports.get_hard_challenge = asyncHandler(async (req, res, next) => {
 });
 
 //Gets an extreme challenge
-exports.get_extreme_challenge = asyncHandler(async (req, res, next) => {
+export const get_extreme_challenge = asyncHandler(async (req, res, next) => {
     console.log('Extreme Challenge Requested.');
 
     const extremeChallenges = await Challenge.aggregate([{ $match: { difficulty: 4 } }, { $sample: { size: 1 } }])
@@ -124,7 +126,7 @@ exports.get_extreme_challenge = asyncHandler(async (req, res, next) => {
     }
 });
 
-exports.get_all_challenges = asyncHandler(async (req, res, next) => {
+export const get_all_challenges = asyncHandler(async (req, res, next) => {
     console.log('Got All Challenges');
     let challenges;
 
@@ -140,7 +142,7 @@ exports.get_all_challenges = asyncHandler(async (req, res, next) => {
 })
 
 //delete a challenge
-exports.delete_challenge = asyncHandler(async (req, res, next) => {
+export const delete_challenge = asyncHandler(async (req, res, next) => {
 
     const challengeId = req.params.id;
     const password = req.query.pass;
@@ -165,19 +167,19 @@ exports.delete_challenge = asyncHandler(async (req, res, next) => {
 });
 
 
-exports.challenge_stats = asyncHandler(async (req, res, next) => {
+export const challenge_stats = asyncHandler(async (req, res, next) => {
     console.log('Got Challenge Stats');
-    let easyChallenges = await Challenge.countDocuments({ difficulty: 1 });
-    let mediumChallenges = await Challenge.countDocuments({ difficulty: 2 });
-    let hardChallenges = await Challenge.countDocuments({ difficulty: 3 });
-    let extremeChallenges = await Challenge.countDocuments({ difficulty: 4 });
+    let easyChallenges = await Challenge.countDocuments({ difficulty: Difficulty.EASY });
+    let mediumChallenges = await Challenge.countDocuments({ difficulty: Difficulty.MEDIUM });
+    let hardChallenges = await Challenge.countDocuments({ difficulty: Difficulty.HARD });
+    let extremeChallenges = await Challenge.countDocuments({ difficulty: Difficulty.EXTREME });
     let totalChallenges = await Challenge.countDocuments();
 
     res.status(200).json({
-        easyChallenges: easyChallenges,
-        mediumChallenges: mediumChallenges,
-        hardChallenges: hardChallenges,
-        extremeChallenges: extremeChallenges,
-        totalChallenges: totalChallenges
+        easyChallenges,
+        mediumChallenges,
+        hardChallenges,
+        extremeChallenges,
+        totalChallenges
     });
 });
