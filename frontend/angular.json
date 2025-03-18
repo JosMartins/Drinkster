@@ -62,6 +62,9 @@
             },
             "development": {
               "buildTarget": "Drinkster:build:development"
+            },
+            "options": {
+              "proxyConfig": "src/proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"
