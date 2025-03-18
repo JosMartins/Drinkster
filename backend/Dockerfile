@@ -4,12 +4,10 @@ FROM node:18
 # Set the working directory
 WORKDIR /app
 
-# Copy and install backend dependencies
-COPY ./package*.json ./backend/
-RUN cd backend && npm install && npm run build --omit-dev
-
-# Copy backend code
+# Copy code, install backend dependencies, build and prune dev dependencies
 COPY . ./backend/
+WORKDIR /app/backend
+RUN npm install && npm run build --omit-dev && npm prune --omit=dev
 
 # Expose port
 EXPOSE 3432
