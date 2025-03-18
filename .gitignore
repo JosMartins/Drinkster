@@ -48,3 +48,5 @@ Backend/someQuests.json
 
 #Certs
 certbot
+
+## My configs, so ignore docker-compose.yml
