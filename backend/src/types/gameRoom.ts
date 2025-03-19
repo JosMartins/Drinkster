@@ -8,10 +8,11 @@ export interface GameRoomConfig {
 }
 
 export interface GameRoom {
-    id: string;
+    id: number;
     name: string;
     private: boolean;
     password?: string;
+    admin: Player;
     players: Array<Player>;
     status: 'waiting' | 'playing' | 'finished';
     createdAt: Date;

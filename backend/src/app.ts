@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
-import express, { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import path from 'path';
 import http from 'http';
 import { Server, Socket } from 'socket.io';
 
@@ -9,14 +8,12 @@ import { Server, Socket } from 'socket.io';
 import * as roomFunctions from './roomFunctions';
 import initRouter from './routes/init';
 import challengeRouter from './routes/challenge';
-import { Player, PlayerConfig } from './types/player';
 import { GameRoom, GameRoomConfig } from './types/gameRoom';
-
-// TODO: Create interfaces in another file
+import { PlayerConfig } from './types/player';
 
 
 const app = express();
-/*
+
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
@@ -24,7 +21,7 @@ const io = new Server(server, {
         methods: ['GET', 'POST']
     }
 });
-*/
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -34,9 +31,7 @@ if (!mongoDB) {
     throw new Error('MONGO_URI is not defined in the environment variables');
 }
 
-
-//Game Rooms
-const gameRooms = new Map<string,GameRoom>();
+const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
 
 
 main().catch((err) => console.log(err));
@@ -44,28 +39,48 @@ async function main() {
     await mongoose.connect(mongoDB);
     console.log("Connected to DB!");
 }
-/*
+
+
 //Socket IO
 io.on('connection', (socket) => {
     console.log('User connected');
 
+    if (disconnectTimeouts.has(socket.id)) {
+        clearTimeout(disconnectTimeouts.get(socket.id));
+        disconnectTimeouts.delete(socket.id);
+        console.log(`Cleared timeout for reconnected user ${socket.id}`);
+    }
 
     socket.on('create-room', (config: GameRoomConfig) =>{
         console.log('Creating Room', config.roomName);
-        const room = roomFunctions.createRoom(config);
+        const roomId = roomFunctions.createRoom(config, socket.id);
+        socket.emit('room-created', roomId);
+    });
+
+
+    socket.on('join-room', (roomId: number, player: PlayerConfig) => {
+        console.log('Joining Room', roomId);
+        socket.join(roomId.toString());
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected ', socket.id);
+        const timeout = setTimeout(() => {
+            console.log(`Removing user ${socket.id} from room after 2 minutes of inactivity`);
+            
+            roomFunctions.removeUserFromRooms(socket.id);
+            disconnectTimeouts.set(socket.id, timeout);
+        }, 2 * 60 * 1000);
+
     });
 
 });
-*/
+
 app.use('/', initRouter);
 app.use('/api/challenge', challengeRouter);
 
 app.use(function (err: Error, req: Request, res: Response, next: NextFunction) {
     console.error(err.stack);
-
-    //if (err.status === 502) {
-     //   errorMessage = 'Backend service is unavailable';
-    //}
 
     res.status(500);
     res.json({ error: err });
