@@ -8,46 +8,38 @@ import {Difficulty} from "../difficulty";
 
 @Component({
   selector: 'app-difficulty-dialog',
-  standalone: true,
   templateUrl: './difficulty-dialog.component.html',
-  styleUrls: ['./difficulty-dialog.component.css'],
-  imports: [MatFormFieldModule, MatInputModule, FormsModule, CommonModule]
+  styleUrls: ['./difficulty-dialog.component.css']
 })
-
 export class DifficultyDialogComponent {
-  difficulty: Difficulty;
-  extremeMode: boolean;
-  errorMsg: string = '';
+  sliderValues: { [key: string]: number } = {
+    easy: 33,
+    medium: 33,
+    hard: 34,
+    extreme: 0
+  };
+  extremeMode: boolean = false;
+  errorMsg: string | null = null;
 
-  constructor(
-    public dialogRef: MatDialogRef<DifficultyDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data : any
-  ) {
-    this.difficulty = {
-      easy: data.difficulty.easy * 100,
-      medium: data.difficulty.medium * 100,
-      hard: data.difficulty.hard * 100,
-      extreme: data.difficulty.extreme * 100
-    };
-    this.extremeMode = data.extremeMode;
-  }
+  onSliderChange(changedSlider: string) {
+    const sliders = this.extremeMode
+      ? ['easy', 'medium', 'hard', 'extreme']
+      : ['easy', 'medium', 'hard'];
 
-  onCancel(): void {
-    this.dialogRef.close();
-  }
+    let total = sliders.reduce((sum, slider) => sum + this.sliderValues[slider], 0);
+    let difference = 100 - total;
 
-  onSave(): void {
-    if (this.difficulty.easy + this.difficulty.medium + this.difficulty.hard + (this.extremeMode ? this.difficulty.extreme : 0) != 100) {
-      this.errorMsg = 'The sum of the difficulties must be equal to 100%!'
-    } else {
-      this.dialogRef.close({
-            easy: this.difficulty.easy / 100,
-            medium: this.difficulty.medium / 100,
-            hard: this.difficulty.hard / 100,
-            extreme: this.extremeMode ? this.difficulty.extreme / 100 : 0
-          });
+    if (difference !== 0) {
+      const adjustableSliders = sliders.filter(s => s !== changedSlider);
+
+      for (let slider of adjustableSliders) {
+        if (this.sliderValues[slider] + difference >= 0) {
+          this.sliderValues[slider] += difference;
+          break;
+        }
+      }
     }
 
+    this.errorMsg = total !== 100 ? 'The total must be 100%' : null;
   }
-
 }
