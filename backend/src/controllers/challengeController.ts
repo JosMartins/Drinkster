@@ -174,18 +174,22 @@ export const delete_challenge = asyncHandler(async (req: Request, res: Response,
 
 
 export const challenge_stats = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    console.log('Got Challenge Stats');
+    
     let easyChallenges = await Challenge.countDocuments({ difficulty: Difficulty.EASY });
     let mediumChallenges = await Challenge.countDocuments({ difficulty: Difficulty.MEDIUM });
     let hardChallenges = await Challenge.countDocuments({ difficulty: Difficulty.HARD });
     let extremeChallenges = await Challenge.countDocuments({ difficulty: Difficulty.EXTREME });
     let totalChallenges = await Challenge.countDocuments();
+    
+    let response = {
+        easyChallenges : easyChallenges,
+        mediumChallenges : mediumChallenges,
+        hardChallenges : hardChallenges,
+        extremeChallenges : extremeChallenges,
+        totalChallenges : totalChallenges
+    };
 
-    res.status(200).json({
-        easyChallenges,
-        mediumChallenges,
-        hardChallenges,
-        extremeChallenges,
-        totalChallenges
-    });
-});
+    console.log('Got Challenge Stats');
+    res.status(200).json(response);
+
+})
