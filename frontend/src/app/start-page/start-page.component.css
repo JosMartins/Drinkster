@@ -10,6 +10,7 @@
   font-size: 4em;
   color: #ffffff;
   margin-bottom: 10px;
+  font-family: 'Times New Roman';
 }
 
 /* Subtitle styling */
@@ -20,7 +21,7 @@
 }
 
 /* Start button styling */
-.start-button {
+.single-button {
   padding: 15px 30px;
   font-size: 1.5em;
   color: #ffffff;
@@ -32,7 +33,32 @@
 }
 
 /* Start button hover effect */
-.start-button:hover {
+.single-button:hover {
   cursor: pointer;
   background-color: #e91e63; /* Darker pink on hover */
+}
+
+/* Start button styling */
+.multiple-button {
+  padding: 15px 30px;
+  font-size: 1.5em;
+  color: #ffffff;
+  background-color: #ff4081; /* Pink button color */
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+/* Start button hover effect */
+.multiple-button:hover {
+  cursor: pointer;
+  background-color: #e91e63; /* Darker pink on hover */
+}
+
+.button-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
 }

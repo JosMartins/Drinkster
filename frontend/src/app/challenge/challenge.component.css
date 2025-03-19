@@ -16,6 +16,7 @@
   max-width: 1400px;
   margin: 0 auto;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-transform: capitalize;
 }
 
 .difficulty-section {
@@ -58,11 +59,11 @@
 }
 
 .next-button-section button {
-  padding: 10px 20px;
+  padding: 10px 10px;
   background-color: #6200ea;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
@@ -78,11 +79,11 @@
 }
 
 .drank-button button {
-  padding: 5px 10px;
+  padding: 10px 10px;
   background-color: #ff6347; /* Darker tomato color on hover */
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
@@ -110,7 +111,7 @@
 
 .round-number {
   align-items: center;
-  color: lightblue;
+  color: rgb(206, 249, 255);
   font-size: 30px;
   font-weight: bold;
   margin-right: 10px;
@@ -129,7 +130,7 @@
 
 @keyframes mediumAnimation {
   from {
-    color: yellow;
+    color: rgb(255, 255, 0);
   }
 
   to {

@@ -26,7 +26,7 @@
     </div>
 
     <!-- Buttons Section -->
-    <div class="button-container" *ngIf="penalty">
+    <div class="button-container" *ngIf="!penalty">
 
         <div class="drank-button">
           <button (click)="drank()" [disabled]="isLoading">Drank it</button>
@@ -37,7 +37,7 @@
         </div>
 
     </div>
-    <span class="next-button-section" *ngIf="!penalty">
+    <span class="next-button-section" *ngIf="penalty">
       <button (click)="didIt()" [disabled]="isLoading">Next</button>
     </span>
 

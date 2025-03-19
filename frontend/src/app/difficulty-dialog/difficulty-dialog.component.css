@@ -16,6 +16,11 @@
   align-items: center;
   padding: 8px; /* Add padding for better spacing */
   background-color: rgba(20, 0, 0, 0.2); /* Super dark with faint red and 20% opacity */
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
 }
 
 mat-form-field {
