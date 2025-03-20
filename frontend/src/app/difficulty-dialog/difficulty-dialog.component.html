@@ -4,60 +4,60 @@
 <div mat-dialog-content class="dialog-content">
   <form class="dialog-content">
     <div class="range-slider">
-      <label for="easyRange">Easy: {{ easyValue }}%</label>
+      <label for="easyRange">Easy: {{ difficulty.easy }}%</label>
       <input
         name="Easy"
         type="range"
         min="0"
         max="100"
-        [(ngModel)]="easyValue"
+        [(ngModel)]="difficulty.easy"
         (input)="onSliderChange('easy')"
         class="slider"
         id="easyRange"
       />
-      <div class="slider-value-box">{{ easyValue }}%</div>
+      <div class="slider-value-box">{{ difficulty.easy }}%</div>
     </div>
     <div class="range-slider">
-      <label for="mediumRange">Medium: {{ mediumValue }}%</label>
+      <label for="mediumRange">Medium: {{ difficulty.medium }}%</label>
       <input
         name="Medium"
         type="range"
         min="0"
         max="100"
-        [(ngModel)]="mediumValue"
+        [(ngModel)]="difficulty.medium"
         (input)="onSliderChange('medium')"
         class="slider"
         id="mediumRange"
       />
-      <div class="slider-value-box">{{ mediumValue }}%</div>
+      <div class="slider-value-box">{{ difficulty.medium }}%</div>
     </div>
     <div class="range-slider">
-      <label for="hardRange">Hard: {{ hardValue }}%</label>
+      <label for="hardRange">Hard: {{ difficulty.hard }}%</label>
       <input
         name="Hard"
         type="range"
         min="0"
         max="100"
-        [(ngModel)]="hardValue"
+        [(ngModel)]="difficulty.hard"
         (input)="onSliderChange('hard')"
         class="slider"
         id="hardRange"
       />
-      <div class="slider-value-box">{{ hardValue }}%</div>
+      <div class="slider-value-box">{{ difficulty.hard }}%</div>
     </div>
     <div class="range-slider" *ngIf="extremeMode">
-      <label for="extremeMode">Extreme: {{ extremeValue }}%</label>
+      <label for="extremeMode">Extreme: {{ difficulty.extreme }}%</label>
       <input
         name="Extreme"
         type="range"
         min="0"
         max="100"
-        [(ngModel)]="extremeValue"
+        [(ngModel)]="difficulty.extreme"
         (input)="onSliderChange('extreme')"
         class="slider"
         id="extremeMode"
       />
-      <div class="slider-value-box">{{ extremeValue }}%</div>
+      <div class="slider-value-box">{{ difficulty.extreme }}%</div>
     </div>
   </form>
   <div *ngIf="errorMsg" class="error-message">{{ errorMsg }}</div>
