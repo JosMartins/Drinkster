@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Debug Drinkster Backend",
+        "skipFiles": ["<node_internals>/**"],
+        "program": "${workspaceFolder}/backend/src/app.ts",
+        "preLaunchTask": "tsc: build - backend/tsconfig.json",
+        "outFiles": ["${workspaceFolder}/backend/dist/**/*.js"],
+        "sourceMaps": true,
+        "resolveSourceMapLocations": [
+          "${workspaceFolder}/**",
+          "!**/node_modules/**"
+        ],
+        "internalConsoleOptions": "openOnSessionStart",
+        "env": {
+            "MONGO_URI": "mongodb://localhost:27017/drinkster"
+        }
+      }
+    ]
+  }
