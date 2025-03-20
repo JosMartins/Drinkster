@@ -15,6 +15,11 @@ export class StartPageComponent {
 
   configGame() {
     // Navigate to the game configuration page
-    this.router.navigate(['/config']);
+    this.router.navigate(['/multiplayer']);
+  }
+
+  multiplayer() {
+    // Navigate to the multiplayer page
+    this.router.navigate(['/multiplayer']);
   }
 }
