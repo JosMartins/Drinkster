@@ -22,7 +22,6 @@ export class DifficultyDialogComponent {
     hard: 34,
     extreme: 0
   };
-  extremeMode: boolean;
   errorMsg: string = '';
 
   constructor(
@@ -36,7 +35,6 @@ export class DifficultyDialogComponent {
       hard: data.difficulty.hard * 100,
       extreme: data.difficulty.extreme * 100
     };
-    this.extremeMode = data.extremeMode;
   }
 
   onCancel(): void {
@@ -44,23 +42,21 @@ export class DifficultyDialogComponent {
   }
 
   onSave(): void {
-    if (this.difficulty.easy + this.difficulty.medium + this.difficulty.hard + (this.extremeMode ? this.difficulty.extreme : 0) != 100) {
+    if (this.difficulty.easy + this.difficulty.medium + this.difficulty.hard + this.difficulty.extreme != 100) {
       this.errorMsg = 'The sum of the difficulties must be equal to 100%!'
     } else {
       this.dialogRef.close({
             easy: this.difficulty.easy / 100,
             medium: this.difficulty.medium / 100,
             hard: this.difficulty.hard / 100,
-            extreme: this.extremeMode ? this.difficulty.extreme / 100 : 0
+            extreme: this.difficulty.extreme / 100
           });
     }
 
   }
 
   onSliderChange(changedSlider: string) {
-    const sliders: (keyof typeof this.sliderValues)[] = this.extremeMode
-      ? ['easy', 'medium', 'hard', 'extreme']
-      : ['easy', 'medium', 'hard'];
+    const sliders: (keyof typeof this.sliderValues)[] = ['easy', 'medium', 'hard', 'extreme']
 
     let total = sliders.reduce((sum, slider) => sum + this.sliderValues[slider], 0);
     let difference = 100 - total;
@@ -77,5 +73,14 @@ export class DifficultyDialogComponent {
     }
 
     this.errorMsg = total !== 100 ? 'The total must be 100%' : '';
+  }
+
+  static getInitialDifficulty(): Difficulty {
+    return {
+      easy: 0.33,
+      medium: 0.33,
+      hard: 0.34,
+      extreme: 0
+    };
   }
 }

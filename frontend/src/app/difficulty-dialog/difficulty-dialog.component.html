@@ -15,7 +15,6 @@
         class="slider"
         id="easyRange"
       />
-      <div class="slider-value-box">{{ difficulty.easy }}%</div>
     </div>
     <div class="range-slider">
       <label for="mediumRange">Medium: {{ difficulty.medium }}%</label>
@@ -29,7 +28,6 @@
         class="slider"
         id="mediumRange"
       />
-      <div class="slider-value-box">{{ difficulty.medium }}%</div>
     </div>
     <div class="range-slider">
       <label for="hardRange">Hard: {{ difficulty.hard }}%</label>
@@ -43,9 +41,8 @@
         class="slider"
         id="hardRange"
       />
-      <div class="slider-value-box">{{ difficulty.hard }}%</div>
     </div>
-    <div class="range-slider" *ngIf="extremeMode">
+    <div class="range-slider">
       <label for="extremeMode">Extreme: {{ difficulty.extreme }}%</label>
       <input
         name="Extreme"
@@ -57,7 +54,6 @@
         class="slider"
         id="extremeMode"
       />
-      <div class="slider-value-box">{{ difficulty.extreme }}%</div>
     </div>
   </form>
   <div *ngIf="errorMsg" class="error-message">{{ errorMsg }}</div>

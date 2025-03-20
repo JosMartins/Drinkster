@@ -1,11 +1,14 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSelectModule } from '@angular/material/select';
+import { MatRadioModule } from '@angular/material/radio';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormBuilder, Validators } from '@angular/forms';
+import { DifficultyDialogComponent } from '../difficulty-dialog/difficulty-dialog.component';
 
 @Component({
   selector: 'app-create-room-dialog',
@@ -17,22 +20,50 @@ import { FormsModule, ReactiveFormsModule, FormGroup, FormBuilder, Validators } 
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    MatSelectModule,
+    MatRadioModule
   ],
   templateUrl: './create-room-dialog.component.html',
   styleUrls: ['./create-room-dialog.component.css']
 })
 export class CreateRoomDialogComponent {
   roomForm: FormGroup;
-
+  
   constructor(
     private fb: FormBuilder,
-    private dialogRef: MatDialogRef<CreateRoomDialogComponent>
+    private dialogRef: MatDialogRef<CreateRoomDialogComponent>,
+    private dialog: MatDialog
   ) {
     this.roomForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
       isPrivate: [false],
-      password: ['']
+      password: [''],
+      player: this.fb.group({
+        name: ['', [Validators.required, Validators.minLength(3)]],
+        sex: ['M'],
+        difficulty: DifficultyDialogComponent.getInitialDifficulty(),
+      }),
+      mode: ['normal'],
+      showChallenges: [true],
+      rememberedChallenges: [35]
+    });
+  }
+
+  openDifficultyDialog(): void {
+    const currentDifficulty = this.roomForm.get('player')?.get('difficulty')?.value;
+    
+    const dialogRef = this.dialog.open(DifficultyDialogComponent, {
+      width: '350px',
+      data: { difficulty: currentDifficulty }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.roomForm.get('player')?.patchValue({
+          difficulty: result
+        });
+      }
     });
   }
 
