@@ -1,0 +1,90 @@
+.container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .content {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .title {
+    margin: 0;
+    font-size: 24px;
+    color: #333;
+  }
+  
+  .create-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  
+  .create-button:hover {
+    background-color: #0069d9;
+  }
+  
+  .room-list {
+    margin-top: 20px;
+  }
+  
+  .room-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #e3e3e3;
+  }
+  
+  .room-item:last-child {
+    border-bottom: none;
+  }
+  
+  .room-info {
+    display: flex;
+    align-items: center;
+  }
+  
+  .room-name {
+    font-size: 16px;
+    font-weight: 500;
+  }
+  
+  .room-lock {
+    margin-left: 10px;
+    color: #6c757d;
+  }
+  
+  .join-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .join-button:hover {
+    background-color: #218838;
+  }
+  
+  .no-rooms {
+    text-align: center;
+    color: #6c757d;
+    padding: 20px;
+  }
