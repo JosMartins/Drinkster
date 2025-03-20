@@ -22,3 +22,10 @@ export interface PlayerConfig {
     sex: Sex;
     difficulty_values: DifficultyValues;
 }
+
+export interface PlayerStats {
+    completedChallenges: number;
+    drinkedChallenges: number;
+    totalDrinked: number;
+    totalRounds: 0;
+}
