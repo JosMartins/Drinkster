@@ -3,6 +3,7 @@ import * as roomFunctions from './roomFunctions';
 import * as gameFunctions from './gameFunctions';
 import { GameRoomConfig } from './types/gameRoom';
 import { PlayerConfig } from './types/player';
+import { findPlayerRoom } from './stores/gameRoomStore';
 
 const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
 
@@ -18,6 +19,7 @@ export function setupSockethandlers(io: Server) {
         console.log('User connected', socket.id);
 
         handleReconnection(socket);
+        setupSessionHandlers(socket);
         setupRoomHandlers(socket);
         setupGameplayHandlers(socket);
         setupAdminHandlers(socket);
@@ -52,8 +54,21 @@ function setupRoomHandlers(socket: Socket) {
 
         try {
             const roomId = roomFunctions.createRoom(config, socket.id);
-            socket.emit('room-created', roomId);
-            socket.join(roomId.toString());
+            const playerRoom = findPlayerRoom(socket.id);
+
+            if (playerRoom?.players) {
+                const player = playerRoom.players.find(p => p.socketId === socket.id);
+                if (player) {
+                    const playerId = player.id;
+                    socket.emit('room-created', roomId, playerId);
+                    socket.join(roomId.toString());
+                } else {
+                    socket.emit('error', 'Player not found in room');
+                }
+            } else {
+                socket.emit('error', 'Player room not found');
+            }
+
         } catch (err) {
             socket.emit('error', err);
         }
@@ -74,7 +89,11 @@ function setupRoomHandlers(socket: Socket) {
             }
 
             const roomId = roomFunctions.createRoom(roomConf, socket.id);
-            socket.emit('room-created', roomId);
+
+            const playerRoom = findPlayerRoom(socket.id);
+            const playerId = playerRoom?.players.find(p => p.socketId === socket.id)?.id;
+    
+            socket.emit('room-created', roomId, playerId);
             socket.join(roomId.toString());
             //Auto Start
             socket.emit('game-started');
@@ -90,6 +109,9 @@ function setupRoomHandlers(socket: Socket) {
         console.log('Joining Room', roomId);
         try {
             roomFunctions.joinRoom(roomId, player, socket.id);
+            const playerRoom = findPlayerRoom(socket.id);
+            const presistId = playerRoom?.players.find(p => p.socketId === socket.id)?.id;
+            socket.emit('room-joined', presistId);
             socket.join(roomId.toString());
         } catch (err) {
             socket.emit('error', err);
@@ -248,18 +270,54 @@ function setupAdminHandlers(socket: Socket) {
  */
 function setupDisconnectHandler(socket: Socket) {
     socket.on('disconnect', () => {
-
-        //FIXME: when a user reconnects, it will happen under a new socket id, so the old socket id will not be removed from the room, and admin functions for example, will not work
+        // Store the player's persistent ID before removal
+        const playerRoom = findPlayerRoom(socket.id);
+        const playerId = playerRoom?.players.find(p => p.socketId === socket.id)?.id;
+        
         console.log('User disconnected ', socket.id);
         const timeout = setTimeout(() => {
-            console.log(`Removing user ${socket.id} from room after 2 minutes of inactivity`);
-
+            console.log(`Removing user ${socket.id} from room after inactivity`);
             roomFunctions.removeUserFromRooms(socket.id);
             disconnectTimeouts.delete(socket.id);
-            
-        }, 60 * 60 * 1000); // does nothing for 1 hour will be removed from room
-
-        disconnectTimeouts.set(socket.id, timeout);
+        }, 60 * 60 * 1000);
+        
+        // Use player ID as key if available, otherwise socket ID
+        disconnectTimeouts.set(playerId ?? socket.id, timeout);
     });
+}
 
+function setupSessionHandlers(socket: Socket) {
+    socket.on('restore-session', (sessionId: string) => {
+        debugger;
+        console.log('Restoring session', sessionId);
+
+        if (disconnectTimeouts.has(sessionId)) {
+            clearTimeout(disconnectTimeouts.get(sessionId));
+            disconnectTimeouts.delete(sessionId);
+        }
+        
+        const playerRoom = findPlayerRoom(sessionId);
+
+        if (playerRoom) {
+            const player = playerRoom.players.find(p => p.id === sessionId);
+            if (player) {
+                player.socketId = socket.id;
+
+
+                socket.join(playerRoom.id.toString());
+                socket.emit('session-restored', {
+                    roomId: playerRoom.id,
+                    players: playerRoom.players,
+                    isAdmin: player.isAdmin,
+                    status: playerRoom.status
+                });
+
+                console.log(`Session restored for player ${sessionId} in room ${playerRoom.id}`);
+                return;
+            }
+
+        } else {
+            socket.emit('session-not-found');
+        }
+    });
 }

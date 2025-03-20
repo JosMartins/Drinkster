@@ -25,7 +25,7 @@ export function roomExists(id: number) {
 export function findPlayerRoom(sockId: string): GameRoom | null {
     for (const room of gameRooms.values()) {
         for (const player of room.players) {
-            if (player.id === sockId) {
+            if (player.socketId === sockId) {
                 return room;
             }
         }

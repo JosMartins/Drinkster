@@ -8,7 +8,8 @@ export interface DifficultyValues {
 }
 
 export interface Player {
-    id: string;
+    id: string; //persistent id
+    socketId: string; //socket id
     name: string;
     sex: Sex;
     difficulty_values: DifficultyValues;

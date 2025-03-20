@@ -26,8 +26,11 @@ export function createRoom(roomConf: GameRoomConfig, sockId: string): number {
     }
     while (roomExists(roomId));
 
+    const persistentId = generatePersistentId();
+
     let owner: Player = {
-        id: sockId,
+        id: persistentId,
+        socketId: sockId,
         name: roomConf.playerConfig.name,
         sex: roomConf.playerConfig.sex,
         difficulty_values: roomConf.playerConfig.difficulty_values,
@@ -78,7 +81,8 @@ export function joinRoom(roomId: number, player: PlayerConfig, sockId: string): 
 
     }
     let newPlayer: Player = {
-        id: sockId,
+        id: generatePersistentId(),
+        socketId: sockId,
         name: player.name,
         sex: player.sex,
         difficulty_values: player.difficulty_values,
@@ -104,13 +108,15 @@ export function joinRoom(roomId: number, player: PlayerConfig, sockId: string): 
  * @throws Error if admin is not the one removing the player
  * @throws Error if admin tries to remove themselves
  */
-export function removePlayerFromRoom(roomId: number, playerId: string, adminId: string) {
+export function removePlayerFromRoom(roomId: number, playerId: string, adminSocketId: string) {
     let room = getRoom(roomId);
     if (!room) {
         throw new Error('Room not found');
     }
 
-    if (room.admin.id !== adminId) {
+    // Get admin by socketId
+    const admin = room.players.find(p => p.socketId === adminSocketId);
+    if (!admin || !admin.isAdmin) {
         throw new Error('Only the admin can remove players');
     }
 
@@ -133,15 +139,15 @@ export function removePlayerFromRoom(roomId: number, playerId: string, adminId: 
  * 
  * @returns Array of room IDs the user was removed from
  */
-export function removeUserFromRooms(socketId: string): number[] {
+export function removeUserFromRooms(sockId: string): number[] {
     const affectedRooms: number[] = [];
 
     // Iterate through all rooms to find the user
-    let room = findPlayerRoom(socketId);
+    let room = findPlayerRoom(sockId);
 
     if (room) {
         // Remove the user from the room
-        room.players = room.players.filter(player => player.id !== socketId);
+        room.players = room.players.filter(player => player.socketId !== sockId);
         affectedRooms.push(room.id);
     }
     return affectedRooms;
@@ -156,13 +162,13 @@ export function removeUserFromRooms(socketId: string): number[] {
  * @throws Error if player is not found in room
  * @throws Error if room is not found
  */
-export function playerReady(roomId: number, playerId: string) {
+export function playerReady(roomId: number, sockId: string) {
     let room = getRoom(roomId);
     if (!room) {
         throw new Error('Room not found');
     }
 
-    let player = room.players.find(player => player.id === playerId);
+    let player = room.players.find(player => player.socketId === sockId);
 
     if (!player) {
         throw new Error('Player not found in room');
@@ -247,4 +253,14 @@ function verifyPlayerInput(player: PlayerConfig) {
         throw new Error('Player difficulty values are required');
     }
 
+}
+
+/**
+ * Generates a persistent ID for a player
+ * 
+ * @returns A string containing a persistent ID
+ */
+function generatePersistentId(): string {
+    return Math.random().toString(36).substring(2, 15) + 
+           Math.random().toString(36).substring(2, 15);
 }

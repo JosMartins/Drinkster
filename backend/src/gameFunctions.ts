@@ -23,7 +23,7 @@ export function initializeGameFunctions(socketServer: Server) {
  * @throws Error if the adminId is not the admin of the room
  * 
  */
-export async function startGame(roomId: number, adminId: string) {
+export async function startGame(roomId: number, adminSocketId: string) {
 
     //check if all players are ready
     const room = getRoom(roomId);
@@ -32,7 +32,7 @@ export async function startGame(roomId: number, adminId: string) {
         throw new Error('Room not found');
     }
 
-    if (room.admin.id !== adminId) {
+    if (room.admin.socketId !== adminSocketId) {
         throw new Error('Only the admin can start the game');
     }
 
@@ -80,7 +80,7 @@ export function endGame(roomId: number) {
     }
 
     room.status = 'finished';
-
+    room.game = undefined;
 }
 
 /**
@@ -137,7 +137,7 @@ export function updatePlayerDifficulty(roomId: number, playerId: string, difficu
  * @throws Error if the room is not found
  * @throws Error if the adminId is not the admin of the room
  */
-export async function forcedSkipChallenge(roomId: number, adminId: string) {
+export async function forcedSkipChallenge(roomId: number, adminSocketId: string) {
     //Admin can force skip a challenge
 
     const room = getRoom(roomId);
@@ -146,7 +146,7 @@ export async function forcedSkipChallenge(roomId: number, adminId: string) {
         throw new Error('Room not found');
     }
 
-    if (room.admin.id !== adminId) {
+    if (room.admin.socketId !== adminSocketId) {
         throw new Error('Only the admin can force skip a challenge');
     }
 
@@ -165,7 +165,7 @@ export async function forcedSkipChallenge(roomId: number, adminId: string) {
  * @throws Error if the player is not found
  * @throws Error if the player is not the current player
  */
-export async function completedChallenge(roomId: number, playerId: string, drinked: boolean) {
+export async function completedChallenge(roomId: number, sockId: string, drinked: boolean) {
 
     const room = getRoom(roomId);
 
@@ -173,7 +173,7 @@ export async function completedChallenge(roomId: number, playerId: string, drink
         throw new Error('Room not found');
     }
 
-    const player = room.players.find(player => player.id === playerId);
+    const player = room.players.find(player => player.socketId === sockId);
 
     if (!player) {
         throw new Error('Player not found');
