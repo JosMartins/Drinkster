@@ -13,9 +13,9 @@ export class StartPageComponent {
   constructor(private readonly router: Router) { }
 
 
-  configGame() {
+  singleplayer() {
     // Navigate to the game configuration page
-    this.router.navigate(['/multiplayer']);
+    this.router.navigate(['/single']);
   }
 
   multiplayer() {

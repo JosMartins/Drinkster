@@ -1,15 +1,13 @@
 import { Routes } from '@angular/router';
-import { GameConfigComponent } from './game-config/game-config.component';
 import { StartPageComponent } from './start-page/start-page.component';
-import { ChallengeComponent} from "./challenge/challenge.component";
-import { ChalAddComponent } from './chaladd/chaladd.component';
+import { GameplayComponent} from "./gameplay/gameplay.component";
 import { MultiplayerComponent } from './multiplayer/multiplayer.component';
+import { SingleplayerComponent } from './singleplayer/singleplayer.component';
 
 export const routes: Routes = [
   { path: '', component: StartPageComponent },
   { path: 'multiplayer', component: MultiplayerComponent },
-  { path: 'config', component: GameConfigComponent },
-  { path: 'game', component: ChallengeComponent },
-  { path: 'add', component: ChalAddComponent },
+  { path: 'singleplayer', component: SingleplayerComponent },
+  { path: 'game', component: GameplayComponent },
   { path: '**', redirectTo: '' }
 ];

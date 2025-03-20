@@ -32,12 +32,16 @@ export class MultiplayerComponent implements OnInit {
 
   fetchRooms(): void {
     // Example data - replace with actual socket connection
-    this.rooms = [];
+    this.rooms = [
+      { id: '1', name: 'Room 1', isPrivate: false },
+      { id: '2', name: 'Room 2', isPrivate: true },
+      { id: '3', name: 'Room 3', isPrivate: false }
+    ];
   }
 
   createRoom(): void {
     const dialogRef = this.dialog.open(CreateRoomDialogComponent, {
-      width: '400px',
+      width: '800px',
       data: {} // You can pass initial data here if needed
     });
 

@@ -3,7 +3,7 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { ChallengeService } from '../challenge.service';
+
 
 @Component({
   selector: 'app-chaladd',
@@ -19,7 +19,7 @@ export class ChalAddComponent {
   sexes = {M: false, F: false}; 
   sexes2 = {M: false, F: false}; 
 
-  constructor(private readonly challengeService: ChallengeService,private readonly http: HttpClient, private readonly router: Router) {}
+  constructor(private readonly http: HttpClient, private readonly router: Router) {}
 
   
 
@@ -38,18 +38,7 @@ export class ChalAddComponent {
         sexes: this.stringifySexes() 
       };
       console.log(newChallenge);
-
-      this.challengeService.addChallenge(newChallenge).subscribe({
-        next: (response: any) => {
-          this.message = 'Challenge added successfully!\nId: ' + response._id;
-          this.challenge = '';
-          this.difficulty = null;
-        },
-        error: (error) => {
-          this.message = 'Error adding challenge.';
-          console.error(error);
-        }
-    });
+      //TODO> find out if i want to be able to add challenges to server database
     }
   }
 

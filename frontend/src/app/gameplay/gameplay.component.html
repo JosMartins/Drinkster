@@ -26,23 +26,17 @@
     </div>
 
     <!-- Buttons Section -->
-    <div class="button-container" *ngIf="!penalty">
+    <div class="button-container">
 
         <div class="drank-button">
-          <button (click)="drank()" [disabled]="isLoading">Drank it</button>
+          <button (click)="null" [disabled]="isLoading">Drank it</button>
         </div>
         <!-- Next Button -->
         <div class="next-button-section">
-          <button (click)="didIt()" [disabled]="isLoading">Did it</button>
+          <button (click)="null" [disabled]="isLoading">Did it</button>
         </div>
 
     </div>
-    <span class="next-button-section" *ngIf="penalty">
-      <button (click)="didIt()" [disabled]="isLoading">Next</button>
-    </span>
-
-
-
   </div>
 
 </div>

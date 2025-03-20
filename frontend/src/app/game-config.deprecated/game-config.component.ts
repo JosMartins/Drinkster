@@ -9,8 +9,7 @@ import { DifficultyDialogComponent } from '../difficulty-dialog/difficulty-dialo
 import {Router} from "@angular/router";
 
 
-const DEFAULT_DIFFICULTY_NO_EXTREME: Difficulty = { easy: 0.20, medium: 0.35, hard:0.35, extreme: 0};
-const DEFAULT_DIFFICULTY_EXTREME: Difficulty = { easy: 0.25, medium: 0.30, hard:0.30, extreme: 0.15 };
+const DEFAULT_DIFFICULTY: Difficulty = { easy: 0.20, medium: 0.35, hard:0.35, extreme: 0};
 
 
 @Component({
