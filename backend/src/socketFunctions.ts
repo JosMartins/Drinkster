@@ -74,7 +74,7 @@ function setupRoomHandlers(socket: Socket) {
         }
     });
 
-    socket.on('create-singleplayer', (device: PlayerConfig[]) => {
+    socket.on('create-singleplayer', (device: PlayerConfig[], mod, remember) => {
         debugger;
         console.log('Creating Singleplayer Room ', device[0].name);
         try {
@@ -83,8 +83,8 @@ function setupRoomHandlers(socket: Socket) {
                 private: false,
                 playerConfig: device[0],
                 singleplayer: true,
-                mode: 'normal',
-                rememberedChallenges: 35,
+                mode: mod,
+                rememberedChallenges: remember,
                 showChallenges: true
             }
 
