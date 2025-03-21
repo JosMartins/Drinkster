@@ -1,66 +1,36 @@
 <span class="parent">
-
-<h2 mat-dialog-title class="dialog-header">Configure Difficulty</h2>
-<div mat-dialog-content class="dialog-content">
-  <form class="dialog-content">
-    <div class="range-slider">
-      <label for="easyRange">Easy: {{ difficulty.easy }}%</label>
-      <input
-        name="Easy"
-        type="range"
-        min="0"
-        max="100"
-        [(ngModel)]="difficulty.easy"
-        (input)="onSliderChange('easy')"
-        class="slider"
-        id="easyRange"
-      />
-    </div>
-    <div class="range-slider">
-      <label for="mediumRange">Medium: {{ difficulty.medium }}%</label>
-      <input
-        name="Medium"
-        type="range"
-        min="0"
-        max="100"
-        [(ngModel)]="difficulty.medium"
-        (input)="onSliderChange('medium')"
-        class="slider"
-        id="mediumRange"
-      />
-    </div>
-    <div class="range-slider">
-      <label for="hardRange">Hard: {{ difficulty.hard }}%</label>
-      <input
-        name="Hard"
-        type="range"
-        min="0"
-        max="100"
-        [(ngModel)]="difficulty.hard"
-        (input)="onSliderChange('hard')"
-        class="slider"
-        id="hardRange"
-      />
-    </div>
-    <div class="range-slider">
-      <label for="extremeMode">Extreme: {{ difficulty.extreme }}%</label>
-      <input
-        name="Extreme"
-        type="range"
-        min="0"
-        max="100"
-        [(ngModel)]="difficulty.extreme"
-        (input)="onSliderChange('extreme')"
-        class="slider"
-        id="extremeMode"
-      />
-    </div>
-  </form>
-  <div *ngIf="errorMsg" class="error-message">{{ errorMsg }}</div>
-</div>
-<div mat-dialog-actions class="dialog-actions">
-  <button mat-button class="mat-button" (click)="onCancel()">Cancel</button>
-  <button mat-button class="mat-button" (click)="onSave()">Save</button>
-</div>
-
+  <h2 mat-dialog-title class="dialog-header">Configure Difficulty</h2>
+  <div mat-dialog-content class="dialog-content">
+    <form class="dialog-content">
+      <div class="range-slider">
+        <label>Easy: {{ sliderValues.easy }}%</label>
+        <mat-slider min="0" max="100" class="slider">
+          <input matSliderThumb [(ngModel)]="sliderValues.easy" (input)="onSliderChange('easy')" name="easy">
+        </mat-slider>
+      </div>
+      <div class="range-slider">
+        <label>Medium: {{ sliderValues.medium }}%</label>
+        <mat-slider min="0" max="100" class="slider">
+          <input matSliderThumb [(ngModel)]="sliderValues.medium" (input)="onSliderChange('medium')" name="medium">
+        </mat-slider>
+      </div>
+      <div class="range-slider">
+        <label>Hard: {{ sliderValues.hard }}%</label>
+        <mat-slider min="0" max="100" class="slider">
+          <input matSliderThumb [(ngModel)]="sliderValues.hard" (input)="onSliderChange('hard')" name="hard">
+        </mat-slider>
+      </div>
+      <div class="range-slider">
+        <label>Extreme: {{ sliderValues.extreme }}%</label>
+        <mat-slider min="0" max="100" class="slider">
+          <input matSliderThumb [(ngModel)]="sliderValues.extreme" (input)="onSliderChange('extreme')" name="extreme">
+        </mat-slider>
+      </div>
+    </form>
+    <div *ngIf="errorMsg" class="error-message">{{ errorMsg }}</div>
+  </div>
+  <div mat-dialog-actions class="dialog-actions">
+    <button mat-button class="mat-button" (click)="onCancel()">Cancel</button>
+    <button mat-button class="mat-button" (click)="onSave()">Save</button>
+  </div>
 </span>
