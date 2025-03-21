@@ -9,6 +9,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatRadioModule } from '@angular/material/radio';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { DifficultyDialogComponent } from '../difficulty-dialog/difficulty-dialog.component';
+import { DEFAULT_DIFFICULTY, Difficulty } from '../difficulty';
 
 @Component({
   selector: 'app-create-room-dialog',
@@ -42,7 +43,7 @@ export class CreateRoomDialogComponent {
       player: this.fb.group({
         name: ['', [Validators.required, Validators.minLength(3)]],
         sex: ['M'],
-        difficulty: DifficultyDialogComponent.getInitialDifficulty(),
+        difficulty: DEFAULT_DIFFICULTY,
       }),
       mode: ['normal'],
       showChallenges: [true],
@@ -51,11 +52,11 @@ export class CreateRoomDialogComponent {
   }
 
   openDifficultyDialog(): void {
-    const currentDifficulty = this.roomForm.get('player')?.get('difficulty')?.value;
+    const currentDifficulty : Difficulty = this.roomForm.get('player')?.get('difficulty')?.value;
     
     const dialogRef = this.dialog.open(DifficultyDialogComponent, {
       width: '350px',
-      data: { difficulty: currentDifficulty }
+      data: { difficultyValues: currentDifficulty }
     });
 
     dialogRef.afterClosed().subscribe(result => {
