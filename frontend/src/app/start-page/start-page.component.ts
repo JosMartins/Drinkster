@@ -15,7 +15,7 @@ export class StartPageComponent {
 
   singleplayer() {
     // Navigate to the game configuration page
-    this.router.navigate(['/single']);
+    this.router.navigate(['/singleplayer']);
   }
 
   multiplayer() {
