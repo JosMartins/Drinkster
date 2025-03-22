@@ -60,7 +60,7 @@ function setupRoomHandlers(socket: Socket) {
                 const player = playerRoom.players.find(p => p.socketId === socket.id);
                 if (player) {
                     const playerId = player.id;
-                    socket.emit('room-created', roomId, playerId);
+                    socket.emit('room-created', {roomId, playerId});
                     socket.join(roomId.toString());
                 } else {
                     socket.emit('error', 'Player not found in room');
@@ -93,7 +93,7 @@ function setupRoomHandlers(socket: Socket) {
             const playerRoom = findPlayerRoom(socket.id);
             const playerId = playerRoom?.players.find(p => p.socketId === socket.id)?.id;
     
-            socket.emit('room-created', roomId, playerId);
+            socket.emit('room-created', {roomId, playerId});
             socket.join(roomId.toString());
             //Auto Start
             socket.emit('game-started');
@@ -154,7 +154,7 @@ function setupGameplayHandlers(socket: Socket) {
         const roomId = parseInt(rooms[0]);
 
         try {
-            gameFunctions.startGame(roomId, socket.id);
+            gameFunctions.startGame(roomId, socket.id); //TODO check
             socket.to(roomId.toString()).emit('game-started');
         }
         catch (err) {
@@ -176,7 +176,7 @@ function setupGameplayHandlers(socket: Socket) {
 
         try {
             // Handle when player completes a challenge
-            gameFunctions.completedChallenge(roomId, socket.id, false);
+            await gameFunctions.completedChallenge(roomId, socket.id, false);
         } catch (err) {
             socket.emit('error', err);
         }

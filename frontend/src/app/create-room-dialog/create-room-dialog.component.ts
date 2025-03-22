@@ -9,7 +9,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatRadioModule } from '@angular/material/radio';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { DifficultyDialogComponent } from '../difficulty-dialog/difficulty-dialog.component';
-import { DEFAULT_DIFFICULTY, Difficulty } from '../difficulty';
+import { DEFAULT_DIFFICULTY, Difficulty } from '../models/difficulty';
+import { SocketService} from "../socket.service";
 
 @Component({
   selector: 'app-create-room-dialog',
@@ -30,11 +31,12 @@ import { DEFAULT_DIFFICULTY, Difficulty } from '../difficulty';
 })
 export class CreateRoomDialogComponent {
   roomForm: FormGroup;
-  
+
   constructor(
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<CreateRoomDialogComponent>,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private socketService: SocketService
   ) {
     this.roomForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -52,11 +54,11 @@ export class CreateRoomDialogComponent {
   }
 
   openDifficultyDialog(): void {
-    const currentDifficulty : Difficulty = this.roomForm.get('player')?.get('difficulty')?.value;
-    
+    const currentDifficulty: Difficulty = this.roomForm.get('player')?.get('difficulty')?.value;
+
     const dialogRef = this.dialog.open(DifficultyDialogComponent, {
       width: '350px',
-      data: { difficultyValues: currentDifficulty }
+      data: {difficultyValues: currentDifficulty}
     });
 
     dialogRef.afterClosed().subscribe(result => {
@@ -70,11 +72,63 @@ export class CreateRoomDialogComponent {
 
   onSubmit(): void {
     if (this.roomForm.valid) {
-      this.dialogRef.close(this.roomForm.value);
+      const roomConfig = {
+        roomName: this.roomForm.value.name,
+        private: this.roomForm.value.isPrivate,
+        password: this.roomForm.value.password,
+        playerConfig: {
+          name: this.roomForm.value.player.name,
+          sex: this.roomForm.value.player.sex,
+          difficulty_values: this.roomForm.value.player.difficulty
+        },
+        mode: this.roomForm.value.mode,
+        rememberedChallenges: this.roomForm.value.rememberedChallenges,
+        showChallenges: this.roomForm.value.showChallenges,
+      };
+
+      // Set up event listener first
+      const errorSubscription = this.socketService.on('error').subscribe(
+        (errorMessage) => {
+          console.error('Error creating room:', errorMessage);
+
+          // Clean up subscriptions
+          errorSubscription.unsubscribe();
+          roomCreatedSubscription.unsubscribe();
+
+          // Close dialog with error
+          this.dialogRef.close({
+            success: false,
+            error: errorMessage
+          });
+        }
+      );
+
+      const roomCreatedSubscription = this.socketService.on('room-created').subscribe(
+        (data) => {
+          const { roomId, playerId } = data;
+          console.log('Room created:', roomId, 'Player ID:', playerId);
+
+          // Store player ID for session restoration
+          this.socketService.storeSessionId(playerId);
+
+          // Clean up subscription
+          roomCreatedSubscription.unsubscribe();
+
+          // Close dialog with result
+          this.dialogRef.close({
+            success: true,
+            roomId: roomId,
+            playerId: playerId
+          });
+        }
+      );
+
+      this.socketService.emit('create-room', roomConfig);
     }
   }
 
   onCancel(): void {
     this.dialogRef.close();
   }
+
 }

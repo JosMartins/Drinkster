@@ -6,7 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatButtonModule } from '@angular/material/button';
-import { Difficulty } from "../difficulty";
+import { Difficulty } from "../models/difficulty";
 
 @Component({
   selector: 'app-difficulty-dialog',
@@ -15,17 +15,17 @@ import { Difficulty } from "../difficulty";
   styleUrls: ['./difficulty-dialog.component.css'],
   imports: [
     MatDialogModule,
-    MatFormFieldModule, 
-    MatInputModule, 
-    FormsModule, 
-    CommonModule, 
+    MatFormFieldModule,
+    MatInputModule,
+    FormsModule,
+    CommonModule,
     MatSliderModule,
     MatButtonModule
   ]
 })
 export class DifficultyDialogComponent {
   /**
-   * We keep difficulty in [0..1] form internally. 
+   * We keep difficulty in [0..1] form internally.
    * sliderValues is in [0..100] for the UI.
    */
   difficulty!: Difficulty;
@@ -49,10 +49,10 @@ export class DifficultyDialogComponent {
 
   onSave(): void {
     // Convert sliderValues [0..100] back to difficulty [0..1]
-    const total = 
-        this.sliderValues.easy + 
-        this.sliderValues.medium + 
-        this.sliderValues.hard + 
+    const total =
+        this.sliderValues.easy +
+        this.sliderValues.medium +
+        this.sliderValues.hard +
         this.sliderValues.extreme;
 
     if (total !== 100) {
@@ -70,26 +70,26 @@ export class DifficultyDialogComponent {
 
   onSliderChange(changedSlider: string) {
     const sliders: (keyof typeof this.sliderValues)[] = ['easy', 'medium', 'hard', 'extreme'];
-    
+
     // Current total
     let total = sliders.reduce((sum, slider) => sum + this.sliderValues[slider], 0);
-    
+
     // Difference from 100
     let difference = 100 - total;
-    
+
     if (difference !== 0) {
       // Sliders that can be adjusted
       const adjustableSliders = sliders.filter(s => s !== changedSlider);
-      
+
       // Calculate total of adjustable sliders
       const adjustableTotal = adjustableSliders.reduce(
-        (sum, slider) => sum + this.sliderValues[slider], 
+        (sum, slider) => sum + this.sliderValues[slider],
         0
       );
-      
+
       if (adjustableTotal > 0) {
         const originalValues = { ...this.sliderValues };
-        
+
         // First pass: proportional adjustment
         adjustableSliders.forEach(slider => {
           const proportion = originalValues[slider] / adjustableTotal;
@@ -98,7 +98,7 @@ export class DifficultyDialogComponent {
           if (this.sliderValues[slider] < 0) this.sliderValues[slider] = 0;
           this.sliderValues[slider] = Math.round(this.sliderValues[slider]);
         });
-        
+
         // Second pass: fix rounding
         total = sliders.reduce((sum, slider) => sum + this.sliderValues[slider], 0);
         if (total !== 100) {
@@ -115,7 +115,7 @@ export class DifficultyDialogComponent {
         this.sliderValues[changedSlider as keyof typeof this.sliderValues] = 100;
       }
     }
-    
+
     // Clear old error message
     this.errorMsg = '';
   }

@@ -1,39 +1,39 @@
 <div class="parent-container">
 
   <!-- Penalty Container -->
-  <div class="penalty-container" *ngIf="penalties.length > 0">
+  <div class="penalty-container" >
     <span class="penalty-title">Penalties</span>
-    <p *ngFor="let penalty of penalties" class="penalty-item">{{ penaltyToString(penalty) }}</p>
+    <p class="penalty-item">{{round}}</p>
   </div>
 
   <!-- Challenge Container -->
   <div class="challenge-container">
 
     <div class="round-number">
-      <span>Round: {{trueRound}}</span>
+      <span>Round: {{round}}</span>
     </div>
 
     <!-- Difficulty Section -->
     <div class="difficulty-section">
-      <span *ngIf="writtenChallenge" [ngClass]="getDifficultyWord(writtenChallenge.difficulty).toLowerCase()">{{
-        getDifficultyWord(writtenChallenge.difficulty) }}</span>
+      <span *ngIf="writtenChallenge" [ngClass]="">{{
+        getDifficultyWord(2) }}</span>
     </div>
 
 
     <!-- Challenge Section -->
     <div class="challenge-section" *ngIf="writtenChallenge">
-      <p>{{ writtenChallenge.challenge }}</p>
+      <p>{{ writtenChallenge }}</p>
     </div>
 
     <!-- Buttons Section -->
     <div class="button-container">
 
         <div class="drank-button">
-          <button (click)="null" [disabled]="isLoading">Drank it</button>
+          <button (click)="getDifficultyWord(1)" >Drank it</button>
         </div>
         <!-- Next Button -->
         <div class="next-button-section">
-          <button (click)="null" [disabled]="isLoading">Did it</button>
+          <button (click)="getDifficultyWord(2)" >Did it</button>
         </div>
 
     </div>

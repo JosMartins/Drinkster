@@ -2,10 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Game } from '../game';
 import Chance from 'chance';
-import { Challenge } from '../challenge';
-import { Penalty } from '../Penalty';
 import { SocketService } from '../socket.service';
 @Component({
   selector: 'app-gameplay',
@@ -16,16 +13,9 @@ import { SocketService } from '../socket.service';
 })
 export class GameplayComponent {
 
-  game!: Game;
   round: number = 0;
-  trueRound: number = 0;
-  lastIds: Array<any> = [];
-  isLoading: boolean = false;
-  requestCooldown: boolean = false;
-  writtenChallenge: Challenge | null = null;
-  penalties: Array<Penalty> = [];
-  penalty: Penalty | null = null;
-  chal: Challenge | null = null;
+  writtenChallenge: string = '';
+
   challengeCount!: { easyChallenges: number, mediumChallenges: number, hardChallenges: number, extremeChallenges: number, totalChallenges: number };
   private readonly chance = new Chance();
 
@@ -52,8 +42,4 @@ export class GameplayComponent {
   }
 
 
-  penaltyToString(penalty: Penalty): string {
-    return 'Unimplemented';
-  }
-  
 }

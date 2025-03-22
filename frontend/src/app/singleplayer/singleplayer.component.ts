@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgFor } from "@angular/common";
-import { Player } from '../player';
-import { Difficulty , DEFAULT_DIFFICULTY } from "../difficulty";
+import { Player } from '../models/player';
+import { Difficulty , DEFAULT_DIFFICULTY } from "../models/difficulty";
 import { MatDialog } from '@angular/material/dialog';
 import { DifficultyDialogComponent } from '../difficulty-dialog/difficulty-dialog.component';
 import {Router} from "@angular/router";
-
+import { SocketService} from "../socket.service";
 
 
 @Component({
@@ -19,7 +19,7 @@ import {Router} from "@angular/router";
 
 export class SingleplayerComponent {
 
-  constructor(public dialog: MatDialog, private readonly router: Router) { }
+  constructor(public dialog: MatDialog, private readonly router: Router, private socketService: SocketService) { }
 
   players: Player[] = [{ name: '', gender: 'M', difficulty: DEFAULT_DIFFICULTY }];
   numberOfRememberedChal: number = 20
@@ -43,7 +43,7 @@ export class SingleplayerComponent {
   }
 
   startGame() {
-    //TODO
+    this.socketService.emit('create-singleplayer');
     //this.router.navigate(['/game']);
 
   }

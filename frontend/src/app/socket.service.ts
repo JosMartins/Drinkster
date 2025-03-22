@@ -7,9 +7,15 @@ import { io, Socket } from 'socket.io-client';
 })
 export class SocketService {
   private socket: Socket;
-  
+
   constructor() {
-    this.socket = io();
+    this.socket = io("http://192.168.1.66:3432", {
+      transports: ['websocket'],
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
+    });
     this.setupReconnection();
   }
 
@@ -27,7 +33,7 @@ export class SocketService {
     // Handle successful session restoration
     this.socket.on('session-restored', (data) => {
       console.log('Session restored successfully', data);
-      //TODO> Send to room 
+      //TODO> Send to room
     });
 
     // Handle failed session restoration
@@ -51,11 +57,11 @@ export class SocketService {
   // Listen for events
   public on(eventName: string): Observable<any> {
     const subject = new Subject<any>();
-    
+
     this.socket.on(eventName, (data) => {
       subject.next(data);
     });
-    
+
     return subject.asObservable();
   }
 
@@ -64,5 +70,7 @@ export class SocketService {
     if (this.socket) {
       this.socket.disconnect();
     }
+    localStorage.removeItem('sessionId');
   }
+
 }
