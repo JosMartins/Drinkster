@@ -15,7 +15,7 @@ export function initializeGameFunctions(socketServer: Server) {
  * Starts the game in the given room.
  * 
  * @param roomId the ID of the room to start the game in
- * @param adminId the ID of the player starting the game
+ * @param adminSocketId the ID of the socket of the player starting the game
  * 
  * @throws Error if the room is not found
  * @throws Error if not all players are ready
@@ -108,14 +108,6 @@ export function updatePlayerDifficulty(roomId: number, playerId: string, difficu
         throw new Error('Player not found');
     }
 
-    if (
-        typeof difficultyValues.easy !== 'number' || 
-        typeof difficultyValues.medium !== 'number' || 
-        typeof difficultyValues.hard !== 'number'
-    ) {
-        throw new Error('Difficulty values must exist and contain numeric values.');
-    }
-
     if (difficultyValues.easy + difficultyValues.medium + difficultyValues.hard !== 100 || 
         difficultyValues.easy + difficultyValues.medium + difficultyValues.hard !== 100 + difficultyValues.extreme
     ) {
@@ -132,7 +124,7 @@ export function updatePlayerDifficulty(roomId: number, playerId: string, difficu
  * Forces the game to skip the current challenge in the given room.
  * 
  * @param roomId the ID of the room to skip the challenge in
- * @param adminId the ID of the player forcing the skip (must be the admin)
+ * @param adminSocketId the ID of the player forcing the skip (must be the admin)
  * 
  * @throws Error if the room is not found
  * @throws Error if the adminId is not the admin of the room
@@ -159,7 +151,8 @@ export async function forcedSkipChallenge(roomId: number, adminSocketId: string)
  * Moves the game to the next challenge in the given room.
  * 
  * @param roomId the ID of the room to skip the challenge in
- * @param playerId the ID of the player causing the skip (must be the current player)
+ * @param sockId the ID of the player causing the skip (must be the current player)
+ * @param drinked whether the player drinked or not
  * 
  * @throws Error if the room is not found
  * @throws Error if the player is not found

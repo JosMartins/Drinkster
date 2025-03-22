@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { CreateRoomDialogComponent } from '../create-room-dialog/create-room-dialog.component';
+import {SocketService} from "../socket.service";
 
 interface Room {
   id: string;
   name: string;
   isPrivate: boolean;
+  playerCount: number;
 }
 
 @Component({
@@ -22,21 +24,22 @@ export class MultiplayerComponent implements OnInit {
 
   constructor(
     private readonly router: Router,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private socketService: SocketService
   ) {}
 
   ngOnInit(): void {
-    // TODO: Connect to socket and fetch available rooms
-    this.fetchRooms();
-  }
+    // Subscribe to initial room list
+    this.socketService.on('room-list').subscribe((rooms: Room[]) => {
+      this.rooms = rooms;
+    });
 
-  fetchRooms(): void {
-    // Example data - replace with actual socket connection
-    this.rooms = [
-      { id: '1', name: 'Room 1', isPrivate: false },
-      { id: '2', name: 'Room 2', isPrivate: true },
-      { id: '3', name: 'Room 3', isPrivate: false }
-    ];
+    // Subscribe to real-time updates
+    this.socketService.on('room-list-update').subscribe((rooms: Room[]) => {
+      this.rooms = rooms;
+    });
+
+    // Req
   }
 
   createRoom(): void {

@@ -6,7 +6,7 @@ import { io, Socket } from 'socket.io-client';
   providedIn: 'root'
 })
 export class SocketService {
-  private socket: Socket;
+  private readonly socket: Socket;
 
   constructor() {
     this.socket = io("http://192.168.1.66:3432", {
@@ -33,7 +33,7 @@ export class SocketService {
     // Handle successful session restoration
     this.socket.on('session-restored', (data) => {
       console.log('Session restored successfully', data);
-      //TODO> Send to room
+      //TODO store session and send to room
     });
 
     // Handle failed session restoration

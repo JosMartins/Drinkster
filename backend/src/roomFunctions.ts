@@ -1,4 +1,4 @@
-import { addRoom, findPlayerRoom, roomExists, getRoom } from "./stores/gameRoomStore";
+import {addRoom, findPlayerRoom, roomExists, getRoom, getRooms} from "./stores/gameRoomStore";
 import { GameRoom, GameRoomConfig } from "./types/gameRoom";
 import { Player, PlayerConfig } from "./types/player";
 
@@ -101,7 +101,7 @@ export function joinRoom(roomId: number, player: PlayerConfig, sockId: string): 
  * 
  * @param roomId the room ID to remove the player from
  * @param playerId the player ID to remove from the room
- * @param adminId the admin ID of the room
+ * @param adminSocketId the admin ID of the room
  * 
  * @throws Error if room is not found
  * @throws Error if player is not found in room
@@ -135,7 +135,7 @@ export function removePlayerFromRoom(roomId: number, playerId: string, adminSock
 /**
  * Removes a user from all rooms they are part of
  * 
- * @param socketId The socket ID of the user to remove
+ * @param sockId The socket ID of the user to remove
  * 
  * @returns Array of room IDs the user was removed from
  */
@@ -157,7 +157,7 @@ export function removeUserFromRooms(sockId: string): number[] {
  * Marks a player as ready in a room
  * 
  * @param roomId the room where the player is to be marked as ready
- * @param playerId the player to be marked as ready
+ * @param sockId the player to be marked as ready
  * 
  * @throws Error if player is not found in room
  * @throws Error if room is not found
@@ -177,6 +177,9 @@ export function playerReady(roomId: number, sockId: string) {
 
 }
 
+export function listRooms(): GameRoom[] {
+    return getRooms();
+}
 /*****HELPERS*****/
 
 
@@ -187,8 +190,7 @@ export function playerReady(roomId: number, sockId: string) {
  */
 function generateRandomRoomId(): number {
     // Generate a number between 1000 and 9999
-    const roomId = Math.floor(1000 + Math.random() * 9000);
-    return roomId;
+    return Math.floor(1000 + Math.random() * 9000);
 }
 
 

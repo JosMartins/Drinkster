@@ -136,6 +136,28 @@ function setupRoomHandlers(socket: Socket) {
         }
     }
     );
+
+    socket.on('get-rooms', () => {
+        console.log('Getting room list');
+        try {
+            const rooms = roomFunctions.listRooms();
+
+            // Map rooms to only include necessary information
+            const roomList = rooms
+                .filter(room => room.status !== 'finished') // Optionally filter out finished rooms
+                .map(room => ({
+                    id: room.id,
+                    name: room.name,
+                    playerCount: room.players.length,
+                    status: room.status,
+                    isPrivate: room.private
+                }));
+
+            socket.emit('room-list', roomList);
+        } catch (err) {
+            socket.emit('error', err);
+        }
+    });
 }
 
 /**
@@ -195,7 +217,7 @@ function setupGameplayHandlers(socket: Socket) {
 
         try {
             // Handle when player completes a challenge
-            gameFunctions.completedChallenge(roomId, socket.id, true);
+            await gameFunctions.completedChallenge(roomId, socket.id, true);
         } catch (err) {
             socket.emit('error', err);
         }
