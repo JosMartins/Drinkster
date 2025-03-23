@@ -1,0 +1,42 @@
+<h2 mat-dialog-title>Player Options: {{data.player.playerName}}</h2>
+
+<mat-dialog-content>
+  <div class="dialog-section">
+    <h3>Difficulty Settings</h3>
+    <div class="difficulty-sliders">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Easy</mat-label>
+        <input matInput type="number" [(ngModel)]="playerDifficulty.easy" min="0" max="1" step="0.05">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Medium</mat-label>
+        <input matInput type="number" [(ngModel)]="playerDifficulty.medium" min="0" max="1" step="0.05">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Hard</mat-label>
+        <input matInput type="number" [(ngModel)]="playerDifficulty.hard" min="0" max="1" step="0.05">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Extreme</mat-label>
+        <input matInput type="number" [(ngModel)]="playerDifficulty.extreme" min="0" max="1" step="0.05">
+      </mat-form-field>
+    </div>
+
+    <div class="difficulty-validation" *ngIf="!isValidDifficulty()">
+      <p class="error-text">Total difficulty values must equal 1</p>
+      <p>Current total: {{getDifficultyTotal() | number:'1.2-2'}}</p>
+    </div>
+  </div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-button [disabled]="!isValidDifficulty()" (click)="saveDifficulty()">Save</button>
+  <button mat-raised-button color="warn" *ngIf="data.isAdmin && !data.isSelf" (click)="kickPlayer()">
+    Kick Player
+  </button>
+</mat-dialog-actions>

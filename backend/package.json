@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "PORT=3000 node ./dist/app.js",
-    "dev": "npx tsx src/app.ts --watch",
+    "dev": "MONGO_URI=mongodb://localhost:27017/drinkster npx tsx src/app.ts --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

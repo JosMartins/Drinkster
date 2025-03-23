@@ -105,7 +105,17 @@ export class SocketService {
   }
 
   public kickPlayer(roomId: number, playerId: string): void {
-    this.emit('admin-remove-player', {roomId ,  playerId});
+    this.emit('admin-remove-player', {roomId, playerId});
   }
 
+  public getRooms(): void {
+    this.emit('get-rooms');
+  }
+
+  public listRooms(): Observable<any> {
+    return this.on('room-list');
+  }
+
+
 }
+

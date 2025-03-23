@@ -1,0 +1,181 @@
+.waiting-room-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.room-header {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.room-header h1 {
+  color: #3f51b5; /* material indigo */
+  margin-bottom: 8px;
+}
+
+.room-info {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  font-size: 0.9rem;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.players-container {
+  width: 500px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.players-container h2 {
+  margin-top: 0;
+  color: #3f51b5;
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.players-list {
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.player-card {
+  background-color: white;
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.player-card.admin {
+  background-color: #e8eaf6; /* light indigo */
+}
+
+.player-card.current-player {
+  border: 2px solid #3f51b5;
+}
+
+.player-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.player-name {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.admin-badge {
+  background-color: #3f51b5;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.player-status {
+  font-size: 0.8rem;
+  color: #f44336; /* material red */
+  text-align: right;
+  padding: 4px 0;
+}
+
+.player-status.ready {
+  color: #4caf50; /* material green */
+  font-weight: 500;
+}
+
+.settings-container {
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.settings-container h2 {
+  margin-top: 0;
+  color: #3f51b5;
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.game-mode {
+  margin-bottom: 12px;
+}
+
+.controls-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  min-width: 120px;
+}
+
+.ready-button {
+  background-color: #e0e0e0;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.ready-button.ready {
+  background-color: #4caf50;
+  color: white;
+}
+
+.leave-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.start-button {
+  background-color: #3f51b5;
+  color: white;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 600px) {
+  .players-list {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  .controls-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  button {
+    width: 100%;
+    max-width: 200px;
+  }
+}

@@ -25,21 +25,22 @@ export class MultiplayerComponent implements OnInit {
   constructor(
     private readonly router: Router,
     private dialog: MatDialog,
-    private socketService: SocketService
+    private socketService: SocketService,
   ) {}
 
   ngOnInit(): void {
     // Subscribe to initial room list
-    this.socketService.on('room-list').subscribe((rooms: Room[]) => {
+    this.socketService.listRooms().subscribe((rooms: Room[]) => {
       this.rooms = rooms;
     });
 
     // Subscribe to real-time updates
-    this.socketService.on('room-list-update').subscribe((rooms: Room[]) => {
+    this.socketService.roomUpdate().subscribe((rooms: Room[]) => {
       this.rooms = rooms;
     });
 
-    // Req
+    // Request the initial room list
+    this.socketService.getRooms();
   }
 
   createRoom(): void {
@@ -59,7 +60,7 @@ export class MultiplayerComponent implements OnInit {
   }
 
   joinRoom(roomId: string): void {
-    // TODO: Join the selected room via socket
     console.log(`Joining room ${roomId}`);
+
   }
 }

@@ -1,0 +1,56 @@
+<div class="waiting-room-container">
+  <div class="room-header">
+    <h1>{{roomName}}</h1>
+    <div class="room-info">
+      <span class="player-count">Players: {{players.length}}</span>
+    </div>
+  </div>
+
+  <div class="players-container">
+    <h2>Players</h2>
+    <div class="players-list">
+      <div *ngFor="let player of players" class="player-card" [class.admin]="player.isAdmin" [class.current-player]="player.id === currentPlayerId">
+        <div class="player-info">
+          <span class="player-name">{{player.playerName}}</span>
+          <span *ngIf="player.isAdmin" class="admin-badge">Admin</span>
+        </div>
+        <div class="player-status" [class.ready]="player.isReady">
+          {{player.isReady ? 'Ready' : 'Not Ready'}}
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-container" *ngIf="isAdmin">
+    <h2>Game Settings</h2>
+    <div class="game-mode">
+      <span>Game Mode: {{gameMode}}</span>
+    </div>
+    <div class="challenge-settings">
+      <label>Show Challenges:
+        <input type="checkbox" [(ngModel)]="showChallenges" />
+      </label>
+    </div>
+  </div>
+
+  <div class="controls-container">
+    <button
+      (click)="toggleReady()"
+      class="ready-button"
+      [class.ready]="isReady">
+      {{isReady ? 'Ready!' : 'Ready Up'}}
+    </button>
+
+    <button (click)="leaveRoom()" class="leave-button">
+      Leave Room
+    </button>
+
+    <button
+      *ngIf="isAdmin"
+      (click)="startGame()"
+      class="start-button">
+      Start Game
+    </button>
+  </div>
+</div>
