@@ -62,12 +62,13 @@ export async function startGame(roomId: number, adminSocketId: string) {
  * Ends the game in the given room.
  * 
  * @param roomId the ID of the room to end the game in
- * 
+ * @param sockId the ID of the socket of the player ending the game
+ *
  * @throws Error if the room is not found
  * @throws Error if the game is not currently playing
  * 
  */
-export function endGame(roomId: number) {
+export function endGame(roomId: number, sockId: string) {
     
     const room = getRoom(roomId);
 
@@ -77,6 +78,14 @@ export function endGame(roomId: number) {
 
     if (room.status !== 'playing') {
         throw new Error('Game is not currently playing');
+    }
+
+    if (room.admin.socketId !== sockId) {
+        throw new Error('Only the admin can end the game');
+    }
+
+    if (!room.game) {
+        throw new Error('Game not found');
     }
 
     room.status = 'finished';
@@ -152,13 +161,13 @@ export async function forcedSkipChallenge(roomId: number, adminSocketId: string)
  * 
  * @param roomId the ID of the room to skip the challenge in
  * @param sockId the ID of the player causing the skip (must be the current player)
- * @param drinked whether the player drinked or not
+ * @param drunk whether the player drunk or not
  * 
  * @throws Error if the room is not found
  * @throws Error if the player is not found
  * @throws Error if the player is not the current player
  */
-export async function completedChallenge(roomId: number, sockId: string, drinked: boolean) {
+export async function completedChallenge(roomId: number, sockId: string, drunk: boolean) {
 
     const room = getRoom(roomId);
 
@@ -180,7 +189,7 @@ export async function completedChallenge(roomId: number, sockId: string, drinked
         throw new Error('Player is not the current player');
     }
 
-    if (drinked) {
+    if (drunk) {
         room.game.stats.drinkedChallenges++;
         room.game.stats.totalDrinked++;
     } else {

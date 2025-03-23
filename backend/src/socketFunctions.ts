@@ -1,8 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import * as roomFunctions from './roomFunctions';
 import * as gameFunctions from './gameFunctions';
-import {GameRoom, GameRoomConfig} from './types/gameRoom';
-import { PlayerConfig } from './types/player';
+import { GameRoomConfig} from './types/gameRoom';
+import {DEFAULT_DIFFICULTY_VALUES, PlayerConfig} from './types/player';
 import { findPlayerRoom } from './stores/gameRoomStore';
 
 const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
@@ -12,18 +12,18 @@ const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
  * 
  * @param io The socket.io server to setup handlers for
  */
-export function setupSockethandlers(io: Server) {
+export function setupSocketHandlers(io: Server) {
     gameFunctions.initializeGameFunctions(io);
 
     io.on('connection', (socket: Socket) => {
         console.log('User connected', socket.id);
 
         handleReconnection(socket);
-        setupSessionHandlers(socket);
-        setupRoomHandlers(socket);
+        setupSessionHandlers(socket, io);
+        setupRoomHandlers(socket, io);
         setupGameplayHandlers(socket);
-        setupAdminHandlers(socket);
-        setupDisconnectHandler(socket);
+        setupAdminHandlers(socket, io);
+        setupDisconnectHandler(socket, io);
     });
 
 }
@@ -46,6 +46,7 @@ function handleReconnection(socket: Socket) {
  * Setup room handlers for socket (create-room, join-room)
  * 
  * @param socket The socket to set up handlers for
+ * @param io The socket.io server to broadcast updates to
  */
 function setupRoomHandlers(socket: Socket, io: Server) {
     socket.on('create-room', (config: GameRoomConfig) => {
@@ -63,7 +64,7 @@ function setupRoomHandlers(socket: Socket, io: Server) {
                     socket.emit('room-created', {roomId, playerId});
                     socket.join(roomId.toString());
 
-                    sendRoomUpdate(roomId);
+                    sendRoomUpdate(io);
                 } else {
                     socket.emit('error', 'Player not found in room');
                 }
@@ -76,15 +77,15 @@ function setupRoomHandlers(socket: Socket, io: Server) {
         }
     });
 
-    socket.on('create-singleplayer', (device: PlayerConfig[], mod: string, remember: number) => {
+    socket.on('create-single-player', (device: PlayerConfig[], mod, remember: number) => {
         debugger;
-        console.log('Creating Singleplayer Room ', device[0].name);
+        console.log('Creating Single player Room ', device[0].name);
         try {
             const roomConf: GameRoomConfig = {
                 roomName: `Single_${device[0].name}`,
                 private: false,
                 playerConfig: device[0],
-                singleplayer: true,
+                singlePlayer: true,
                 mode: mod,
                 rememberedChallenges: remember,
                 showChallenges: true
@@ -99,24 +100,30 @@ function setupRoomHandlers(socket: Socket, io: Server) {
             socket.join(roomId.toString());
             //Auto Start
             socket.emit('game-started');
-            gameFunctions.startGame(roomId, socket.id);
+            gameFunctions.startGame(roomId, socket.id).then(_ =>
+                socket.emit('game-started'));
 
         } catch (err) {
             socket.emit('error', err);
         }
     });
 
-    socket.on('join-room', (roomId: number, player: PlayerConfig) => {
+    socket.on('join-room', (roomId: number, {playerName , playerSex}) => {
         debugger;
         console.log('Joining Room', roomId);
         try {
+            const player : PlayerConfig = {
+                name: playerName,
+                sex: playerSex,
+                difficulty_values: DEFAULT_DIFFICULTY_VALUES,
+            }
             roomFunctions.joinRoom(roomId, player, socket.id);
             const playerRoom = findPlayerRoom(socket.id);
-            const presistId = playerRoom?.players.find(p => p.socketId === socket.id)?.id;
-            socket.emit('room-joined', presistId);
+            const persistId = playerRoom?.players.find(p => p.socketId === socket.id)?.id;
+            socket.emit('room-joined', persistId);
             socket.join(roomId.toString());
 
-            sendRoomUpdate(roomId);
+            sendRoomUpdate(io);
         } catch (err) {
             socket.emit('error', err);
         }
@@ -124,13 +131,13 @@ function setupRoomHandlers(socket: Socket, io: Server) {
 
     socket.on('player-ready', () => {
         debugger;
-        const rooms: GameRoom[] = Array.from(socket.rooms).filter(room => room !== socket.id);
+        const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
         if (rooms.length !== 1) {
             socket.emit('error', 'Player is either not in a room or in multiple rooms');
             return;
         }
 
-        const roomId = rooms[0].id;
+        const roomId = parseInt(rooms[0]);
 
         console.log('Player Ready', socket.id);
         try {
@@ -138,7 +145,7 @@ function setupRoomHandlers(socket: Socket, io: Server) {
         } catch (err) {
             socket.emit('error', err);
         }
-        sendRoomUpdate(roomId);
+        sendRoomUpdate(io);
     }
     );
 
@@ -181,9 +188,8 @@ function setupGameplayHandlers(socket: Socket) {
         const roomId = parseInt(rooms[0]);
 
         try {
-            gameFunctions.startGame(roomId, socket.id); //TODO check
-            socket.to(roomId.toString()).emit('game-started');
-            //TODO check if need to send room update
+            gameFunctions.startGame(roomId, socket.id).then(_ =>
+                socket.to(roomId.toString()).emit('game-started'));
         }
         catch (err) {
             socket.emit('error', err);
@@ -210,7 +216,7 @@ function setupGameplayHandlers(socket: Socket) {
         }
     });
 
-    socket.on('challenge-drinked', async () => {
+    socket.on('challenge-drunk', async () => {
         debugger;
         // Get the room this socket is in
         const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
@@ -233,7 +239,7 @@ function setupGameplayHandlers(socket: Socket) {
 /**
  * Setup Admin handlers for socket (admin-remove, admin-update, admin-skip)
  * 
- * @param socket The socket to setup admin handlers for
+ * @param socket The socket to set up admin handlers for
  * @param io The socket.io server to broadcast updates to
  */
 function setupAdminHandlers(socket: Socket, io: Server) {
@@ -292,6 +298,24 @@ function setupAdminHandlers(socket: Socket, io: Server) {
             socket.emit('error', err);
         }
     });
+
+    socket.on('admin-end-game', async () => {
+        debugger;
+        // Get the room this socket is in
+        const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
+        if (rooms.length !== 1) {
+            socket.emit('error', 'Admin is not in exactly one room');
+            return;
+        }
+
+        const roomId = parseInt(rooms[0]);
+
+        try {
+            gameFunctions.endGame(roomId, socket.id);
+        } catch (err) {
+            socket.emit('error', err);
+        }
+    })
 }
 
 /**
@@ -323,7 +347,7 @@ function setupDisconnectHandler(socket: Socket, io: Server) {
 /**
  * Setup session handlers for socket (restore-session)
  *
- * @param socket The socket to setup session handlers for
+ * @param socket The socket to set up session handlers for
  * @param io The socket.io server to broadcast updates to
  */
 function setupSessionHandlers(socket: Socket, io: Server) {

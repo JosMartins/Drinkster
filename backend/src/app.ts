@@ -1,10 +1,9 @@
 import mongoose from 'mongoose';
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import cors from 'cors';
 import http from 'http';
 import { Server } from 'socket.io';
-
-import { setupSockethandlers } from './socketFunctions';
+import { setupSocketHandlers } from './socketFunctions';
 
 
 const app = express();
@@ -33,20 +32,9 @@ async function main() {
     console.log("Connected to DB!");
 }
 
-setupSockethandlers(io);
-
-/*
-app.use(function (err: Error, req: Request, res: Response, next: NextFunction) {
-    console.error(err.stack);
-
-    res.status(500);
-    res.json({ error: err });
-});
-
-*/
+setupSocketHandlers(io);
 
 server.listen(3432, () => {
     console.log("Server is up and running on port 3432");
 });
 
-export default app;

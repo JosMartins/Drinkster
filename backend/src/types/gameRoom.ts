@@ -6,7 +6,7 @@ export interface GameRoomConfig {
     private: boolean;
     password?: string;
     playerConfig: PlayerConfig;
-    singleplayer?: boolean ;
+    singlePlayer?: boolean ;
     mode: 'normal' | 'random';
     rememberedChallenges: number;
     showChallenges: boolean;
