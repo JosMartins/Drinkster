@@ -1,4 +1,4 @@
-import { Sex } from '../types/sex';
+import { Sex } from './sex';
 
 export interface DifficultyValues {
     easy: number;
@@ -7,6 +7,12 @@ export interface DifficultyValues {
     extreme: number;
 }
 
+export const DEFAULT_DIFFICULTY_VALUES: DifficultyValues = {
+    easy: 0.3,
+    medium: 0.35,
+    hard: 0.35,
+    extreme: 0,
+}
 export interface Player {
     id: string; //persistent id
     socketId: string; //socket id

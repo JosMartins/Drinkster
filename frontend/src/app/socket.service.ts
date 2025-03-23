@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
@@ -8,7 +9,7 @@ import { io, Socket } from 'socket.io-client';
 export class SocketService {
   private readonly socket: Socket;
 
-  constructor() {
+  constructor(private router: Router) {
     this.socket = io("http://192.168.1.66:3432", {
       transports: ['websocket'],
       autoConnect: true,
@@ -33,7 +34,9 @@ export class SocketService {
     // Handle successful session restoration
     this.socket.on('session-restored', (data) => {
       console.log('Session restored successfully', data);
-      //TODO store session and send to room
+
+      localStorage.setItem('sessionId', data.id);
+      this.router.navigate(['/room']);
     });
 
     // Handle failed session restoration
@@ -73,4 +76,46 @@ export class SocketService {
     localStorage.removeItem('sessionId');
   }
 
+  public roomUpdate(): Observable<any> {
+    return this.on('room-update');
+  }
+
+  public gameStarted(): Observable<any> {
+    return this.on('game-started');
+  }
+
+  public playerReady(): void {
+    this.emit('player-ready');
+  }
+
+  public playerUnready(): void {
+    this.emit('player-unready');
+  }
+
+  public leaveRoom(): void {
+    this.emit('leave-room');
+  }
+
+  public startGame(): void {
+    this.emit('game-start');
+  }
+
+  public updatePlayerDifficulty(roomId: number, playerId: string, difficulty: any): void {
+    this.emit('admin-update-difficulty', roomId, playerId, difficulty);
+  }
+
+  public kickPlayer(roomId: number, playerId: string): void {
+    this.emit('admin-remove-player', {roomId, playerId});
+  }
+
+  public getRooms(): void {
+    this.emit('get-rooms');
+  }
+
+  public listRooms(): Observable<any> {
+    return this.on('room-list');
+  }
+
+
 }
+

@@ -6,3 +6,19 @@ export interface Difficulty {
   hard: number;
   extreme: number;
 }
+
+
+export function getDifficultyWord(difficulty: number): string {
+  switch (difficulty) {
+    case 1:
+      return 'Easy';
+    case 2:
+      return 'Medium';
+    case 3:
+      return 'Hard';
+    case 4:
+      return 'Extreme';
+    default:
+      return 'None';
+  }
+}

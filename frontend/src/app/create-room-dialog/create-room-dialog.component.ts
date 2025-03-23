@@ -58,6 +58,7 @@ export class CreateRoomDialogComponent {
 
     const dialogRef = this.dialog.open(DifficultyDialogComponent, {
       width: '350px',
+      panelClass: 'difficulty-dialog',
       data: {difficultyValues: currentDifficulty}
     });
 
