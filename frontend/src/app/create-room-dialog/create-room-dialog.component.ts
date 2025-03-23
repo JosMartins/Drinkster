@@ -11,6 +11,9 @@ import { FormsModule, ReactiveFormsModule, FormGroup, FormBuilder, Validators } 
 import { DifficultyDialogComponent } from '../difficulty-dialog/difficulty-dialog.component';
 import { DEFAULT_DIFFICULTY, Difficulty } from '../models/difficulty';
 import { SocketService} from "../socket.service";
+import { Router } from '@angular/router';
+import { RoomService } from '../room-service';
+
 
 @Component({
   selector: 'app-create-room-dialog',
@@ -36,7 +39,9 @@ export class CreateRoomDialogComponent {
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<CreateRoomDialogComponent>,
     private dialog: MatDialog,
-    private socketService: SocketService
+    private socketService: SocketService,
+    private router: Router,
+    private roomService: RoomService
   ) {
     this.roomForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -112,15 +117,16 @@ export class CreateRoomDialogComponent {
           // Store player ID for session restoration
           this.socketService.storeSessionId(playerId);
 
-          // Clean up subscription
           roomCreatedSubscription.unsubscribe();
 
-          // Close dialog with result
           this.dialogRef.close({
             success: true,
             roomId: roomId,
             playerId: playerId
           });
+
+          this.roomService.setId(roomId);
+          this.router.navigate(['/room']);
         }
       );
 

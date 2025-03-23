@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SocketService } from '../socket.service';
 import { Subscription } from 'rxjs';
+import { RoomService } from '../room-service';
 
 interface Player {
   id: string;
@@ -23,12 +24,7 @@ interface Player {
 export class WaitingRoomComponent implements OnInit, OnDestroy {
   roomName: string = '';
   roomId: number = 0;
-  players: Player[] = [
-    { id: '123', playerName: 'Test1', playerSex: 'M', isAdmin: false, isReady: false },
-    { id: '1234', playerName: 'Test2', playerSex: 'M', isAdmin: true, isReady: true },
-    { id: '321', playerName: 'Test3', playerSex: 'F', isAdmin: false, isReady: true }
-
-  ];
+  players: Player[] = [ ];
   currentPlayerId: string = '';
   isAdmin: boolean = false;
   gameMode: string = 'normal';
@@ -39,10 +35,16 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
   constructor(
     private io: SocketService,
-    private router: Router
+    private router: Router,
+    private roomService: RoomService
   ) {}
 
   ngOnInit(): void {
+    const storedId = this.roomService.getId();
+    if (storedId) {
+      this.roomId = storedId;
+    }
+
     this.currentPlayerId = localStorage.getItem('playerId') || '';
 
     // Subscribe to room updates
@@ -68,6 +70,8 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
         this.router.navigate(['/gameplay']).then(_ => null);
       })
     );
+
+    this.io.getRoom(this.roomId);
   }
 
   ngOnDestroy(): void {
@@ -94,5 +98,9 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     if (this.isAdmin) {
       this.io.startGame();
     }
+  }
+
+  setRoomId(roomId: number): void {
+    this.roomId = roomId;
   }
 }

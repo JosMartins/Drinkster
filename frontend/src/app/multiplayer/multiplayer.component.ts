@@ -53,14 +53,13 @@ export class MultiplayerComponent implements OnInit {
       if (result) {
         // Handle the result data from the dialog
         console.log('Room created:', result);
-        // TODO: Send room creation request to the server
-        // After confirmation, refresh rooms or navigate to the room
       }
     });
   }
 
   joinRoom(roomId: string): void {
     console.log(`Joining room ${roomId}`);
+    this.socketService.joinRoom(roomId);
 
   }
 }

@@ -116,6 +116,13 @@ export class SocketService {
     return this.on('room-list');
   }
 
+  public getRoom(roomId: number): void {
+    this.emit('get-room', roomId);
+  }
+
+  public joinRoom(roomId: string): void {
+    this.emit('join-room', roomId);
+  }
 
 }
 
