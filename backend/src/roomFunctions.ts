@@ -180,6 +180,37 @@ export function playerReady(roomId: number, sockId: string) {
 export function listRooms(): GameRoom[] {
     return getRooms();
 }
+
+export function playerUnready(roomId: number, sockId: string) {
+    let room = getRoom(roomId);
+    if (!room) {
+        throw new Error('Room not found');
+    }
+
+    let player = room.players.find(player => player.socketId === sockId);
+
+    if (!player) {
+        throw new Error('Player not found in room');
+    }
+    player.isReady = false;
+}
+
+export function leaveRoom(roomId: number, sockId: string) {
+    let room = getRoom(roomId);
+    if (!room) {
+        throw new Error('Room not found');
+    }
+
+    let player = room.players.find(player => player.socketId === sockId);
+
+    if (!player) {
+        throw new Error('Player not found in room');
+    }
+
+    room.players = room.players.filter(player => player.socketId !== sockId);
+}
+
+
 /*****HELPERS*****/
 
 

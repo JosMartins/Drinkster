@@ -129,6 +129,25 @@ function setupRoomHandlers(socket: Socket, io: Server) {
         }
     });
 
+    socket.on('player-unready', () => {
+        debugger;
+        const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
+        if (rooms.length !== 1) {
+            socket.emit('error', 'Player is either not in a room or in multiple rooms');
+            return;
+        }
+
+        const roomId = parseInt(rooms[0]);
+
+        console.log('Player Unready', socket.id);
+        try {
+            roomFunctions.playerUnready(roomId, socket.id);
+        } catch (err) {
+            socket.emit('error', err);
+        }
+        sendRoomUpdate(io);
+    })
+
     socket.on('player-ready', () => {
         debugger;
         const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
@@ -148,6 +167,25 @@ function setupRoomHandlers(socket: Socket, io: Server) {
         sendRoomUpdate(io);
     }
     );
+
+    socket.on('leave-room', () => {
+        debugger;
+        const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
+        if (rooms.length !== 1) {
+            socket.emit('error', 'Player is not in exactly one room');
+            return;
+        }
+
+        const roomId = parseInt(rooms[0]);
+
+        console.log('Leaving Room', roomId);
+        try {
+            roomFunctions.leaveRoom(roomId, socket.id);
+            sendRoomUpdate(io);
+        } catch (err) {
+            socket.emit('error', err);
+        }
+    });
 
     socket.on('get-rooms', () => {
         console.log('Getting room list');
@@ -243,16 +281,8 @@ function setupGameplayHandlers(socket: Socket) {
  * @param io The socket.io server to broadcast updates to
  */
 function setupAdminHandlers(socket: Socket, io: Server) {
-    socket.on('admin-remove-player', (playerId: string) => {
+    socket.on('admin-remove-player', ({roomId , playerId}) => {
         debugger;
-        // Get the room this socket is in
-        const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
-        if (rooms.length !== 1) {
-            socket.emit('error', 'Admin is not in exactly one room');
-            return;
-        }
-
-        const roomId = parseInt(rooms[0]);
 
         try {
             roomFunctions.removePlayerFromRoom(roomId, playerId, socket.id);
@@ -263,16 +293,9 @@ function setupAdminHandlers(socket: Socket, io: Server) {
         }
     });
 
-    socket.on('admin-update-difficulty', (playerId: string, difficultyValues: any) => {
+    socket.on('admin-update-difficulty', (roomId: number,playerId: string, difficultyValues: any) => {
         debugger;
         // Get the room this socket is in
-        const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
-        if (rooms.length !== 1) {
-            socket.emit('error', 'Admin is not in exactly one room');
-            return;
-        }
-
-        const roomId = parseInt(rooms[0]);
 
         try {
             gameFunctions.updatePlayerDifficulty(roomId, playerId, difficultyValues);
