@@ -6,7 +6,7 @@
   }
 
   .content {
-    background-color: #f8f9fa;
+    background-color: rgb(0, 0, 0, 50%);
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -22,7 +22,7 @@
   .title {
     margin: 0;
     font-size: 24px;
-    color: #333;
+    color: #ffffff;
   }
 
   .create-button {
@@ -62,6 +62,7 @@
   .room-name {
     font-size: 16px;
     font-weight: 500;
+    color: #ffffff;
   }
 
   .room-lock {
