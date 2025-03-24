@@ -5,7 +5,7 @@
 
 /* Force content transparency */
 .mdc-dialog__surface {
-  background: rgb(128,0,0,0.6) !important;
+  background: rgba(155, 219, 253, 0.6) !important;
   box-shadow: none !important;
 }
 

@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SocketService } from '../socket.service';
-import { Subscription } from 'rxjs';
+import {firstValueFrom, Subscription} from 'rxjs';
 import { RoomService } from '../room-service';
 
 interface Player {
@@ -36,16 +36,16 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   constructor(
     private io: SocketService,
     private router: Router,
-    private roomService: RoomService
   ) {}
 
-  ngOnInit(): void {
-    const storedId = this.roomService.getId();
+  async ngOnInit() {
+    const storedId = parseInt(localStorage.getItem("roomId") || '');
+
     if (storedId) {
       this.roomId = storedId;
     }
 
-    this.currentPlayerId = localStorage.getItem('playerId') || '';
+    this.currentPlayerId = localStorage.getItem('sessionId') || '';
 
     // Subscribe to room updates
     this.subscriptions.push(
@@ -73,13 +73,16 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
     this.io.getRoom(this.roomId);
 
-    this.io.roomInfo().subscribe(roomInfo => {
+    try {
+      const roomInfo = await firstValueFrom(this.io.roomInfo());
       console.log(roomInfo);
       this.roomName = roomInfo.name;
       this.gameMode = roomInfo.mode;
       this.players = roomInfo.players;
       this.showChallenges = roomInfo.showChallenges;
-    }).unsubscribe()
+    } catch (error) {
+      console.error('Error retrieving room info:', error);
+    }
 
   }
 
@@ -100,7 +103,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
   leaveRoom(): void {
     this.io.leaveRoom();
-    this.router.navigate(['/lobby']).then(_ => null );
+    this.router.navigate(['/multiplayer']).then(_ => null );
   }
 
   startGame(): void {
@@ -109,7 +112,4 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     }
   }
 
-  setRoomId(roomId: number): void {
-    this.roomId = roomId;
-  }
 }

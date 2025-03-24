@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
 import { Router } from '@angular/router';
+import {Player} from "./models/player";
 
 @Injectable({
   providedIn: 'root'
@@ -17,39 +18,39 @@ export class SocketService {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000
     });
-    this.setupReconnection();
+    this.setupReconnection().then(_ => null);
   }
 
   // Handle reconnection with persistent ID
-  private setupReconnection(): void {
-    this.socket.on('connect', () => {
-      console.log('Socket connected');
-      const sessionId = localStorage.getItem('sessionId');
-      if (sessionId) {
-        console.log('Attempting to restore session:', sessionId);
-        this.socket.emit('restore-session', sessionId);
-      }
+  private async setupReconnection(): Promise<void> {
+
+    this.socket.emit('restore-session', localStorage.getItem('sessionId'));
+
+    await new Promise<void>((resolve) => {
+      this.socket.on('connect', () => {
+        console.log('Socket connected');
+        const sessionId = localStorage.getItem('sessionId');
+        if (sessionId) {
+          console.log('Attempting to restore session:', sessionId);
+          this.socket.emit('restore-session', sessionId);
+          this.socket.once('session-restored', (data) => {
+            console.log('Session restored successfully', data);
+
+            localStorage.setItem('roomId', data.roomId);
+            resolve();
+          });
+
+          this.socket.once('session-not-found', () => {
+            console.log('Session not found, creating new session');
+            localStorage.removeItem('sessionId');
+            localStorage.removeItem('roomId');
+            resolve();
+          });
+        } else {
+          resolve();
+        }
+      });
     });
-
-    // Handle successful session restoration
-    this.socket.on('session-restored', (data) => {
-      console.log('Session restored successfully', data);
-
-      localStorage.setItem('sessionId', data.id);
-      this.router.navigate(['/room']);
-    });
-
-    // Handle failed session restoration
-    this.socket.on('session-not-found', () => {
-      console.log('Session not found, creating new session');
-      localStorage.removeItem('sessionId');
-    });
-  }
-
-  // Store session ID from server
-  public storeSessionId(sessionId: string): void {
-    localStorage.setItem('sessionId', sessionId);
-    console.log('Stored session ID:', sessionId);
   }
 
   // Emit events
@@ -124,9 +125,14 @@ export class SocketService {
     return this.on('room-info');
   }
 
-  public joinRoom(roomId: string): void {
-    this.emit('join-room', roomId);
+  public joinRoom(roomId: number, playerConf : Player): void {
+    this.emit('join-room', roomId , playerConf);
   }
+
+  public roomJoined(): Observable<any> {
+    return this.on('room-joined');
+  }
+
 
   public error(): Observable<any> {
     return this.on('error');

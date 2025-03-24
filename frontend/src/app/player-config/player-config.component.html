@@ -1,0 +1,30 @@
+<div class="player-config-dialog">
+  <h2>Player Configuration</h2>
+  <form [formGroup]="playerForm" (ngSubmit)="onSave()">
+    <mat-form-field class="full-width">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" required>
+      <mat-error *ngIf="playerForm.get('name')?.hasError('required')">
+        Name is required
+      </mat-error>
+      <mat-error *ngIf="playerForm.get('name')?.hasError('minlength')">
+        Name must be at least 3 characters long
+      </mat-error>
+    </mat-form-field>
+
+    <div class="player-sex">
+      <label class="sex-label">Sex:</label>
+      <mat-radio-group formControlName="sex" class="sex-radio-group">
+        <mat-radio-button value="M">M</mat-radio-button>
+        <mat-radio-button value="F">F</mat-radio-button>
+      </mat-radio-group>
+    </div>
+
+    <div class="button-row">
+      <button mat-stroked-button type="button" (click)="onCancel()">Cancel</button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="playerForm.invalid">
+        Save
+      </button>
+    </div>
+  </form>
+</div>

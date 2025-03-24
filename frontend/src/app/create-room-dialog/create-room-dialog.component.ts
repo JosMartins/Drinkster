@@ -116,7 +116,8 @@ export class CreateRoomDialogComponent {
           console.log('Room created:', roomId, 'Player ID:', playerId);
 
           // Store player ID for session restoration
-          this.socketService.storeSessionId(playerId);
+          localStorage.setItem('sessionId', playerId);
+          localStorage.setItem('roomId', roomId);
 
           roomCreatedSubscription.unsubscribe();
 

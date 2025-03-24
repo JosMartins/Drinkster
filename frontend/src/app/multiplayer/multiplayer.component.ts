@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { CreateRoomDialogComponent } from '../create-room-dialog/create-room-dialog.component';
 import {SocketService} from "../socket.service";
+import {PlayerConfigComponent} from "../player-config/player-config.component";
 
 interface Room {
   id: string;
@@ -61,7 +62,20 @@ export class MultiplayerComponent implements OnInit {
 
   joinRoom(roomId: string): void {
     console.log(`Joining room ${roomId}`);
-    this.socketService.joinRoom(roomId);
+
+    const dialogRef = this.dialog.open(PlayerConfigComponent, {
+      width: '800px',
+      panelClass: ['custom-dialog', 'transparent-overlay'],
+      hasBackdrop: false,
+      data: {roomId: roomId}
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.router.navigate(['/room']).then(_ => null);
+      }
+    })
+
 
   }
 }
