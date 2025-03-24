@@ -1,3 +1,15 @@
+:root {
+  --main-bg-color: transparent;
+}
+
+
+/* Force content transparency */
+.mdc-dialog__surface {
+  background: rgb(128,0,0,0.6) !important;
+  box-shadow: none !important;
+}
+
+
 .player-config-row {
   display: flex;
   align-items: flex-start;

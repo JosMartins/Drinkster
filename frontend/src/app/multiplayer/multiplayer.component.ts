@@ -46,6 +46,8 @@ export class MultiplayerComponent implements OnInit {
   createRoom(): void {
     const dialogRef = this.dialog.open(CreateRoomDialogComponent, {
       width: '800px',
+      panelClass: ['custom-dialog', 'transparent-overlay'],
+      hasBackdrop: false,
       data: {} // You can pass initial data here if needed
     });
 

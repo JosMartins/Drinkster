@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import {Component, ViewEncapsulation} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -30,7 +30,8 @@ import { RoomService } from '../room-service';
     MatRadioModule
   ],
   templateUrl: './create-room-dialog.component.html',
-  styleUrls: ['./create-room-dialog.component.css']
+  styleUrls: ['./create-room-dialog.component.css'],
+  encapsulation: ViewEncapsulation.None
 })
 export class CreateRoomDialogComponent {
   roomForm: FormGroup;
@@ -93,7 +94,7 @@ export class CreateRoomDialogComponent {
       };
 
       // Set up event listener first
-      const errorSubscription = this.socketService.on('error').subscribe(
+      const errorSubscription = this.socketService.error().subscribe(
         (errorMessage) => {
           console.error('Error creating room:', errorMessage);
 
@@ -126,7 +127,7 @@ export class CreateRoomDialogComponent {
           });
 
           this.roomService.setId(roomId);
-          this.router.navigate(['/room']);
+          this.router.navigate(['/room']).then(_ => null);
         }
       );
 

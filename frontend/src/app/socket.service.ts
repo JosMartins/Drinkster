@@ -120,8 +120,16 @@ export class SocketService {
     this.emit('get-room', roomId);
   }
 
+  public roomInfo(): Observable<any> {
+    return this.on('room-info');
+  }
+
   public joinRoom(roomId: string): void {
     this.emit('join-room', roomId);
+  }
+
+  public error(): Observable<any> {
+    return this.on('error');
   }
 
 }

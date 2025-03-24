@@ -72,6 +72,15 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     );
 
     this.io.getRoom(this.roomId);
+
+    this.io.roomInfo().subscribe(roomInfo => {
+      console.log(roomInfo);
+      this.roomName = roomInfo.name;
+      this.gameMode = roomInfo.mode;
+      this.players = roomInfo.players;
+      this.showChallenges = roomInfo.showChallenges;
+    }).unsubscribe()
+
   }
 
   ngOnDestroy(): void {
