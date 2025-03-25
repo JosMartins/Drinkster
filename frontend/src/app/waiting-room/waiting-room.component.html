@@ -11,7 +11,7 @@
     <div class="players-list">
       <div *ngFor="let player of players" class="player-card" [class.admin]="player.isAdmin" [class.current-player]="player.id === currentPlayerId">
         <div class="player-info">
-          <span class="player-name">{{player.playerName}}</span>
+          <span class="player-name">{{player.name}}</span>
           <span *ngIf="player.isAdmin" class="admin-badge">Admin</span>
         </div>
         <div class="player-status" [class.ready]="player.isReady">

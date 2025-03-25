@@ -12,7 +12,6 @@ import { DifficultyDialogComponent } from '../difficulty-dialog/difficulty-dialo
 import { DEFAULT_DIFFICULTY, Difficulty } from '../models/difficulty';
 import { SocketService} from "../socket.service";
 import { Router } from '@angular/router';
-import { RoomService } from '../room-service';
 
 
 @Component({
@@ -42,7 +41,6 @@ export class CreateRoomDialogComponent {
     private dialog: MatDialog,
     private socketService: SocketService,
     private router: Router,
-    private roomService: RoomService
   ) {
     this.roomForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -127,7 +125,6 @@ export class CreateRoomDialogComponent {
             playerId: playerId
           });
 
-          this.roomService.setId(roomId);
           this.router.navigate(['/room']).then(_ => null);
         }
       );

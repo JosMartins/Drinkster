@@ -67,7 +67,7 @@ export class MultiplayerComponent implements OnInit {
       width: '800px',
       panelClass: ['custom-dialog', 'transparent-overlay'],
       hasBackdrop: false,
-      data: {roomId: roomId}
+      data: roomId
     });
 
     dialogRef.afterClosed().subscribe(result => {

@@ -4,14 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SocketService } from '../socket.service';
 import {firstValueFrom, Subscription} from 'rxjs';
-import { RoomService } from '../room-service';
 
 interface Player {
   id: string;
-  playerName: string;
-  playerSex: string;
-  isAdmin: boolean;
+  name: string;
+  sex: string;
   isReady: boolean;
+  isAdmin: boolean;
 }
 
 @Component({
@@ -29,7 +28,9 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   isAdmin: boolean = false;
   gameMode: string = 'normal';
   showChallenges: boolean = true;
+  rememberedChallenges: number = 0;
   isReady: boolean = false;
+  admin: boolean = false;
 
   private subscriptions: Subscription[] = [];
 
@@ -41,9 +42,12 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   async ngOnInit() {
     const storedId = parseInt(localStorage.getItem("roomId") || '');
 
-    if (storedId) {
-      this.roomId = storedId;
+    if (!storedId) {
+      console.log("No room ID found, redirecting to multiplayer");
+      await this.router.navigate(['/multiplayer']).then(_ => null);
     }
+
+    this.roomId = storedId;
 
     this.currentPlayerId = localStorage.getItem('sessionId') || '';
 
@@ -53,13 +57,6 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
         this.roomName = roomData.name;
         this.roomId = roomData.id;
         this.players = roomData.players;
-
-        // Find current player
-        const currentPlayer = this.players.find(p => p.id === this.currentPlayerId);
-        if (currentPlayer) {
-          this.isAdmin = currentPlayer.isAdmin;
-          this.isReady = currentPlayer.isReady;
-        }
 
       })
     );
@@ -79,7 +76,10 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       this.roomName = roomInfo.name;
       this.gameMode = roomInfo.mode;
       this.players = roomInfo.players;
+      this.rememberedChallenges = roomInfo.rememberedChallenges;
       this.showChallenges = roomInfo.showChallenges;
+
+      this.isAdmin = this.isPlayerAdmin();
     } catch (error) {
       console.error('Error retrieving room info:', error);
     }
@@ -92,12 +92,12 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   }
 
   toggleReady(): void {
-    this.isReady = !this.isReady;
     if (this.isReady) {
       this.io.playerReady();
     } else {
       this.io.playerUnready();
     }
+    this.isReady = !this.isReady;
   }
 
 
@@ -112,4 +112,9 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     }
   }
 
+  // HELPER FUNCTIONS
+
+  isPlayerAdmin(): boolean {
+    return this.players.find(player => player.id === this.currentPlayerId)?.isAdmin || false;
+  }
 }

@@ -1,8 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
-import { Router } from '@angular/router';
-import {Player} from "./models/player";
 
 @Injectable({
   providedIn: 'root'
@@ -10,8 +8,8 @@ import {Player} from "./models/player";
 export class SocketService {
   private readonly socket: Socket;
 
-  constructor(private router: Router) {
-    this.socket = io("http://192.168.1.66:3432", {
+  constructor() {
+    this.socket = io("http://autistassv.ddns.net:25568", {
       transports: ['websocket'],
       autoConnect: true,
       reconnection: true,
@@ -125,8 +123,8 @@ export class SocketService {
     return this.on('room-info');
   }
 
-  public joinRoom(roomId: number, playerConf : Player): void {
-    this.emit('join-room', roomId , playerConf);
+  public joinRoom(payload: { roomId: number; playerConfig: any }): void {
+    this.emit('join-room', payload);
   }
 
   public roomJoined(): Observable<any> {

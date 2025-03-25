@@ -1,21 +1,28 @@
 import {Component, Inject, OnInit} from '@angular/core';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
 import {MatError, MatFormField, MatLabel} from "@angular/material/form-field";
+import { MatInputModule } from '@angular/material/input';
 import {MatRadioButton, MatRadioGroup} from "@angular/material/radio";
 import {SocketService} from "../socket.service";
+import {MatButton} from "@angular/material/button";
+import {NgIf} from "@angular/common";
 
 @Component({
   selector: 'app-player-config',
   standalone: true,
   templateUrl: './player-config.component.html',
   imports: [
-    ReactiveFormsModule,
     MatFormField,
     MatRadioGroup,
+    MatInputModule,
     MatRadioButton,
     MatLabel,
-    MatError
+    MatError,
+    FormsModule,
+    MatButton,
+    ReactiveFormsModule,
+    NgIf
   ],
   styleUrls: ['./player-config.component.css']
 })
@@ -56,9 +63,9 @@ export class PlayerConfigComponent implements OnInit {
 
       const roomJoinedSubscription = this.socketService.roomJoined().subscribe(
         (data) => {
-          const { roomId, playerId } = data;
+          const { roomId, presistId } = data;
           console.log('Room joined room:', roomId);
-          localStorage.setItem('sessionId', playerId);
+          localStorage.setItem('sessionId', presistId);
           localStorage.setItem('roomId', roomId);
 
           errorSubscription.unsubscribe();
@@ -67,13 +74,15 @@ export class PlayerConfigComponent implements OnInit {
           this.dialogRef.close({
             success: true,
             roomId: roomId,
-            playerId: playerId
+            playerId: presistId
           });
         }
       )
 
 
-      this.socketService.joinRoom(this.roomId.valueOf(), this.playerForm.value);
+      this.socketService.joinRoom({
+        roomId: this.roomId,
+        playerConfig: this.playerForm.value});
     }
   }
 
