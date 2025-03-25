@@ -34,7 +34,7 @@ async function main() {
 
 setupSocketHandlers(io);
 
-server.listen(3432, () => {
+server.listen(25568, () => {
     console.log("Server is up and running on port 3432");
 });
 

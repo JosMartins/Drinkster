@@ -2,10 +2,12 @@ import { Server, Socket } from 'socket.io';
 import * as roomFunctions from './roomFunctions';
 import * as gameFunctions from './gameFunctions';
 import { GameRoomConfig} from './types/gameRoom';
-import {DEFAULT_DIFFICULTY_VALUES, PlayerConfig} from './types/player';
-import { findPlayerRoom } from './stores/gameRoomStore';
+import { PlayerConfig} from './types/player';
+import { findPlayerRoom, findPlayerRoomById } from './stores/gameRoomStore';
 
 const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
+const creationCooldowns = new Map<string, number>();
+const CREATION_COOLDOWN = 5000;
 
 /**
  * Setup socket handlers for the socket.io server
@@ -50,10 +52,26 @@ function handleReconnection(socket: Socket) {
  */
 function setupRoomHandlers(socket: Socket, io: Server) {
     socket.on('create-room', (config: GameRoomConfig) => {
-        debugger;
         console.log('Creating Room', config.roomName);
 
+        // Check existing cooldown
+        if (creationCooldowns.has(socket.id)) {
+            const lastCreation = creationCooldowns.get(socket.id)!;
+            if (Date.now() - lastCreation < CREATION_COOLDOWN) {
+                socket.emit('error', 'Wait before creating another room');
+                return;
+            }
+        }
+
+        // Check if already in a room
+        if (findPlayerRoom(socket.id)) {
+            socket.emit('error', 'Already in a room');
+            return;
+        }
+
+        // Proceed with room creation
         try {
+            creationCooldowns.set(socket.id, Date.now());
             const roomId = roomFunctions.createRoom(config, socket.id);
             const playerRoom = findPlayerRoom(socket.id);
 
@@ -61,7 +79,7 @@ function setupRoomHandlers(socket: Socket, io: Server) {
                 const player = playerRoom.players.find(p => p.socketId === socket.id);
                 if (player) {
                     const playerId = player.id;
-                    socket.emit('room-created', {roomId, playerId});
+                    socket.emit('room-created', { roomId, playerId });
                     socket.join(roomId.toString());
 
                     sendRoomUpdate(io);
@@ -77,9 +95,8 @@ function setupRoomHandlers(socket: Socket, io: Server) {
         }
     });
 
-    socket.on('create-single-player', (device: PlayerConfig[], mod, remember: number) => {
-        debugger;
-        console.log('Creating Single player Room ', device[0].name);
+    socket.on('create-singleplayer', (device: PlayerConfig[], mod, remember) => {
+        console.log('Creating Singleplayer Room ', device[0].name);
         try {
             const roomConf: GameRoomConfig = {
                 roomName: `Single_${device[0].name}`,
@@ -95,8 +112,8 @@ function setupRoomHandlers(socket: Socket, io: Server) {
 
             const playerRoom = findPlayerRoom(socket.id);
             const playerId = playerRoom?.players.find(p => p.socketId === socket.id)?.id;
-    
-            socket.emit('room-created', {roomId, playerId});
+
+            socket.emit('room-created', { roomId, playerId });
             socket.join(roomId.toString());
             //Auto Start
             socket.emit('game-started');
@@ -108,22 +125,26 @@ function setupRoomHandlers(socket: Socket, io: Server) {
         }
     });
 
-    socket.on('join-room', (roomId: number, {playerName , playerSex}) => {
-        debugger;
+    socket.on('join-room', (payload) => {
+        const { roomId, playerConfig } = payload;
         console.log('Joining Room', roomId);
+
+        const currentRooms = Array.from(socket.rooms).filter(room => room !== socket.id);
+        if (currentRooms.length > 0) {
+            socket.emit('error', 'Leave current room first');
+            return;
+        }
+
+
         try {
-            const player : PlayerConfig = {
-                name: playerName,
-                sex: playerSex,
-                difficulty_values: DEFAULT_DIFFICULTY_VALUES,
-            }
-            roomFunctions.joinRoom(roomId, player, socket.id);
+            roomFunctions.joinRoom(roomId, playerConfig, socket.id);
             const playerRoom = findPlayerRoom(socket.id);
-            const persistId = playerRoom?.players.find(p => p.socketId === socket.id)?.id;
-            socket.emit('room-joined', persistId);
+            const presistId = playerRoom?.players.find(p => p.socketId === socket.id)?.id;
+            socket.emit('room-joined', { roomId, presistId });
             socket.join(roomId.toString());
 
-            sendRoomUpdate(io);
+            // Notify other players in the room that a new player has joined
+            socket.to(roomId.toString()).emit('room-update', playerRoom);
         } catch (err) {
             socket.emit('error', err);
         }
@@ -148,8 +169,7 @@ function setupRoomHandlers(socket: Socket, io: Server) {
         sendRoomUpdate(io);
     })
 
-    socket.on('player-ready', () => {
-        debugger;
+    socket.on('player-unready', () => {
         const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
         if (rooms.length !== 1) {
             socket.emit('error', 'Player is either not in a room or in multiple rooms');
@@ -158,15 +178,57 @@ function setupRoomHandlers(socket: Socket, io: Server) {
 
         const roomId = parseInt(rooms[0]);
 
-        console.log('Player Ready', socket.id);
+        console.log('Player Unready', socket.id);
         try {
-            roomFunctions.playerReady(roomId, socket.id);
+            roomFunctions.playerUnready(roomId, socket.id);
         } catch (err) {
             socket.emit('error', err);
         }
         sendRoomUpdate(io);
-    }
-    );
+    })
+
+    socket.on('player-ready', () => {
+        const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
+        if (rooms.length !== 1) {
+            socket.emit('error', 'Player is either not in a room or in multiple rooms');
+            return;
+        }
+
+        const roomId = parseInt(rooms[0]);
+
+
+        try {
+            roomFunctions.playerReady(roomId, socket.id);
+            console.log('Player Ready', socket.id);
+
+            // Notify other players in the room that a player has readied
+            socket.to(roomId.toString()).emit('room-update', findPlayerRoom(socket.id));
+        } catch (err) {
+            socket.emit('error', err);
+        }
+        sendRoomUpdate(io);
+    });
+
+    socket.on('player-unready', () => {
+        const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
+        if (rooms.length !== 1) {
+            socket.emit('error', 'Player is either not in a room or in multiple rooms');
+            return;
+        }
+
+        const roomId = parseInt(rooms[0]);
+
+
+        try {
+            roomFunctions.playerUnready(roomId, socket.id);
+            console.log('Player Ready', socket.id);
+
+            // Notify other players in the room that a player has unready
+            socket.to(roomId.toString()).emit('room-update', findPlayerRoom(socket.id));
+        } catch (err) {
+            socket.emit('error', err);
+        }
+    });
 
     socket.on('leave-room', () => {
         debugger;
@@ -208,6 +270,29 @@ function setupRoomHandlers(socket: Socket, io: Server) {
             socket.emit('error', err);
         }
     });
+
+    socket.on('get-room', (roomId: number) => {
+        console.log('Getting room info', roomId);
+        try {
+            const room = roomFunctions.getRoomById(roomId, socket.id);
+
+            // Map room to only include necessary information
+            const roomInfo = {
+                id: room.id,
+                name: room.name,
+                players: room.players,
+                mode: room.mode,
+                rememberedChallenges: room.rememberedChallenges,
+                showChallenges: room.showChallenges,
+                status: room.status,
+            };
+
+            socket.emit('room-info', roomInfo);
+
+        } catch (err) {
+            socket.emit('error', err);
+        }
+    });
 }
 
 /**
@@ -219,7 +304,6 @@ function setupGameplayHandlers(socket: Socket) {
 
     // Game start handler
     socket.on('game-start', () => {
-        debugger;
         const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
         if (rooms.length !== 1) return;
 
@@ -236,7 +320,6 @@ function setupGameplayHandlers(socket: Socket) {
 
     // Challenge completion handlers
     socket.on('challenge-completed', async () => {
-        debugger;
         // Get the room this socket is in
         const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
         if (rooms.length !== 1) {
@@ -255,7 +338,6 @@ function setupGameplayHandlers(socket: Socket) {
     });
 
     socket.on('challenge-drunk', async () => {
-        debugger;
         // Get the room this socket is in
         const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
         if (rooms.length !== 1) {
@@ -281,8 +363,15 @@ function setupGameplayHandlers(socket: Socket) {
  * @param io The socket.io server to broadcast updates to
  */
 function setupAdminHandlers(socket: Socket, io: Server) {
-    socket.on('admin-remove-player', ({roomId , playerId}) => {
-        debugger;
+    socket.on('admin-remove-player', (playerId: string) => {
+        // Get the room this socket is in
+        const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
+        if (rooms.length !== 1) {
+            socket.emit('error', 'Admin is not in exactly one room');
+            return;
+        }
+
+        const roomId = parseInt(rooms[0]);
 
         try {
             roomFunctions.removePlayerFromRoom(roomId, playerId, socket.id);
@@ -305,7 +394,6 @@ function setupAdminHandlers(socket: Socket, io: Server) {
     });
 
     socket.on('admin-force-skip', async () => {
-        debugger;
         // Get the room this socket is in
         const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
         if (rooms.length !== 1) {
@@ -349,19 +437,24 @@ function setupAdminHandlers(socket: Socket, io: Server) {
  */
 function setupDisconnectHandler(socket: Socket, io: Server) {
     socket.on('disconnect', () => {
+        
         // Store the player's persistent ID before removal
         const playerRoom = findPlayerRoom(socket.id);
         const playerId = playerRoom?.players.find(p => p.socketId === socket.id)?.id;
+
         
-        console.log('User disconnected ', socket.id);
         const timeout = setTimeout(() => {
             console.log(`Removing user ${socket.id} from room after inactivity`);
             roomFunctions.removeUserFromRooms(socket.id);
+            
+            if (playerRoom?.players.length === 0) {
+                // Destroy room if last player disconnects
+                roomFunctions.deleteRoom(playerRoom.id);
+            }
             disconnectTimeouts.delete(socket.id);
-        }, 60 * 60 * 1000);
+            sendRoomUpdate(io);
+        }, 5 * 60 * 1000);
 
-        sendRoomUpdate(io);
-        
         // Use player ID as key if available, otherwise socket ID
         disconnectTimeouts.set(playerId ?? socket.id, timeout);
     });
@@ -375,15 +468,15 @@ function setupDisconnectHandler(socket: Socket, io: Server) {
  */
 function setupSessionHandlers(socket: Socket, io: Server) {
     socket.on('restore-session', (sessionId: string) => {
-        debugger;
+
         console.log('Restoring session', sessionId);
 
         if (disconnectTimeouts.has(sessionId)) {
             clearTimeout(disconnectTimeouts.get(sessionId));
             disconnectTimeouts.delete(sessionId);
         }
-        
-        const playerRoom = findPlayerRoom(sessionId);
+
+        const playerRoom = findPlayerRoomById(sessionId);
 
         if (playerRoom) {
             const player = playerRoom.players.find(p => p.id === sessionId);
@@ -429,5 +522,5 @@ function sendRoomUpdate(io: Server) {
         }));
 
     // Broadcast the updated room list to all clients
-    io.emit('room-list-update', roomList);
+    io.emit('room-update', roomList);
 }

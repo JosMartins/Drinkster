@@ -1,5 +1,6 @@
 import { Sex } from './sex';
 
+export const DEFAULT_DIFFICULTY_VALUES: DifficultyValues = { easy: 0.3, medium: 0.35, hard: 0.35, extreme: 0 };
 export interface DifficultyValues {
     easy: number;
     medium: number;

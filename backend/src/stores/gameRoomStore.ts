@@ -33,6 +33,17 @@ export function findPlayerRoom(sockId: string): GameRoom | null {
     return null;
 }
 
+export function findPlayerRoomById(playerId: string): GameRoom | null {
+    for (const room of gameRooms.values()) {
+        for (const player of room.players) {
+            if (player.id === playerId) {
+                return room;
+            }
+        }
+    }
+    return null;
+}
+
 export function removePlayerFromRoom(room: GameRoom, playerId: string) {
     room.players = room.players.filter(player => player.id !== playerId);
 }

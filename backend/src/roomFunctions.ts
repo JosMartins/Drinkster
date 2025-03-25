@@ -1,6 +1,6 @@
-import {addRoom, findPlayerRoom, roomExists, getRoom, getRooms} from "./stores/gameRoomStore";
+import {addRoom, findPlayerRoom, roomExists, getRoom, getRooms, removeRoom} from "./stores/gameRoomStore";
 import { GameRoom, GameRoomConfig } from "./types/gameRoom";
-import { Player, PlayerConfig } from "./types/player";
+import { Player, PlayerConfig, DEFAULT_DIFFICULTY_VALUES } from "./types/player";
 
 
 /**
@@ -71,7 +71,8 @@ export function createRoom(roomConf: GameRoomConfig, sockId: string): number {
  */
 export function joinRoom(roomId: number, player: PlayerConfig, sockId: string): void {
 
-    //Validate input
+    //Validate input - willl always have default
+    player.difficulty_values = DEFAULT_DIFFICULTY_VALUES;
     verifyPlayerInput(player);
 
     let room = getRoom(roomId);
@@ -116,7 +117,7 @@ export function removePlayerFromRoom(roomId: number, playerId: string, adminSock
 
     // Get admin by socketId
     const admin = room.players.find(p => p.socketId === adminSocketId);
-    if (!admin || !admin.isAdmin) {
+    if (!admin?.isAdmin) {
         throw new Error('Only the admin can remove players');
     }
 
@@ -177,6 +178,21 @@ export function playerReady(roomId: number, sockId: string) {
 
 }
 
+export function playerUnready(roomId: number, sockId: string) {
+    let room = getRoom(roomId);
+    if (!room) {
+        throw new Error('Room not found');
+    }
+
+    let player = room.players.find(player => player.socketId === sockId);
+
+    if (!player) {
+        throw new Error('Player not found in room');
+    }
+    player.isReady = false;
+
+}
+
 export function listRooms(): GameRoom[] {
     return getRooms();
 }
@@ -211,6 +227,34 @@ export function leaveRoom(roomId: number, sockId: string) {
 }
 
 
+
+export function getRoomById(roomId: number, sockId: string): GameRoom {
+
+    //only players in the room can get the room
+    let room = getRoom(roomId);
+
+    if (!room) {
+        throw new Error('Room not found');
+    }
+
+    let player = room.players.find(player => player.socketId === sockId);
+
+    if (!player) {
+        throw new Error('Player not found in room');
+    }
+
+    return room;
+}
+
+export function deleteRoom(roomId: number) {
+    let room = getRoom(roomId);
+    if (!room) {
+        throw new Error('Room not found');
+    }
+
+    // Remove the room
+    removeRoom(roomId);
+}
 /*****HELPERS*****/
 
 
