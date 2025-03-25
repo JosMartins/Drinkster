@@ -141,12 +141,28 @@ function setupRoomHandlers(socket: Socket, io: Server) {
             const presistId = newPlayer?.id;
             socket.emit('room-joined', { roomId, presistId });
             socket.join(roomId.toString());
+            const room = findPlayerRoom(socket.id);
+
+            if (!room) {
+                socket.emit('error', 'Room not found');
+                return;
+            }
 
             // Notify other players in the room that a new player has joined
             io.to(roomId.toString()).emit('player-joined', {
-                player: filterPlayerData(newPlayer, socket.id),
-                isAdmin: newPlayer?.isAdmin
+                name: newPlayer.name,
+                isReady: newPlayer.isReady
             });
+    
+            // Notify admin with full details
+            if (room?.admin.socketId !== socket.id) {
+                io.to(room.admin.socketId).emit('admin-player-joined', {
+                    id: newPlayer.id,
+                    name: newPlayer.name,
+                    isReady: newPlayer.isReady,
+                    isAdmin: newPlayer.isAdmin
+                });
+            }
 
         } catch (err) {
             socket.emit('error', err);
@@ -177,6 +193,7 @@ function setupRoomHandlers(socket: Socket, io: Server) {
         } catch (err) {
             socket.emit('error', err);
         }
+
 
 
 
@@ -219,8 +236,13 @@ function setupRoomHandlers(socket: Socket, io: Server) {
 
         console.log('Leaving Room', roomId);
         try {
-            roomFunctions.leaveRoom(roomId, socket.id);
-            sendRoomUpdate(io);
+            const newPlayer = roomFunctions.leaveRoom(roomId, socket.id);
+            
+            io.to(roomId.toString()).emit('player-left', {
+                player: filterPlayerData(newPlayer, socket.id),
+                isAdmin: newPlayer?.isAdmin
+            });
+            
         } catch (err) {
             socket.emit('error', err);
         }
@@ -524,8 +546,11 @@ function sendRoomUpdate(io: Server) {
     });
 }
 
+
 function filterPlayerData(player: Player, socketId: string) {
-    const isAdmin = findPlayerRoom(socketId)?.admin.socketId === socketId;
+    const room = findPlayerRoom(socketId);
+    const isAdmin = room?.admin.socketId === socketId;
+    
     return {
         name: player.name,
         isReady: player.isReady,

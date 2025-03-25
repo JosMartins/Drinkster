@@ -201,7 +201,7 @@ export function listRooms(): GameRoom[] {
 }
 
 
-export function leaveRoom(roomId: number, sockId: string) {
+export function leaveRoom(roomId: number, sockId: string): Player {
     let room = getRoom(roomId);
     if (!room) {
         throw new Error('Room not found');
@@ -214,6 +214,8 @@ export function leaveRoom(roomId: number, sockId: string) {
     }
 
     room.players = room.players.filter(player => player.socketId !== sockId);
+
+    return player;
 }
 
 
