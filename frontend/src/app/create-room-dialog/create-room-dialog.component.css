@@ -2,10 +2,9 @@
   --main-bg-color: transparent;
 }
 
-
 /* Force content transparency */
 .mdc-dialog__surface {
-  background: rgba(155, 219, 253, 0.6) !important;
+  background: rgba(0, 0, 0, 80%) !important;
   box-shadow: none !important;
 }
 
@@ -31,19 +30,81 @@
 
 .sex-label {
   margin-right: 8px;
-  color: rgba(0, 0, 0, 0.6);
+  color: rgb(255, 255, 255);
   font-size: 14px;
 }
 
 .sex-radio-group {
   display: flex;
   gap: 12px;
+  color: rgb(255, 255, 255);
+}
+
+.mdc-form-field>label {
+  margin-left: 0;
+  margin-right: auto;
+  padding-left: 4px;
+  padding-right: 0;
+  order: 0;
+  color: white;
 }
 
 .difficulty-button {
   margin-top: 5px;
   height: 36px;
 }
+
+.create-room-dialog mat-error {
+  color: white !important;
+}
+
+/* Flex container to align form field and error side by side */
+.room-name-container {
+  display: flex;
+  align-items: center;
+  gap: 16px; /* Adjust spacing between input and error */
+}
+
+/* Ensure the mat-form-field takes available space */
+.room-name-container .mat-form-field {
+  flex: 1;
+}
+
+/* Style the error message */
+.error-message {
+  color: white; /* If you still want white text */
+  margin-top: 0; /* Remove default top margin */
+}
+
+/* Optional: Adjust mat-error styling */
+.error-message mat-error {
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.create-room-dialog {
+  overflow: hidden;
+}
+
+.difficulty-button {
+  color: white !important; /* Forces white text */
+  border-color: white !important; /* Optional: if you want the border white too */
+}
+
+.no-spinners input[type="number"]::-webkit-outer-spin-button,
+.no-spinners input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.create-room-dialog {
+  padding-top: 15px;
+  padding-bottom: 15px;
+  padding-right: 15px;
+  padding-left: 15px;
+  
+}
+
+
 
 /* Add to existing CSS */
 
@@ -52,7 +113,8 @@ h2 {
   border-bottom: 1px solid #e0e0e0;
   padding-bottom: 10px;
   margin-bottom: 20px;
-  color: #3f51b5;
+  color: #ffffff;
+  text-align: center;
 }
 
 h3 {
@@ -60,7 +122,8 @@ h3 {
   padding-bottom: 5px;
   margin-top: 24px;
   margin-bottom: 16px;
-  color: #555;
+  color: #ffffff;
+  text-align: center;
 }
 
 .button-row {
@@ -68,6 +131,7 @@ h3 {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 24px;
+  color: #ffffff;
 }
 
 mat-checkbox {

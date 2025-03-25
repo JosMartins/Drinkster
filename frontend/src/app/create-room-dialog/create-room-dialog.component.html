@@ -1,12 +1,16 @@
 <div class="create-room-dialog">
-  <h2>Create Room</h2>
+  <h2>Room Information</h2>
   <form [formGroup]="roomForm" (ngSubmit)="onSubmit()">
-    <mat-form-field class="full-width">
-      <mat-label>Room Name</mat-label>
-      <input matInput formControlName="name" required>
-      <mat-error *ngIf="roomForm.get('name')?.hasError('required')">Room name is required.</mat-error>
-      <mat-error *ngIf="roomForm.get('name')?.hasError('minlength')">Room name must be at least 3 characters long.</mat-error>
-    </mat-form-field>
+    <div class="room-name-container">
+      <mat-form-field class="full-width">
+        <mat-label>Room Name</mat-label>
+        <input matInput formControlName="name" required>
+      </mat-form-field>
+      <div class="error-message">
+        <mat-error *ngIf="roomForm.get('name')?.hasError('required')">Room name is required.</mat-error>
+        <mat-error *ngIf="roomForm.get('name')?.hasError('minlength')">Room name must be at least 3 characters long.</mat-error>
+      </div>
+    </div>
 
     <div class="checkbox-field">
       <mat-checkbox formControlName="isPrivate">Private Room</mat-checkbox>
@@ -21,7 +25,7 @@
     <div formGroupName="player">
       <div class="player-config-row">
         <mat-form-field class="player-name">
-          <mat-label>Admin Name</mat-label>
+          <mat-label>Name</mat-label>
           <input matInput formControlName="name" required>
           <mat-error *ngIf="roomForm.get('player')?.get('name')?.hasError('required')">Admin name is required.</mat-error>
           <mat-error *ngIf="roomForm.get('player')?.get('name')?.hasError('minlength')">Admin name must be at least 3 characters long.</mat-error>
@@ -50,16 +54,19 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field class="full-width">
+    <mat-form-field class="full-width no-spinners">
       <mat-label>Remembered Challenges</mat-label>
-      <input matInput type="number" formControlName="rememberedChallenges" min="0">
+      <input matInput 
+             type="number" 
+             formControlName="rememberedChallenges" 
+             min="0">
     </mat-form-field>
 
     <mat-checkbox formControlName="showChallenges" class="full-width">Show Challenges to All Players</mat-checkbox>
 
     <div class="button-row">
       <button mat-raised-button color="primary" type="submit">Create Room</button>
-      <button mat-button type="button" (click)="onCancel()">Cancel</button>
+      <button mat-button type="button" (click)="onCancel()" style="color: white">Cancel</button>
     </div>
   </form>
 </div>

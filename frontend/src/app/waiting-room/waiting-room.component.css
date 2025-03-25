@@ -3,6 +3,11 @@
   margin: 0 auto;
   padding: 20px;
   font-family: Roboto, "Helvetica Neue", sans-serif;
+  background-color: rgba(0, 0, 0, 50%);
+}
+
+.player-count {
+  color: white;
 }
 
 .room-header {
@@ -11,7 +16,7 @@
 }
 
 .room-header h1 {
-  color: #3f51b5; /* material indigo */
+  color: #4d63df; /* material indigo */
   margin-bottom: 8px;
 }
 
@@ -25,11 +30,12 @@
 
 .players-container {
   width: 500px;
-  background-color: #f5f5f5;
+  background-color: rgba(0, 0, 0, 50%);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 24px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
 }
 
 .players-container h2 {
