@@ -303,14 +303,14 @@ function setupRoomHandlers(socket: Socket, io: Server) {
 function setupGameplayHandlers(socket: Socket) {
 
     // Game start handler
-    socket.on('game-start', () => {
+    socket.on('game-start', async () => {
         const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
         if (rooms.length !== 1) return;
 
         const roomId = parseInt(rooms[0]);
 
-        try {
-            gameFunctions.startGame(roomId, socket.id).then(_ =>
+        try  {
+            await gameFunctions.startGame(roomId, socket.id).then(_ =>
                 socket.to(roomId.toString()).emit('game-started'));
         }
         catch (err) {
