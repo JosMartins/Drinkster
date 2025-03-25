@@ -6,11 +6,11 @@ import { SocketService } from '../socket.service';
 import {firstValueFrom, Subscription} from 'rxjs';
 
 interface Player {
-  id: string;
+  id?: string;
   name: string;
-  sex: string;
+  sex?: string;
   isReady: boolean;
-  isAdmin: boolean;
+  isAdmin?: boolean;
 }
 
 @Component({
@@ -51,15 +51,13 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
     this.currentPlayerId = localStorage.getItem('sessionId') || '';
 
-    // Subscribe to room updates
+    //Player Status Update
     this.subscriptions.push(
-      this.io.roomUpdate().subscribe(roomData => {
-        this.roomName = roomData.name;
-        this.roomId = roomData.id;
-        this.players = roomData.players;
+      this.io.playerStatusUpdate().subscribe(({ playerId, isReady }) => {
+        const player = this.players.find(p => p.id === playerId);
+        if (player) player.isReady = isReady;
 
-      })
-    );
+      }));
 
     // Listen for game start event
     this.subscriptions.push(
@@ -67,6 +65,21 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
         this.router.navigate(['/gameplay']).then(_ => null);
       })
     );
+
+    this.subscriptions.push(
+      this.io.playerJoined().subscribe((newPlayer) => {
+        if (!this.isAdmin) {
+          this.players.push(newPlayer);
+        }
+      }),
+
+      this.io.playerLeft().subscribe((leftPlayer) => {
+        if (!this.isAdmin) {
+          this.players = this.players.filter(p => p.name !== leftPlayer.name);
+        }
+      })
+    );
+
 
     this.io.getRoom(this.roomId);
 

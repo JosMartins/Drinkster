@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgFor } from "@angular/common";
 import { Player } from '../models/player';
-import { Difficulty , DEFAULT_DIFFICULTY } from "../models/difficulty";
+import { DEFAULT_DIFFICULTY } from "../models/difficulty";
 import { MatDialog } from '@angular/material/dialog';
 import { DifficultyDialogComponent } from '../difficulty-dialog/difficulty-dialog.component';
 import {Router} from "@angular/router";
@@ -43,7 +43,9 @@ export class SingleplayerComponent {
   }
 
   startGame() {
-    this.socketService.emit('create-singleplayer');
+    //TODO create the room (check backend requirements)
+    this.socketService.createSinglePlayer(undefined);
+    //TODO
     //this.router.navigate(['/game']);
 
   }

@@ -108,7 +108,7 @@ export class CreateRoomDialogComponent {
         }
       );
 
-      const roomCreatedSubscription = this.socketService.on('room-created').subscribe(
+      const roomCreatedSubscription = this.socketService.roomCreated().subscribe(
         (data) => {
           const { roomId, playerId } = data;
           console.log('Room created:', roomId, 'Player ID:', playerId);
@@ -129,7 +129,7 @@ export class CreateRoomDialogComponent {
         }
       );
 
-      this.socketService.emit('create-room', roomConfig);
+      this.socketService.createRoom(roomConfig);
     }
   }
 

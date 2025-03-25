@@ -52,12 +52,12 @@ export class SocketService {
   }
 
   // Emit events
-  public emit(eventName: string, ...args: any[]): void {
+  private emit(eventName: string, ...args: any[]): void {
     this.socket.emit(eventName, ...args);
   }
 
   // Listen for events
-  public on(eventName: string): Observable<any> {
+  private on(eventName: string): Observable<any> {
     const subject = new Subject<any>();
 
     this.socket.on(eventName, (data) => {
@@ -75,62 +75,87 @@ export class SocketService {
     localStorage.removeItem('sessionId');
   }
 
-  public roomUpdate(): Observable<any> {
+  roomUpdate(): Observable<any> {
     return this.on('room-update');
   }
 
-  public gameStarted(): Observable<any> {
+  gameStarted(): Observable<any> {
     return this.on('game-started');
   }
 
-  public playerReady(): void {
+  playerReady(): void {
     this.emit('player-ready');
   }
 
-  public playerUnready(): void {
+  playerUnready(): void {
     this.emit('player-unready');
   }
 
-  public leaveRoom(): void {
+  leaveRoom(): void {
     this.emit('leave-room');
   }
 
-  public startGame(): void {
+  startGame(): void {
     this.emit('game-start');
   }
 
-  public updatePlayerDifficulty(roomId: number, playerId: string, difficulty: any): void {
+  updatePlayerDifficulty(roomId: number, playerId: string, difficulty: any): void {
     this.emit('admin-update-difficulty', roomId, playerId, difficulty);
   }
 
-  public kickPlayer(roomId: number, playerId: string): void {
+  kickPlayer(roomId: number, playerId: string): void {
     this.emit('admin-remove-player', {roomId, playerId});
   }
 
-  public getRooms(): void {
+  getRooms(): void {
     this.emit('get-rooms');
   }
 
-  public listRooms(): Observable<any> {
+  listRooms(): Observable<any> {
     return this.on('room-list');
   }
 
-  public getRoom(roomId: number): void {
+  getRoom(roomId: number): void {
     this.emit('get-room', roomId);
   }
 
-  public roomInfo(): Observable<any> {
+  createRoom(room: any) {
+    this.emit('create-room',room)
+  }
+
+  createSinglePlayer(room: any) {
+    this.emit('create-singleplayer',room);
+  }
+  roomCreated(): Observable<any> {
+    return this.on('room-created');
+  }
+  roomInfo(): Observable<any> {
     return this.on('room-info');
   }
 
-  public joinRoom(payload: { roomId: number; playerConfig: any }): void {
+  joinRoom(payload: { roomId: number; playerConfig: any }): void {
     this.emit('join-room', payload);
   }
 
-  public roomJoined(): Observable<any> {
+  roomJoined(): Observable<any> {
     return this.on('room-joined');
   }
 
+  playerStatusUpdate(): Observable<any> {
+    return this.on('player-status-update');
+  }
+
+  playerJoined() {
+    return new Observable<any>(observer => {
+      this.socket.on('player-joined', data => observer.next(data));
+    });
+  }
+
+  playerLeft() {
+    return new Observable<any>(observer => {
+      this.socket.on('player-left', data => observer.next(data));
+    });
+  }
 
   public error(): Observable<any> {
     return this.on('error');
