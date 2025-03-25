@@ -157,6 +157,24 @@ export class SocketService {
     });
   }
 
+  adminJoined() {
+    return new Observable<any>(observer => {
+      this.socket.on('admin-player-joined', data => observer.next(data));
+    });
+  }
+
+  /** TO CHANGE.
+  askDifficulty(roomId: number) {
+    this.emit('player-difficulty',roomId);
+  }
+  getDifficulty() {
+    return new Observable<any>(observer => {
+      this.socket.on('difficulty-values', data => observer.next(data));
+    })
+  }
+  */
+
+
   public error(): Observable<any> {
     return this.on('error');
   }

@@ -9,10 +9,19 @@
   <div class="players-container">
     <h2>Players</h2>
     <div class="players-list">
-      <div *ngFor="let player of players" class="player-card" [class.admin]="player.isAdmin" [class.current-player]="player.id === currentPlayerId">
+      <div *ngFor="let player of players" class="player-card"
+           [class.admin]="player.isAdmin"
+           [class.current-player]="player.id === currentPlayerId">
         <div class="player-info">
           <span class="player-name">{{player.name}}</span>
-          <span *ngIf="player.isAdmin" class="admin-badge">Admin</span>
+          <div>
+            <span *ngIf="player.isAdmin" class="admin-badge">Admin</span>
+            <button *ngIf="isAdmin"
+                    class="admin-options-button"
+                    (click)="openAdminOptions(player)">
+              ⚙️
+            </button>
+          </div>
         </div>
         <div class="player-status" [class.ready]="player.isReady">
           {{player.isReady ? 'Ready' : 'Not Ready'}}
