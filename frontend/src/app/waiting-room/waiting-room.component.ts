@@ -5,12 +5,18 @@ import {Router} from '@angular/router';
 import {SocketService} from '../socket.service';
 import {firstValueFrom, Subscription, merge} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
-import {AdminOptionsDialogComponent} from "../admin-options-dialog/admin-options-dialog.component";
+import {DifficultyDialogComponent} from "../difficulty-dialog/difficulty-dialog.component";
 
 interface Player {
   id?: string;
   name: string;
   sex?: string;
+  difficulty?: {
+    easy: number,
+    medium: number,
+    hard: number,
+    extreme: number
+  };
   isReady: boolean;
   isAdmin?: boolean;
 }
@@ -73,15 +79,16 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
             id: this.isAdmin ? newPlayer.id : undefined,
             name: newPlayer.name,
             isReady: newPlayer.isReady,
-            isAdmin: newPlayer.isAdmin
+            isAdmin: newPlayer.isAdmin,
+            difficulty: newPlayer.difficulty,
           });
         }
       })
-      ),
+      )
 
       this.io.playerLeft().subscribe((leftPlayer) => {
         this.players = this.players.filter(p => p.name !== leftPlayer.name);
-      }),
+      })
 
       this.io.gameStarted().subscribe(() => {
       this.startGame();
@@ -95,6 +102,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       this.roomName = roomInfo.name;
       this.gameMode = roomInfo.mode;
       this.players = roomInfo.players;
+      this.players[0].difficulty = JSON.parse(localStorage.getItem(`${this.players[0].id}_difficulty`) || '');
       this.rememberedChallenges = roomInfo.rememberedChallenges;
       this.showChallenges = roomInfo.showChallenges;
 
@@ -127,28 +135,42 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
   startGame(): void {
     if (this.isAdmin) {
-      this.io.startGame();
+      //everyone ready?
+      if (this.players.some(p => !p.isReady)) {
+        alert('Not all players are ready!');
+        return;
+      }
 
+      this.io.startGame();
       this.router.navigate(['/game']).then(_ => null);
     }
   }
 
-  openAdminOptions(player: Player): void {
+  openDifficultyModal(player: Player): void {
     if (!this.isAdmin) {
       return;
     }
 
-
-    const dialogRef = this.dialog.open(AdminOptionsDialogComponent, {
+    const dialogRef = this.dialog.open(DifficultyDialogComponent, {
       data: {
-        player: player,
-        roomId: this.roomId,
-        difficulty: undefined /*this.findDifficulty()   check out*/,
-        isSelf: player.id === this.currentPlayerId
+        difficultyValues: player.difficulty
       }
     });
 
-    dialogRef.afterClosed().subscribe(_ => null)
+    dialogRef.afterClosed().subscribe( async (difficulty) => {
+      if (player.id) {
+        this.io.updatePlayerDifficulty(this.roomId, player.id, difficulty);
+      }
+    })
+
+  }
+
+  kickPlayer(player: Player): void {
+    if (this.isAdmin && player.id) {
+      if (confirm(`Are you sure you want to kick ${player.name}?`)) {
+        this.io.kickPlayer(this.roomId, player.id);
+      }
+    }
   }
 
   // HELPER FUNCTIONS
@@ -156,20 +178,4 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   isPlayerAdmin(): boolean {
     return this.players.find(player => player.id === this.currentPlayerId)?.isAdmin || false;
   }
-
-  /* Will need to see this
-  findDifficulty(): any {
-    this.io.askDifficulty(this.roomId);
-
-    this.io.getDifficulty().subscribe(
-      (difficulty: {
-        easy: number,
-        medium: number,
-        hard: number,
-        extreme: number
-      }) => {
-        return difficulty;
-      }
-    )
-  }*/
 }

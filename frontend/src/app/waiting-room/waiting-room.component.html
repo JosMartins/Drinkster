@@ -18,8 +18,13 @@
             <span *ngIf="player.isAdmin" class="admin-badge">Admin</span>
             <button *ngIf="isAdmin"
                     class="admin-options-button"
-                    (click)="openAdminOptions(player)">
-              ⚙️
+                    (click)="kickPlayer(player)">
+              Kick
+            </button>
+            <button *ngIf="isAdmin"
+                    class="admin-options-button"
+                    (click)="openDifficultyModal(player)">
+              ⚙Difficulty
             </button>
           </div>
         </div>
