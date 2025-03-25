@@ -20,7 +20,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-const mongoDB = process.env.MONGO_URI ?? '';
+const mongoDB = process.env.MONGO_URI ?? 'mongodb://localhost:27017/drinkster';
 if (!mongoDB) {
     throw new Error('MONGO_URI is not defined in the environment variables');
 }

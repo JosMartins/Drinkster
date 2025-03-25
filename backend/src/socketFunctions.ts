@@ -1,8 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import * as roomFunctions from './roomFunctions';
 import * as gameFunctions from './gameFunctions';
-import { GameRoomConfig} from './types/gameRoom';
-import { PlayerConfig} from './types/player';
+import { GameRoomConfig } from './types/gameRoom';
+import { PlayerConfig, Player } from './types/player';
 import { findPlayerRoom, findPlayerRoomById } from './stores/gameRoomStore';
 
 const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
@@ -137,55 +137,22 @@ function setupRoomHandlers(socket: Socket, io: Server) {
 
 
         try {
-            roomFunctions.joinRoom(roomId, playerConfig, socket.id);
-            const playerRoom = findPlayerRoom(socket.id);
-            const presistId = playerRoom?.players.find(p => p.socketId === socket.id)?.id;
+            const newPlayer = roomFunctions.joinRoom(roomId, playerConfig, socket.id);
+            const presistId = newPlayer?.id;
             socket.emit('room-joined', { roomId, presistId });
             socket.join(roomId.toString());
 
             // Notify other players in the room that a new player has joined
-            socket.to(roomId.toString()).emit('room-update', playerRoom);
+            io.to(roomId.toString()).emit('player-joined', {
+                player: filterPlayerData(newPlayer, socket.id),
+                isAdmin: newPlayer?.isAdmin
+            });
+
         } catch (err) {
             socket.emit('error', err);
         }
     });
 
-    socket.on('player-unready', () => {
-        debugger;
-        const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
-        if (rooms.length !== 1) {
-            socket.emit('error', 'Player is either not in a room or in multiple rooms');
-            return;
-        }
-
-        const roomId = parseInt(rooms[0]);
-
-        console.log('Player Unready', socket.id);
-        try {
-            roomFunctions.playerUnready(roomId, socket.id);
-        } catch (err) {
-            socket.emit('error', err);
-        }
-        sendRoomUpdate(io);
-    })
-
-    socket.on('player-unready', () => {
-        const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
-        if (rooms.length !== 1) {
-            socket.emit('error', 'Player is either not in a room or in multiple rooms');
-            return;
-        }
-
-        const roomId = parseInt(rooms[0]);
-
-        console.log('Player Unready', socket.id);
-        try {
-            roomFunctions.playerUnready(roomId, socket.id);
-        } catch (err) {
-            socket.emit('error', err);
-        }
-        sendRoomUpdate(io);
-    })
 
     socket.on('player-ready', () => {
         const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
@@ -196,17 +163,23 @@ function setupRoomHandlers(socket: Socket, io: Server) {
 
         const roomId = parseInt(rooms[0]);
 
-
         try {
-            roomFunctions.playerReady(roomId, socket.id);
+            const player = roomFunctions.playerReady(roomId, socket.id);
             console.log('Player Ready', socket.id);
 
             // Notify other players in the room that a player has readied
             socket.to(roomId.toString()).emit('room-update', findPlayerRoom(socket.id));
+
+            io.to(roomId.toString()).emit('player-status-update', {
+                playerId: player.id,
+                isReady: true
+            });
         } catch (err) {
             socket.emit('error', err);
         }
-        sendRoomUpdate(io);
+
+
+
     });
 
     socket.on('player-unready', () => {
@@ -220,11 +193,15 @@ function setupRoomHandlers(socket: Socket, io: Server) {
 
 
         try {
-            roomFunctions.playerUnready(roomId, socket.id);
+            const player = roomFunctions.playerUnready(roomId, socket.id);
             console.log('Player Ready', socket.id);
 
             // Notify other players in the room that a player has unready
-            socket.to(roomId.toString()).emit('room-update', findPlayerRoom(socket.id));
+            io.to(roomId.toString()).emit('player-status-update', {
+                playerId: player.id,
+                isReady: false
+            });
+
         } catch (err) {
             socket.emit('error', err);
         }
@@ -275,20 +252,32 @@ function setupRoomHandlers(socket: Socket, io: Server) {
         console.log('Getting room info', roomId);
         try {
             const room = roomFunctions.getRoomById(roomId, socket.id);
+            const currentPlayer = room.players.find(p => p.socketId === socket.id);
+            const isAdmin = currentPlayer?.isAdmin ?? false;
 
-            // Map room to only include necessary information
+            const filteredPlayers = room.players.map(p => ({
+                id: isAdmin ? p.id : undefined,
+                name: p.name,
+                isReady: p.isReady,
+                ...(isAdmin && {
+                    sex: p.sex,
+                    isAdmin: p.isAdmin
+                })
+            }));
+
             const roomInfo = {
                 id: room.id,
                 name: room.name,
-                players: room.players,
-                mode: room.mode,
-                rememberedChallenges: room.rememberedChallenges,
-                showChallenges: room.showChallenges,
+                players: filteredPlayers,
+                ...(isAdmin && {
+                    mode: room.mode,
+                    rememberedChallenges: room.rememberedChallenges,
+                    showChallenges: room.showChallenges
+                }),
                 status: room.status,
             };
 
             socket.emit('room-info', roomInfo);
-
         } catch (err) {
             socket.emit('error', err);
         }
@@ -309,7 +298,7 @@ function setupGameplayHandlers(socket: Socket) {
 
         const roomId = parseInt(rooms[0]);
 
-        try  {
+        try {
             await gameFunctions.startGame(roomId, socket.id).then(_ =>
                 socket.to(roomId.toString()).emit('game-started'));
         }
@@ -382,7 +371,7 @@ function setupAdminHandlers(socket: Socket, io: Server) {
         }
     });
 
-    socket.on('admin-update-difficulty', (roomId: number,playerId: string, difficultyValues: any) => {
+    socket.on('admin-update-difficulty', (roomId: number, playerId: string, difficultyValues: any) => {
         debugger;
         // Get the room this socket is in
 
@@ -437,16 +426,16 @@ function setupAdminHandlers(socket: Socket, io: Server) {
  */
 function setupDisconnectHandler(socket: Socket, io: Server) {
     socket.on('disconnect', () => {
-        
+
         // Store the player's persistent ID before removal
         const playerRoom = findPlayerRoom(socket.id);
         const playerId = playerRoom?.players.find(p => p.socketId === socket.id)?.id;
 
-        
+
         const timeout = setTimeout(() => {
             console.log(`Removing user ${socket.id} from room after inactivity`);
             roomFunctions.removeUserFromRooms(socket.id);
-            
+
             if (playerRoom?.players.length === 0) {
                 // Destroy room if last player disconnects
                 roomFunctions.deleteRoom(playerRoom.id);
@@ -507,20 +496,43 @@ function setupSessionHandlers(socket: Socket, io: Server) {
 /// HELPERS ///
 
 function sendRoomUpdate(io: Server) {
-    // Get updated room list
     const rooms = roomFunctions.listRooms();
 
-    // Map rooms to only include necessary information for clients
-    const roomList = rooms
-        .filter(room => room.status !== 'finished')
-        .map(room => ({
-            id: room.id,
-            name: room.name,
-            playerCount: room.players.length,
-            status: room.status,
-            isPrivate: room.private
-        }));
+    rooms.forEach(room => {
+        io.to(room.id.toString()).fetchSockets().then(sockets => {
+            sockets.forEach(socket => {
+                const isAdmin = room.players.some(p =>
+                    p.socketId === socket.id && p.isAdmin
+                );
 
-    // Broadcast the updated room list to all clients
-    io.emit('room-update', roomList);
+                const filteredRoom = {
+                    ...room,
+                    players: room.players.map(p => ({
+                        name: p.name,
+                        isReady: p.isReady,
+                        ...(isAdmin && {
+                            id: p.id,
+                            sex: p.sex,
+                            isAdmin: p.isAdmin
+                        })
+                    }))
+                };
+
+                socket.emit('room-update', filteredRoom);
+            });
+        });
+    });
+}
+
+function filterPlayerData(player: Player, socketId: string) {
+    const isAdmin = findPlayerRoom(socketId)?.admin.socketId === socketId;
+    return {
+        name: player.name,
+        isReady: player.isReady,
+        ...(isAdmin && {
+            id: player.id,
+            sex: player.sex,
+            isAdmin: player.isAdmin
+        })
+    };
 }

@@ -69,7 +69,7 @@ export function createRoom(roomConf: GameRoomConfig, sockId: string): number {
  * @throws Error if room does not exist
  * @throws Error if player input is invalid
  */
-export function joinRoom(roomId: number, player: PlayerConfig, sockId: string): void {
+export function joinRoom(roomId: number, player: PlayerConfig, sockId: string): Player {
 
     //Validate input - willl always have default
     player.difficulty_values = DEFAULT_DIFFICULTY_VALUES;
@@ -94,7 +94,7 @@ export function joinRoom(roomId: number, player: PlayerConfig, sockId: string): 
 
     room.players.push(newPlayer);
     console.log('Player', newPlayer.id, 'Joining Room ', roomId);
-    
+    return newPlayer;
 }
 
 /**
@@ -160,10 +160,11 @@ export function removeUserFromRooms(sockId: string): number[] {
  * @param roomId the room where the player is to be marked as ready
  * @param sockId the player to be marked as ready
  * 
+ * @returns the player that was marked as ready
  * @throws Error if player is not found in room
  * @throws Error if room is not found
  */
-export function playerReady(roomId: number, sockId: string) {
+export function playerReady(roomId: number, sockId: string): Player{
     let room = getRoom(roomId);
     if (!room) {
         throw new Error('Room not found');
@@ -175,10 +176,11 @@ export function playerReady(roomId: number, sockId: string) {
         throw new Error('Player not found in room');
     }
     player.isReady = true;
-
+    
+    return player;
 }
 
-export function playerUnready(roomId: number, sockId: string) {
+export function playerUnready(roomId: number, sockId: string): Player {
     let room = getRoom(roomId);
     if (!room) {
         throw new Error('Room not found');
@@ -191,6 +193,7 @@ export function playerUnready(roomId: number, sockId: string) {
     }
     player.isReady = false;
 
+    return player;
 }
 
 export function listRooms(): GameRoom[] {
