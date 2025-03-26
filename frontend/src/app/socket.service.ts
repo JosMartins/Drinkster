@@ -9,7 +9,7 @@ export class SocketService {
   private readonly socket: Socket;
 
   constructor() {
-    this.socket = io("http://autistassv.ddns.net:25568", {
+    this.socket = io("http://127.0.0.1:25568", {
       transports: ['websocket'],
       autoConnect: true,
       reconnection: true,
@@ -163,17 +163,17 @@ export class SocketService {
     });
   }
 
-  /** TO CHANGE.
-  askDifficulty(roomId: number) {
-    this.emit('player-difficulty',roomId);
+  gotChallenge(): Observable<any> {
+    return this.on('your-challenge');
   }
-  getDifficulty() {
-    return new Observable<any>(observer => {
-      this.socket.on('difficulty-values', data => observer.next(data));
-    })
-  }
-  */
 
+  challengeCompletedted(roomId: number) {
+    this.emit('challenge-completed', roomId);
+  }
+
+  challengeDrunk(roomId: number) {
+    this.emit('challenge-drunk', roomId);
+  }
 
   public error(): Observable<any> {
     return this.on('error');

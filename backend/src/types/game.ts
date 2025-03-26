@@ -1,5 +1,5 @@
 import { Server } from 'socket.io';
-import { getChallenge, getChallengeStats } from '../controllers/challengeController';
+import { getChallenge as fetchFromDB, getChallengeStats } from '../controllers/challengeController';
 import { IChallenge } from '../models/challenge';
 import { GameRoom } from './gameRoom';
 import { Player } from './player';
@@ -8,8 +8,6 @@ export interface GameStats {
     startTime?: Date;
     endTime?: Date;
     completedChallenges: number;
-    drinkedChallenges: number;
-    totalDrinked: number;
     totalRounds: number;
 }
 
@@ -19,14 +17,19 @@ export interface PlayerTurn {
 }
 
 export class Game {
-    //communication
+    // Communication
     private static io?: Server;
-    // State
-    currentTurn: PlayerTurn;
-    stats: GameStats;
-    currentPlayerIndex: number;
+
+    // Game state
+    private currentTurn: PlayerTurn;
+    private stats: GameStats;
+    private currentPlayerIndex: number;
+    private currentRound: number;
+    private challengeTimeout?: NodeJS.Timeout;
 
     // Challenge tracking
+    private lastChallengeIds: string[];
+    private readonly room: GameRoom;
     private challengeStats: {
         easyChallenges: number;
         mediumChallenges: number;
@@ -35,36 +38,19 @@ export class Game {
         totalChallenges: number;
     };
 
-    private lastChallengeIds: Array<string>;
-    private readonly room: GameRoom;
-
     constructor(startRoom: GameRoom) {
         this.room = startRoom;
         this.currentPlayerIndex = 0;
-
+        this.currentRound = 1;
+        this.lastChallengeIds = [];
         this.stats = {
-            startTime: new Date(),
             completedChallenges: 0,
-            drinkedChallenges: 0,
-            totalDrinked: 0,
             totalRounds: 0
         };
 
-        // Initialize with empty challenge (will be populated in initialize)
-        this.currentTurn = {
-            playerId: startRoom.players[0].id,
-            challenge: null
-        };
-
-        // Initialize empty arrays and objects
-        this.lastChallengeIds = [];
-        this.challengeStats = {
-            easyChallenges: 0,
-            mediumChallenges: 0,
-            hardChallenges: 0,
-            extremeChallenges: 0,
-            totalChallenges: 0
-        };
+        // Initialize challenge stats with defaults
+        this.challengeStats = this.resetChallengeStats();
+        this.currentTurn = this.createNewTurn();
     }
 
     // Accessors
@@ -73,37 +59,57 @@ export class Game {
     get rememberedChallenges() { return this.room.rememberedChallenges; }
 
     // Game initialization
+    private resetChallengeStats() {
+        return {
+            easyChallenges: 1,
+            mediumChallenges: 1,
+            hardChallenges: 1,
+            extremeChallenges: 1,
+            totalChallenges: 4
+        };
+    }
+
+    private createNewTurn(): PlayerTurn {
+        return {
+            playerId: this.players[this.currentPlayerIndex].id,
+            challenge: null
+        };
+    }
+
     async initialize(socketServer: Server): Promise<void> {
-        // Load challenge stats
         try {
             Game.io = socketServer;
             this.challengeStats = await getChallengeStats();
+            await this.loadInitialChallenge();
+            this.stats.startTime = new Date();
         } catch (error) {
-            console.error("Failed to load challenge stats:", error);
-            // Use default values if stats can't be loaded
-            this.challengeStats = {
-                easyChallenges: 1,
-                mediumChallenges: 1,
-                hardChallenges: 1,
-                extremeChallenges: 1,
-                totalChallenges: 4
-            };
+            console.error("Game initialization failed:", error);
+            this.handleInitializationError();
         }
+    }
 
-        // Get first challenge
+    private async loadInitialChallenge(): Promise<void> {
         try {
             this.currentTurn.challenge = await this.getChallenge();
         } catch (error) {
-            console.error("Failed to get initial challenge:", error);
-            // Use a default challenge if needed
-            this.currentTurn.challenge = {
-                challenge: 'Drink {sips} to start the game!',
-                difficulty: 1,
-                sexes: ['All'],
-                sips: 1,
-                type: 'challenge'
-            };
+            console.error("Initial challenge loading failed:", error);
+            this.currentTurn.challenge = this.createFallbackChallenge();
         }
+    }
+
+    private handleInitializationError(): void {
+        this.challengeStats = this.resetChallengeStats();
+        this.currentTurn.challenge = this.createFallbackChallenge();
+    }
+
+    private createFallbackChallenge(): IChallenge {
+        return {
+            challenge: 'Drink {sips} to start the game!',
+            difficulty: 1,
+            sexes: ['All'],
+            sips: 1,
+            type: 'challenge'
+        };
     }
 
     // Player management
@@ -115,42 +121,26 @@ export class Game {
     // Game flow
     async nextTurn(): Promise<void> {
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+        this.stats.totalRounds++;
+
+        if (this.currentPlayerIndex === 0) {
+            this.currentRound++;
+        }
 
         try {
             const newChallenge = await this.getChallenge();
-
             this.currentTurn = {
                 playerId: this.players[this.currentPlayerIndex].id,
                 challenge: newChallenge
             };
+            this.sendCurrentChallenge();
         } catch (error) {
-            console.error("Failed to get next challenge:", error);
-
-            // Use a default challenge if needed
-            this.currentTurn = {
-                playerId: this.players[this.currentPlayerIndex].id,
-                challenge: {
-                    challenge: 'Take a drink, we had trouble finding a challenge!',
-                    difficulty: 1,
-                    sexes: ['All'],
-                    sips: 1,
-                    type: 'challenge'
-                }
-            };
+            console.error("Challenge rotation failed:", error);
+            this.currentTurn.challenge = this.createFallbackChallenge();
+            this.sendCurrentChallenge();
         }
     }
 
-    // Stats tracking
-    updateStats(player: Player, completed: boolean) {
-        this.stats.totalRounds++;
-
-        if (completed) {
-            this.stats.completedChallenges++;
-        } else {
-            this.stats.drinkedChallenges++;
-            this.stats.totalDrinked += 1;
-        }
-    }
 
     // Challenge generation
     private async getChallenge(): Promise<IChallenge> {
@@ -162,7 +152,7 @@ export class Game {
         const difficulty = this.getDifficultyLevel(currentPlayer);
 
         // Get challenge from backend
-        let challenge = await getChallenge(difficulty, this.lastChallengeIds);
+        let challenge = await fetchFromDB(difficulty, this.lastChallengeIds);
 
         // Process challenge text (replace player name placeholders)
         let randomPlayer: string | undefined;
@@ -217,73 +207,99 @@ export class Game {
         return processedChallenge;
     }
 
-    // Difficulty selection
     private getDifficultyLevel(player: Player): string {
         const challengeCount = this.challengeStats;
+        const total = challengeCount.totalChallenges || 1; // Prevent division by zero
 
-        // Weighted selection based on player's difficulty preferences and available challenges
         const choices = {
-            easy: player.difficulty_values.easy * (challengeCount.easyChallenges / challengeCount.totalChallenges),
-            medium: player.difficulty_values.medium * (challengeCount.mediumChallenges / challengeCount.totalChallenges),
-            hard: player.difficulty_values.hard * (challengeCount.hardChallenges / challengeCount.totalChallenges),
-            extreme: player.difficulty_values.extreme * (challengeCount.extremeChallenges / challengeCount.totalChallenges)
+            easy: player.difficulty_values.easy * (challengeCount.easyChallenges / total),
+            medium: player.difficulty_values.medium * (challengeCount.mediumChallenges / total),
+            hard: player.difficulty_values.hard * (challengeCount.hardChallenges / total),
+            extreme: player.difficulty_values.extreme * (challengeCount.extremeChallenges / total)
         };
 
-        // Find the highest weighted option
-        const entries = Object.entries(choices);
-        const maxEntry = entries.reduce((max, entry) =>
-            entry[1] > max[1] ? entry : max, entries[0]);
-
-        return maxEntry[0];
+        return Object.entries(choices).reduce((max, entry) =>
+            entry[1] > max[1] ? entry : max, Object.entries(choices)[0])[0];
     }
 
-    public static setSocketServer(socketServer: Server): void {
-        Game.io = socketServer;
-    }
-
-    /**
-     * Send the current challenge to the current player and notify others
-     */
     public sendCurrentChallenge(): void {
-        if (!Game.io) {
-            console.warn("Socket server not set, cannot send challenge notifications");
-            return;
-        }
+        if (!Game.io || !this.currentTurn.challenge) return;
 
         const currentPlayer = this.getCurrentPlayer();
-        if (!currentPlayer || !this.currentTurn.challenge) return;
+        if (!currentPlayer) return;
 
-        // Send challenge to current player
         if (this.currentTurn.challenge.challenge.includes('Everyone')) {
-            //TODO - after sending make sure that any player can complete the challenge
-            
-            // Special case for "Everyone" challenges
-            Game.io.to(this.room.id.toString()).emit('everyone-challenge', {
-                challenge: this.currentTurn.challenge.challenge,
-                round: this.stats.totalRounds + 1
-            });
-
+            this.handleEveryoneChallenge();
         } else {
-            this.sendChallengeToPlayer(currentPlayer);
-
-            // Notify other players
-            this.notifyOtherPlayersAboutChallenge(currentPlayer);
+            this.sendIndividualChallenge(currentPlayer);
         }
 
+        this.setChallengeCompletionHandler();
     }
 
-    /**
-     * Send challenge details to the player whose turn it is
-     */
-    private sendChallengeToPlayer(player: Player): void {
+    private handleEveryoneChallenge(): void {
+        Game.io!.to(this.room.id.toString()).emit('everyone-challenge', {
+            challenge: this.currentTurn.challenge!.challenge,
+            round: this.currentRound
+        });
+    }
 
-        if (!Game.io) {
-            throw new Error("Socket server not set, cannot send challenge to player");
+    private sendIndividualChallenge(player: Player): void {
+        const challengeData = {
+            ...this.currentTurn.challenge,
+            round: this.currentRound,
+            playerId: player.id
+        };
+
+        Game.io!.to(player.id).emit('your-challenge', challengeData);
+        this.notifyOtherPlayersAboutChallenge(player);
+    }
+
+    private setChallengeCompletionHandler(): void {
+        if (!Game.io) return;
+
+        const cleanup = () => {
+            Game.io!.off('challenge-completed', handleComplete);
+            Game.io!.off('challenge-drunk', handleDrunk);
+            if (this.challengeTimeout) clearTimeout(this.challengeTimeout);
+        };
+
+        const handleComplete = (roomId: number) => {
+            if (roomId === this.room.id) {
+                cleanup();
+                this.handleChallengeCompletion(true);
+            }
+        };
+
+        const handleDrunk = (roomId: number) => {
+            if (roomId === this.room.id) {
+                cleanup();
+                this.handleChallengeCompletion(false);
+            }
+        };
+
+        Game.io!.on('challenge-completed', handleComplete);
+        Game.io!.on('challenge-drunk', handleDrunk);
+
+        // Add timeout for challenge completion
+        this.challengeTimeout = setTimeout(() => {
+            cleanup();
+            this.handleChallengeTimeout();
+        }, 120000); // 2-minute timeout
+    }
+
+    private handleChallengeCompletion(success: boolean): void {
+        if (success) {
+            this.stats.completedChallenges++;
         }
-
-        Game.io.to(player.id).emit('your-challenge', this.currentTurn.challenge);
+        this.nextTurn();
     }
 
+    private handleChallengeTimeout(): void {
+        console.log(`Challenge timeout in room ${this.room.id}`);
+        Game.io!.to(this.room.id.toString()).emit('challenge-timeout');
+        this.nextTurn();
+    }
 
     private notifyOtherPlayersAboutChallenge(currentPlayer: Player, secondPlayerName?: string): void {
         if (!this.currentTurn.challenge) return;
@@ -296,12 +312,11 @@ export class Game {
             throw new Error("Socket server not set, cannot notify other players about challenge");
         }
 
-        const text = (secondPlayerName) 
-        ? `${currentPlayer.name} and ${secondPlayerName} are performing a challenge or drinking ${challenge.sips}`
-        :  `${currentPlayer.name} is performing a challenge or drinking ${challenge.sips}` ;
+        const text = (secondPlayerName)
+            ? `${currentPlayer.name} and ${secondPlayerName} are performing a challenge or drinking ${challenge.sips}`
+            :  `${currentPlayer.name} is performing a challenge or drinking ${challenge.sips}` ;
         Game.io.to(roomId)
             .except(currentPlayer.id)
             .emit('other-player-challenge', text);
     }
-
 }

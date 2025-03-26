@@ -1,28 +1,47 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
-import { Router } from '@angular/router';
-import Chance from 'chance';
-import { SocketService } from '../socket.service';
+// gameplay.component.ts
+import { Component, OnInit } from '@angular/core';
+import { SocketService} from "../socket.service";
+import {NgForOf} from "@angular/common";
+
+interface Penalty {
+  rounds: number;
+  text: string;
+}
+
+
 @Component({
   selector: 'app-gameplay',
   standalone: true,
-  imports: [HttpClientModule, CommonModule],
+  imports: [
+    NgForOf
+  ],
   templateUrl: './gameplay.component.html',
   styleUrls: ['./gameplay.component.css']
 })
-export class GameplayComponent {
+export class GameplayComponent implements OnInit {
+  roomId: number = 0;
+  currentChallenge: string = 'Loading challenge...';
+  penalties: Penalty[] = [];
 
-  round: number = 0;
-  writtenChallenge: string = '';
+  constructor(private io: SocketService ) { }
 
-  challengeCount!: { easyChallenges: number, mediumChallenges: number, hardChallenges: number, extremeChallenges: number, totalChallenges: number };
+  ngOnInit(): void {
+    this.listenForChallenges();
+  }
 
+  private listenForChallenges(): void {
+    //subscribe to the challenge event
+    this.io.gotChallenge().subscribe((challenge: string) => {
+      this.currentChallenge = challenge;
+    });
 
+  }
 
-  constructor(
-    private io: SocketService,
-    private readonly router: Router
-  ) { }
+  completeChallenge(): void {
+    this.io.challengeCompletedted(this.roomId)
+  }
 
+  drunkChallenge(): void {
+    this.io.challengeDrunk(this.roomId);
+  }
 }

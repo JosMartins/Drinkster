@@ -129,8 +129,8 @@ function setupRoomHandlers(socket: Socket, io: Server) {
         const { roomId, playerConfig } = payload;
         console.log('Joining Room', roomId);
 
-        const currentRooms = Array.from(socket.rooms).filter(room => room !== socket.id);
-        if (currentRooms.length > 0) {
+        const room = findPlayerRoom(socket.id);
+        if (room) {
             socket.emit('error', 'Leave current room first');
             return;
         }
