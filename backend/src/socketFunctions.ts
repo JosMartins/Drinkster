@@ -151,6 +151,7 @@ function setupRoomHandlers(socket: Socket, io: Server) {
             // Notify other players in the room that a new player has joined
             io.to(roomId.toString()).emit('player-joined', {
                 name: newPlayer.name,
+                sex: newPlayer.sex,
                 isReady: newPlayer.isReady
             });
     
@@ -159,6 +160,8 @@ function setupRoomHandlers(socket: Socket, io: Server) {
                 io.to(room.admin.socketId).emit('admin-player-joined', {
                     id: newPlayer.id,
                     name: newPlayer.name,
+                    sex: newPlayer.sex,
+                    difficulty: newPlayer.difficulty_values,
                     isReady: newPlayer.isReady,
                     isAdmin: newPlayer.isAdmin
                 });
