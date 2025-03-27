@@ -65,7 +65,9 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     this.subscriptions.push(
       this.io.playerStatusUpdate().subscribe(({playerId, isReady}) => {
         const player = this.players.find(p => p.id === playerId);
-        if (player) player.isReady = isReady;
+        if (player) {
+          player.isReady = isReady;
+        }
       }),
 
       merge(

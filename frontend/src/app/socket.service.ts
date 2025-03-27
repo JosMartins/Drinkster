@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
+import {Router} from "@angular/router";
 
 @Injectable({
   providedIn: 'root'
@@ -8,8 +9,8 @@ import { io, Socket } from 'socket.io-client';
 export class SocketService {
   private readonly socket: Socket;
 
-  constructor() {
-    this.socket = io("http://127.0.0.1:25568", {
+  constructor(private router: Router) {
+    this.socket = io("http://autistassv.ddns.net:25568", {
       transports: ['websocket'],
       autoConnect: true,
       reconnection: true,
@@ -31,10 +32,19 @@ export class SocketService {
         if (sessionId) {
           console.log('Attempting to restore session:', sessionId);
           this.socket.emit('restore-session', sessionId);
+
           this.socket.once('session-restored', (data) => {
             console.log('Session restored successfully', data);
 
             localStorage.setItem('roomId', data.roomId);
+
+            // Route based on game status
+            if (data.status === 'waiting') {
+              this.router.navigate(['/room']);
+            } else if (data.status === 'playing') {
+              this.router.navigate(['/game']);
+            }
+
             resolve();
           });
 
@@ -57,7 +67,7 @@ export class SocketService {
   }
 
   // Listen for events
-  private on(eventName: string): Observable<any> {
+  on(eventName: string): Observable<any> {
     const subject = new Subject<any>();
 
     this.socket.on(eventName, (data) => {
@@ -167,12 +177,19 @@ export class SocketService {
     return this.on('your-challenge');
   }
 
-  challengeCompletedted(roomId: number) {
+  otherPlayerChallenge(): Observable<any> {
+    return this.on('other-player-challenge');
+  }
+  challengeCompleted(roomId: number) {
     this.emit('challenge-completed', roomId);
   }
 
   challengeDrunk(roomId: number) {
     this.emit('challenge-drunk', roomId);
+  }
+
+  public forceSkipChallenge(roomId: number): void {
+    this.emit('admin-force-skip', roomId);
   }
 
   public error(): Observable<any> {
