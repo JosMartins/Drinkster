@@ -13,6 +13,7 @@ export interface GameStats {
 
 export interface PlayerTurn {
     playerId: string;
+    playerName: string;
     challenge: IChallenge | null;
 }
 
@@ -24,8 +25,9 @@ export class Game {
     currentTurn: PlayerTurn;
     private stats: GameStats;
     private currentPlayerIndex: number;
-    private currentRound: number;
+    currentRound: number;
     private challengeTimeout?: NodeJS.Timeout;
+    secondPlayer?: string
 
     // Challenge tracking
     private lastChallengeIds: string[];
@@ -49,43 +51,46 @@ export class Game {
         };
 
         // Initialize challenge stats with defaults
-        this.challengeStats = this.resetChallengeStats();
-        this.currentTurn = this.createNewTurn();
-    }
-
-    // Accessors
-    get players() { return this.room.players; }
-    get mode() { return this.room.mode; }
-    get rememberedChallenges() { return this.room.rememberedChallenges; }
-
-    // Game initialization
-    private resetChallengeStats() {
-        return {
+        this.challengeStats = { //placeholder
             easyChallenges: 1,
             mediumChallenges: 1,
             hardChallenges: 1,
             extremeChallenges: 1,
             totalChallenges: 4
-        };
-    }
+        }
+        this.currentTurn = this.createNewTurn();
 
-    private createNewTurn(): PlayerTurn {
-        return {
-            playerId: this.players[this.currentPlayerIndex].id,
-            challenge: null
-        };
     }
 
     async initialize(socketServer: Server): Promise<void> {
         try {
             Game.io = socketServer;
-            this.challengeStats = await getChallengeStats();
+            await getChallengeStats();
+            console.log("stats:", this.challengeStats);
             await this.loadInitialChallenge();
         } catch (error) {
             console.error("Game initialization failed:", error);
             this.handleInitializationError();
         }
     }
+    // Accessors
+    get players() { return this.room.players; }
+    get mode() { return this.room.mode; }
+    get rememberedChallenges() { return this.room.rememberedChallenges; }
+
+    // Game initialization
+    private async getChallengeNumbers() {
+        this.challengeStats = await getChallengeStats();
+    }
+
+    private createNewTurn(): PlayerTurn {
+        return {
+            playerId: this.players[this.currentPlayerIndex].id,
+            playerName: this.players[this.currentPlayerIndex].name,
+            challenge: null
+        };
+    }
+
 
     private async loadInitialChallenge(): Promise<void> {
         try {
@@ -97,7 +102,6 @@ export class Game {
     }
 
     private handleInitializationError(): void {
-        this.challengeStats = this.resetChallengeStats();
         this.currentTurn.challenge = this.createFallbackChallenge();
     }
 
@@ -122,14 +126,12 @@ export class Game {
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
         this.stats.totalRounds++;
 
-        if (this.currentPlayerIndex === 0) {
-            this.currentRound++;
-        }
 
         try {
             const newChallenge = await this.getChallenge();
             this.currentTurn = {
                 playerId: this.players[this.currentPlayerIndex].id,
+                playerName: this.players[this.currentPlayerIndex].name,
                 challenge: newChallenge
             };
             this.sendCurrentChallenge();
@@ -193,6 +195,7 @@ export class Game {
 
             // Replace {Player2} with another player's name
             if (secondPlayer) {
+                this.secondPlayer = secondPlayer;
                 text = text.replace(/{Player2}/g, secondPlayer);
             }
 
@@ -203,6 +206,13 @@ export class Game {
             this.currentPlayerIndex -= 1;
         }
 
+        //if penalty add to penalties
+        if (challenge.type === 'penalty' && challenge.penalty_params) {
+            this.room.players[this.currentPlayerIndex].penalties?.push({
+                text: challenge.penalty_params.text!,
+                rounds: challenge.penalty_params.rounds!
+            });
+        }
         // Update challenge text
         processedChallenge.challenge = text;
 
@@ -234,6 +244,8 @@ export class Game {
             this.handleEveryoneChallenge();
         } else {
             this.sendIndividualChallenge(currentPlayer);
+            if (this.secondPlayer)
+                this.sendIndividualChallenge(this.players.filter(pl => pl.name === this.secondPlayer)[0]);
         }
 
         this.setChallengeCompletionHandler();
@@ -247,12 +259,16 @@ export class Game {
     }
 
     private sendIndividualChallenge(player: Player): void {
+        debugger
         const challengeData = {
-            text: this.currentTurn.challenge,
-            type: this.currentTurn.challenge?.type,
+            text: this.currentTurn.challenge?.challenge ?? '',
             round: this.currentRound,
-            playerName: player.name
-
+            playerName: player.name,
+            // Enviar apenas dados necessários das penalidades
+            playerPenalties: player.penalties?.map(p => ({
+                text: p.text,
+                rounds: p.rounds
+            })) || []
         };
 
         Game.io!.to(player.socketId).emit('your-challenge', challengeData);
@@ -282,8 +298,8 @@ export class Game {
             }
         };
 
-        Game.io!.on('challenge-completed', handleComplete);
-        Game.io!.on('challenge-drunk', handleDrunk);
+        Game.io.on('challenge-completed', handleComplete);
+        Game.io.on('challenge-drunk', handleDrunk);
 
         // Add timeout for challenge completion
         this.challengeTimeout = setTimeout(() => {
@@ -296,6 +312,12 @@ export class Game {
         if (success) {
             this.stats.completedChallenges++;
         }
+        this.players.forEach((player: Player) => {player.penalties = player.penalties?.filter(pen => {
+            if (pen.rounds === 0) return false;
+            pen.rounds--;
+            return true;
+        })});
+
         this.nextTurn();
     }
 
@@ -308,17 +330,25 @@ export class Game {
     private notifyOtherPlayersAboutChallenge(currentPlayer: Player): void {
         if (!this.currentTurn.challenge) return;
 
-        const challenge = this.currentTurn.challenge;
-        const roomId = this.room.id.toString();
+        const sips = this.currentTurn.challenge.sips ?? 0;
 
 
         if (!Game.io) {
             throw new Error("Socket server not set, cannot notify other players about challenge");
         }
 
-        const text = `${currentPlayer.name} is performing a challenge or drinking ${challenge.sips}` ;
-        Game.io.to(roomId.toString())
-            .except(currentPlayer.id)
-            .emit('other-player-challenge', text);
+        const text = `${currentPlayer.name} is performing a challenge or drinking ${sips}` ;
+        this.room.players.forEach(player => {
+            if (player.id !== this.currentTurn.playerId) {
+                Game.io?.to(player.socketId).emit('other-player-challenge', {
+                    text: text,
+                    round: this.currentRound,
+                    playerPenalties: player.penalties?.map(p => ({
+                        text: p.text,
+                        rounds: p.rounds
+                    })) || []
+                });
+            }
+        });
     }
 }
