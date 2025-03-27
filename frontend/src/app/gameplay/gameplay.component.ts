@@ -2,6 +2,8 @@
 import { Component, OnInit } from '@angular/core';
 import { SocketService} from "../socket.service";
 import {NgForOf, NgIf} from "@angular/common";
+import {merge, Subscription} from "rxjs";
+import {Router} from "@angular/router";
 
 interface Penalty {
   text: string;
@@ -20,17 +22,35 @@ interface Penalty {
   styleUrls: ['./gameplay.component.css']
 })
 export class GameplayComponent implements OnInit {
-  self? : string;
-  isAdmin: boolean = false;
+
+  private subscriptions: Subscription[] = [];
+  players: string[] = [];
   roomId: number = 0;
-  currentChallenge: string = 'Loading challenge...';
-  currentRound: number = 0;
+
+  currentChallenge?: {
+    text: string,
+    type: 'challenge' | 'penalty',
+    round: number
+    playerName: string,
+    penalty_opts?: {
+      rounds: number,
+      text: string
+    }
+  }
   penalties: Penalty[] = [];
   myChallenge: boolean = false;
 
-  constructor(private io: SocketService ) { }
+  constructor(private io: SocketService,
+              private router: Router,) { }
 
   ngOnInit(): void {
+    const navigationData = this.router.getCurrentNavigation();
+
+    if (navigationData?.extras.state) {
+      this.roomId = navigationData.extras.state['roomId'] || 0;
+      this.players = navigationData.extras.state['players'] || [];
+    }
+
     this.listenForChallenges();
 
     this.io.on('session-restored').subscribe((data: any) => {
@@ -52,6 +72,12 @@ export class GameplayComponent implements OnInit {
       this.currentChallenge = data.text;
       this.currentRound = data.round;
       this.penalties = data.playerPenalties;
+
+    merge(
+      this.io.gotChallenge(),
+      this.io.gotChallenge()).subscribe((ch) => {
+      this.currentChallenge = ch;
+      })
     });
 
     this.io.otherPlayerChallenge().subscribe((data) => {
@@ -61,9 +87,13 @@ export class GameplayComponent implements OnInit {
       this.currentRound = data.round;
       this.penalties = data.playerPenalties;
     });
+
   }
 
   completeChallenge(): void {
+    if (!this.currentChallenge) {
+      return;
+    }
     this.io.challengeCompleted(this.roomId)
   }
 

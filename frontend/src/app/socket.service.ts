@@ -67,7 +67,7 @@ export class SocketService {
   }
 
   // Listen for events
-  on(eventName: string): Observable<any> {
+  private on(eventName: string): Observable<any> {
     const subject = new Subject<any>();
 
     this.socket.on(eventName, (data) => {
@@ -155,6 +155,9 @@ export class SocketService {
     return this.on('player-status-update');
   }
 
+  playerDifficultyUpdate(): Observable<any> {
+    return this.on('player-difficulty-updated');
+  }
   playerJoined() {
     return new Observable<any>(observer => {
       this.socket.on('player-joined', data => observer.next(data));

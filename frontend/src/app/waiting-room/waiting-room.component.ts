@@ -63,20 +63,19 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
     //Player Status Update
     this.subscriptions.push(
-      this.io.playerStatusUpdate().subscribe(({playerId, isReady}) => {
-        const player = this.players.find(p => p.id === playerId);
-        if (player) {
-          player.isReady = isReady;
-        }
+      this.io.playerStatusUpdate().subscribe(({playerName, isReady}) => {
+        const player = this.players.find(p => p.name === playerName);
+        if (player) player.isReady = isReady;
       }),
 
       merge(
         this.io.playerJoined(),
         this.io.adminJoined()
       ).subscribe((newPlayer) => {
-        // For admins: Full player object with ID
-        // For regular users: Basic {name, isReady} object
-        if (!this.players.some(p => p.name === newPlayer.name)) {
+        // Use unique ID for admins, fallback to name for non-admins
+        const uniqueKey = newPlayer.id || newPlayer.name;
+
+        if (!this.players.some(p => (p.id || p.name) === uniqueKey)) {
           this.players.push({
             id: this.isAdmin ? newPlayer.id : undefined,
             name: newPlayer.name,
@@ -85,16 +84,22 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
             difficulty: newPlayer.difficulty,
           });
         }
-      })
-      )
+      }),
 
       this.io.playerLeft().subscribe((leftPlayer) => {
         this.players = this.players.filter(p => p.name !== leftPlayer.name);
-      })
+      }),
 
       this.io.gameStarted().subscribe(() => {
-      this.startGame();
-    });
+      this.router.navigate(['/game'], {
+        state: {
+          //string list of names
+          players: this.players.map(p => p.name),
+          roomId: this.roomId
+        }
+      });
+    })
+    );
 
     this.io.getRoom(this.roomId);
 
@@ -161,9 +166,19 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe( async (difficulty) => {
       if (player.id) {
-        this.io.updatePlayerDifficulty(this.roomId, player.id, difficulty);
+         this.io.updatePlayerDifficulty(this.roomId, player.id, difficulty);
+
+         let diffSub= this.io.playerDifficultyUpdate().subscribe(
+           async (data)  => {
+              if (data.playerId === player.id) {
+                player.difficulty = data.difficultyValues;
+              }
+           }
+        );
+        this.subscriptions.push(diffSub);
       }
     })
+
 
   }
 

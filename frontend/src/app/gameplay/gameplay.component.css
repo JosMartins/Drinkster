@@ -77,13 +77,56 @@
   background-color: #45a049;
 }
 
-.penalty-btn {
+.drunk-btn {
   background-color: #f44336; /* Red */
   color: white;
 }
 
-.penalty-btn:hover {
+.drunk-btn:hover {
   background-color: #da190b;
+}
+
+/* Additional CSS */
+.left-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.players-box {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 15px;
+  padding: 20px;
+  flex: 1;
+}
+
+.players-content {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.player-item {
+  padding: 10px;
+  margin: 5px 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+}
+
+.current-player {
+  background-color: #4CAF50;
+  font-weight: bold;
+}
+
+.challenge-text {
+  font-size: 1.4em;
+  margin-bottom: 15px;
+}
+
+.challenge-player {
+  font-size: 1.1em;
+  color: #ff4081;
+  margin-top: 15px;
 }
 
 /* Add these styles */
