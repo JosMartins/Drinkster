@@ -67,7 +67,7 @@ export class SocketService {
   }
 
   // Listen for events
-  private on(eventName: string): Observable<any> {
+  on(eventName: string): Observable<any> {
     const subject = new Subject<any>();
 
     this.socket.on(eventName, (data) => {
