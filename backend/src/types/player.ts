@@ -8,6 +8,10 @@ export interface DifficultyValues {
     extreme: number;
 }
 
+interface Penalty {
+    text: string;
+    rounds: number;
+}
 
 export interface Player {
     id: string; //persistent id
@@ -15,6 +19,7 @@ export interface Player {
     name: string;
     sex: Sex;
     difficulty_values: DifficultyValues;
+    penalties: Penalty[];
     isAdmin: boolean;
     isReady: boolean;
     isPlaying: boolean;

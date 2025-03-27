@@ -349,7 +349,7 @@ function setupGameplayHandlers(socket: Socket) {
 
         try {
             // Handle when player completes a challenge
-            await gameFunctions.completedChallenge(roomId, socket.id, false);
+            await gameFunctions.completedChallenge(roomId, socket.id);
         } catch (err) {
             socket.emit('error', err);
         }
@@ -367,7 +367,7 @@ function setupGameplayHandlers(socket: Socket) {
 
         try {
             // Handle when player completes a challenge
-            await gameFunctions.completedChallenge(roomId, socket.id, true);
+            await gameFunctions.completedChallenge(roomId, socket.id);
         } catch (err) {
             socket.emit('error', err);
         }
@@ -504,12 +504,23 @@ function setupSessionHandlers(socket: Socket, io: Server) {
 
 
                 socket.join(playerRoom.id.toString());
+
                 socket.emit('session-restored', {
+                    status: playerRoom.status,
                     roomId: playerRoom.id,
                     players: playerRoom.players,
                     isAdmin: player.isAdmin,
-                    status: playerRoom.status
+                    penalties: player.penalties || [],
+                    // Add game-specific fields if available
+                    ...(playerRoom.status === 'playing' && {
+                        playerName: player.name,
+                        currentChallenge: playerRoom.game?.currentTurn.challenge,
+                        currentPlayer: playerRoom.game?.currentTurn.playerName,
+                        currentRound: playerRoom.game?.currentRound
+                    })
                 });
+
+
 
                 console.log(`Session restored for player ${sessionId} in room ${playerRoom.id}`);
                 return;
