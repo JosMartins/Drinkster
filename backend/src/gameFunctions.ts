@@ -117,11 +117,11 @@ export function updatePlayerDifficulty(roomId: number, playerId: string, difficu
         throw new Error('Player not found');
     }
 
-    if (difficultyValues.easy + difficultyValues.medium + difficultyValues.hard !== 100 || 
-        difficultyValues.easy + difficultyValues.medium + difficultyValues.hard !== 100 + difficultyValues.extreme
-    ) {
-        throw new Error('Difficulty values must sum to 100');
+    const sum = difficultyValues.easy + difficultyValues.medium + difficultyValues.hard + difficultyValues.extreme;
+    const epsilon = 0.00001;
 
+    if (Math.abs(sum - 1) > epsilon) {
+        throw new Error('Difficulty values must sum to 100%');
     }
 
 
@@ -161,13 +161,12 @@ export async function forcedSkipChallenge(roomId: number, adminSocketId: string)
  * 
  * @param roomId the ID of the room to skip the challenge in
  * @param sockId the ID of the player causing the skip (must be the current player)
- * @param drunk whether the player drunk or not
  * 
  * @throws Error if the room is not found
  * @throws Error if the player is not found
  * @throws Error if the player is not the current player
  */
-export async function completedChallenge(roomId: number, sockId: string, drunk: boolean) {
+export async function completedChallenge(roomId: number, sockId: string) {
 
     const room = getRoom(roomId);
 
@@ -188,15 +187,6 @@ export async function completedChallenge(roomId: number, sockId: string, drunk: 
     if (room.game.getCurrentPlayer() !== player) {
         throw new Error('Player is not the current player');
     }
-
-    if (drunk) {
-        room.game.stats.drinkedChallenges++;
-        room.game.stats.totalDrinked++;
-    } else {
-        room.game.stats.completedChallenges++;
-    }
-
-    room.game.stats.totalRounds++;
 
     await room.game.nextTurn();
 

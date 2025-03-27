@@ -47,7 +47,6 @@ export function createRoom(roomConf: GameRoomConfig, sockId: string): number {
         admin: owner,
         players: [owner],
         status: 'waiting',
-        createdAt: new Date(),
         mode: roomConf.mode,
         rememberedChallenges: roomConf.rememberedChallenges,
         showChallenges: roomConf.showChallenges
@@ -271,7 +270,7 @@ function generateRandomRoomId(): number {
  * @throws Error if password is not provided for private rooms
  * @throws Error if mode is not provided
  * @throws Error if remembered challenges is not provided or is invalid
- * @throws Error if player name is not provided
+ * @throws Error if player name not provided
  */
 function verifyRoomInput(roomConf: GameRoomConfig) {
 

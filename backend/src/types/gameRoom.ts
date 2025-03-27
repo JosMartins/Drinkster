@@ -20,7 +20,7 @@ export interface GameRoom {
     admin: Player;
     players: Array<Player>;
     status: 'waiting' | 'playing' | 'finished';
-    createdAt: Date;
+    createdAt?: Date;
     mode: 'normal' | 'random';
     rememberedChallenges: number;
     showChallenges: boolean;

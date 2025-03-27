@@ -44,7 +44,7 @@ export class DifficultyDialogComponent {
   }
 
   onCancel(): void {
-    this.dialogRef.close();
+    this.dialogRef.close(null);
   }
 
   onSave(): void {

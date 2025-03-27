@@ -145,6 +145,9 @@ export class SocketService {
     return this.on('player-status-update');
   }
 
+  playerDifficultyUpdate(): Observable<any> {
+    return this.on('player-difficulty-updated');
+  }
   playerJoined() {
     return new Observable<any>(observer => {
       this.socket.on('player-joined', data => observer.next(data));
@@ -167,7 +170,11 @@ export class SocketService {
     return this.on('your-challenge');
   }
 
-  challengeCompletedted(roomId: number) {
+  otherChallenge(): Observable<any> {
+    return this.on('other-player-challenge');
+  }
+
+  challengeCompleted(roomId: number) {
     this.emit('challenge-completed', roomId);
   }
 

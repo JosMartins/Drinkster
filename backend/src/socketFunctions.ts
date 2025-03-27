@@ -149,11 +149,13 @@ function setupRoomHandlers(socket: Socket, io: Server) {
             }
 
             // Notify other players in the room that a new player has joined
-            io.to(roomId.toString()).emit('player-joined', {
-                name: newPlayer.name,
-                sex: newPlayer.sex,
-                isReady: newPlayer.isReady
-            });
+            io.to(roomId.toString())
+                .except(room.admin.socketId)
+                .emit('player-joined', {
+                    name: newPlayer.name,
+                    sex: newPlayer.sex,
+                    isReady: newPlayer.isReady
+                });
     
             // Notify admin with full details
             if (room?.admin.socketId !== socket.id) {
@@ -190,7 +192,7 @@ function setupRoomHandlers(socket: Socket, io: Server) {
             socket.to(roomId.toString()).emit('room-update', findPlayerRoom(socket.id));
 
             io.to(roomId.toString()).emit('player-status-update', {
-                playerId: player.id,
+                playerName: player.name,
                 isReady: true
             });
         } catch (err) {
@@ -214,11 +216,11 @@ function setupRoomHandlers(socket: Socket, io: Server) {
 
         try {
             const player = roomFunctions.playerUnready(roomId, socket.id);
-            console.log('Player Ready', socket.id);
+            console.log('Player Unready', socket.id);
 
             // Notify other players in the room that a player has unready
             io.to(roomId.toString()).emit('player-status-update', {
-                playerId: player.id,
+                playerName: player.name,
                 isReady: false
             });
 
@@ -324,8 +326,10 @@ function setupGameplayHandlers(socket: Socket) {
         const roomId = parseInt(rooms[0]);
 
         try {
-            await gameFunctions.startGame(roomId, socket.id).then(_ =>
-                socket.to(roomId.toString()).emit('game-started'));
+            await gameFunctions.startGame(roomId, socket.id).then(_ => {
+
+                socket.to(roomId.toString()).emit('game-started', {})
+            });
         }
         catch (err) {
             socket.emit('error', err);
@@ -396,12 +400,13 @@ function setupAdminHandlers(socket: Socket, io: Server) {
         }
     });
 
-    socket.on('admin-update-difficulty', (roomId: number, playerId: string, difficultyValues: any) => {
-        debugger;
-        // Get the room this socket is in
+     socket.on('admin-update-difficulty', async (roomId: number, playerId: string, difficultyValues: any) => {
 
+        // Get the room this socket is in
         try {
             gameFunctions.updatePlayerDifficulty(roomId, playerId, difficultyValues);
+
+            socket.emit('player-difficulty-updated', { playerId, difficultyValues });
         } catch (err) {
             socket.emit('error', err);
         }
@@ -556,11 +561,12 @@ function filterPlayerData(player: Player, socketId: string) {
     
     return {
         name: player.name,
+        sex: player.sex,
         isReady: player.isReady,
+        isAdmin: player.isAdmin,
         ...(isAdmin && {
             id: player.id,
-            sex: player.sex,
-            isAdmin: player.isAdmin
+            difficulty: player.difficulty_values
         })
     };
 }

@@ -1,15 +1,37 @@
 <div class="game-container">
   <div class="game-boxes">
-    <div class="challenge-box">
-      <h2 class="box-title">Current Challenge</h2>
-      <div class="content-box challenge-content">{{ currentChallenge }}</div>
+    <!-- Left Column -->
+    <div class="left-column">
+      <div class="penalty-box" *ngIf="penalties.length > 0">
+        <h2 class="box-title">Penalties</h2>
+        <div class="content-box penalty-content">
+          <div *ngFor="let penalty of penalties" class="penalty-item">
+            {{ penalty.text }} ({{ penalty.rounds }} rounds)
+          </div>
+        </div>
+      </div>
+
+      <div class="players-box">
+        <h2 class="box-title">Players</h2>
+        <div class="content-box players-content">
+          <div *ngFor="let player of players"
+               class="player-item"
+               [class.current-player]="player === currentChallenge?.playerName">
+            {{ player }}
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="penalty-box">
-      <h2 class="box-title">Penalties</h2>
-      <div class="content-box penalty-content">
-        <div *ngFor="let penalty of penalties" class="penalty-item">
-          {{ penalty }}
+    <!-- Right Column -->
+    <div class="challenge-box">
+      <h2 class="box-title">Current Challenge</h2>
+      <div class="content-box challenge-content">
+        <div *ngIf="currentChallenge">
+          <div class="challenge-text">{{ currentChallenge.text }}</div>
+          <div class="challenge-player" *ngIf="currentChallenge.playerName">
+            For: {{ currentChallenge.playerName }}
+          </div>
         </div>
       </div>
     </div>
@@ -19,7 +41,7 @@
     <button class="action-button complete-btn" (click)="completeChallenge()">
       Challenge Completed
     </button>
-    <button class="action-button penalty-btn" (click)="drunkChallenge()">
+    <button class="action-button drunk-btn" (click)="drunkChallenge()">
       Challenge Drunk
     </button>
   </div>

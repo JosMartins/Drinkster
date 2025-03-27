@@ -21,7 +21,7 @@ export class Game {
     private static io?: Server;
 
     // Game state
-    private currentTurn: PlayerTurn;
+    currentTurn: PlayerTurn;
     private stats: GameStats;
     private currentPlayerIndex: number;
     private currentRound: number;
@@ -81,7 +81,6 @@ export class Game {
             Game.io = socketServer;
             this.challengeStats = await getChallengeStats();
             await this.loadInitialChallenge();
-            this.stats.startTime = new Date();
         } catch (error) {
             console.error("Game initialization failed:", error);
             this.handleInitializationError();
@@ -192,10 +191,13 @@ export class Game {
                 text = text.replace(/{Player}/g, currentPlayer.name);
             }
 
-
             // Replace {Player2} with another player's name
             if (secondPlayer) {
                 text = text.replace(/{Player2}/g, secondPlayer);
+            }
+
+            if (text.includes('{x}')) {
+                text = text.replace(/{x}/g, challenge.sips);
             }
         } else if (text.includes('Everyone')) {
             this.currentPlayerIndex -= 1;
@@ -246,12 +248,14 @@ export class Game {
 
     private sendIndividualChallenge(player: Player): void {
         const challengeData = {
-            ...this.currentTurn.challenge,
+            text: this.currentTurn.challenge,
+            type: this.currentTurn.challenge?.type,
             round: this.currentRound,
-            playerId: player.id
+            playerName: player.name
+
         };
 
-        Game.io!.to(player.id).emit('your-challenge', challengeData);
+        Game.io!.to(player.socketId).emit('your-challenge', challengeData);
         this.notifyOtherPlayersAboutChallenge(player);
     }
 
@@ -301,7 +305,7 @@ export class Game {
         this.nextTurn();
     }
 
-    private notifyOtherPlayersAboutChallenge(currentPlayer: Player, secondPlayerName?: string): void {
+    private notifyOtherPlayersAboutChallenge(currentPlayer: Player): void {
         if (!this.currentTurn.challenge) return;
 
         const challenge = this.currentTurn.challenge;
@@ -312,10 +316,8 @@ export class Game {
             throw new Error("Socket server not set, cannot notify other players about challenge");
         }
 
-        const text = (secondPlayerName)
-            ? `${currentPlayer.name} and ${secondPlayerName} are performing a challenge or drinking ${challenge.sips}`
-            :  `${currentPlayer.name} is performing a challenge or drinking ${challenge.sips}` ;
-        Game.io.to(roomId)
+        const text = `${currentPlayer.name} is performing a challenge or drinking ${challenge.sips}` ;
+        Game.io.to(roomId.toString())
             .except(currentPlayer.id)
             .emit('other-player-challenge', text);
     }
