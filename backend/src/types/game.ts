@@ -264,8 +264,7 @@ export class Game {
                 this.sendIndividualChallenge(this.players.filter(pl => pl.name === this.secondPlayer)[0], false);
         }
 
-        this.io.emit('admin-challenge-text', this.currentTurn.challenge.challenge
-        );
+        this.io.to(this.roomId.toString()).emit('admin-challenge-text', this.currentTurn.challenge.challenge);
 
         this.setChallengeTimeout();
     }

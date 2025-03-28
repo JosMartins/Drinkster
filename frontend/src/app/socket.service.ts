@@ -46,6 +46,7 @@ export class SocketService {
 
               this.sessionData$.next(
                 {
+                  me: data.me,
                   status: data.status,
                   roomId: data.roomId,
                   players: data.players,
