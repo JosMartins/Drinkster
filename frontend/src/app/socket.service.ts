@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, BehaviorSubject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
 import {Router} from "@angular/router";
 
@@ -7,10 +7,11 @@ import {Router} from "@angular/router";
   providedIn: 'root'
 })
 export class SocketService {
+  private sessionData$ = new BehaviorSubject<any>(null);
   private readonly socket: Socket;
 
   constructor(private router: Router) {
-    this.socket = io("http://autistassv.ddns.net:25568", {
+    this.socket = io("http://localhost:25568", {
       transports: ['websocket'],
       autoConnect: true,
       reconnection: true,
@@ -42,7 +43,23 @@ export class SocketService {
             if (data.status === 'waiting') {
               this.router.navigate(['/room']);
             } else if (data.status === 'playing') {
+
+              this.sessionData$.next(
+                {
+                  status: data.status,
+                  roomId: data.roomId,
+                  players: data.players,
+                  isAdmin: data.isAdmin,
+                  penalties: data.penalties,
+                  text: data.text || 'Loading challenge...',
+                  difficulty: data.difficulty,
+                  type: data.type || 'challenge',
+                  round: data.round || 0,
+                  playerName: data.playerName || '',
+                }
+              )
               this.router.navigate(['/game']);
+
             }
 
             resolve();
@@ -199,5 +216,8 @@ export class SocketService {
     return this.on('error');
   }
 
+  public getSessionData(): Observable<any> {
+    return this.sessionData$.asObservable();
+  }
 }
 

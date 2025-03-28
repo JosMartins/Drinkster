@@ -4,6 +4,7 @@ import { SocketService} from "../socket.service";
 import {NgForOf, NgIf} from "@angular/common";
 import {Subscription} from "rxjs";
 import {Router} from "@angular/router";
+import {Player} from "../models/player";
 
 interface Penalty {
   text: string;
@@ -20,16 +21,18 @@ interface Penalty {
   templateUrl: './gameplay.component.html',
   styleUrls: ['./gameplay.component.css']
 })
+
 export class GameplayComponent implements OnInit {
   private subscriptions: Subscription[] = [];
+  self?: Player;
   players: string[] = [];
   roomId: number = 0;
   currentRound: number = 1;
   isAdmin: boolean = false;
-  self?: string;
-
+  adminText?: string;
   currentChallenge?: {
     text: string,
+    difficulty: string,
     type: 'challenge' | 'penalty',
     round: number,
     playerName: string,
@@ -47,29 +50,38 @@ export class GameplayComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+
+    this.subscriptions.push(
+      this.io.getSessionData().subscribe(sesData => {
+        console.log("Session data:", sesData);
+        if (sesData && sesData.status === 'playing') {
+          this.self = sesData.me;
+          this.roomId = sesData.roomId;
+          this.players = sesData.players.map((p: { name: any; }) => {p.name});
+          this.isAdmin = sesData.isAdmin;
+          this.penalties = sesData.penalties;
+          this.currentChallenge = {
+            text: sesData.text,
+            difficulty: sesData.difficulty,
+            type: sesData.type,
+            round: sesData.round,
+            playerName: sesData.playerName
+          };
+          this.myChallenge = sesData.playerName === self.name;
+        }
+      })
+    )
+
     const navigationData = this.router.getCurrentNavigation();
 
     if (navigationData?.extras.state) {
       this.roomId = navigationData.extras.state['roomId'] || 0;
       this.players = navigationData.extras.state['players'] || [];
+      this.self = navigationData.extras.state['self'];
     }
 
     this.listenForChallenges();
 
-    this.io.on('session-restored').subscribe((data: any) => {
-      if (data.status === 'playing') {
-        this.self = data.playerName;
-        this.isAdmin = data.isAdmin;
-        this.penalties = data.penalties;
-        this.currentChallenge = data.currentChallenge || {
-          text: 'Loading challenge...',
-          type: 'challenge',
-          round: this.currentRound,
-          playerName: ''
-        };
-        this.myChallenge = data.currentChallenge?.player === this.self;
-      }
-    });
   }
 
   private listenForChallenges(): void {
@@ -79,7 +91,8 @@ export class GameplayComponent implements OnInit {
         this.myChallenge = true;
         this.currentChallenge = {
           text: data.text,
-          type: 'challenge',
+          difficulty: data.difficulty,
+          type: data.type,
           round: data.round,
           playerName: data.playerName
         };
@@ -92,7 +105,8 @@ export class GameplayComponent implements OnInit {
         this.myChallenge = false;
         this.currentChallenge = {
           text: data.text,
-          type: 'challenge',
+          difficulty: data.difficulty,
+          type: data.type,
           round: data.round,
           playerName: data.playerName
         };
@@ -100,7 +114,15 @@ export class GameplayComponent implements OnInit {
         this.penalties = data.playerPenalties;
       })
     );
-  }
+
+    if (this.isAdmin) {
+      this.subscriptions.push(
+        this.io.on('admin-challenge-text').subscribe(data => {
+          console.log("Admin text:", data);
+          this.adminText = data;
+        })
+        )}
+    }
 
   completeChallenge(): void {
     if (!this.currentChallenge) return;
@@ -108,6 +130,7 @@ export class GameplayComponent implements OnInit {
   }
 
   drunkChallenge(): void {
+    if (!this.currentChallenge) return;
     this.io.challengeDrunk(this.roomId);
   }
 

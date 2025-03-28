@@ -1,7 +1,6 @@
 import { Server } from 'socket.io';
 import { getChallenge as fetchFromDB, getChallengeStats } from '../controllers/challengeController';
 import { IChallenge } from '../models/challenge';
-import { GameRoom } from './gameRoom';
 import { Player } from './player';
 
 export interface GameStats {
@@ -19,8 +18,10 @@ export interface PlayerTurn {
 
 export class Game {
     // Communication
-    private static io?: Server;
-
+    private io?: Server;
+    players: Player[];
+    roomId: number;
+    showChallenges: boolean;
     // Game state
     currentTurn: PlayerTurn;
     private stats: GameStats;
@@ -28,10 +29,10 @@ export class Game {
     currentRound: number;
     private challengeTimeout?: NodeJS.Timeout;
     secondPlayer?: string
+    rememberedChallenges: number;
+    mode: 'normal' | 'random';
 
     // Challenge tracking
-    private lastChallengeIds: string[];
-    private readonly room: GameRoom;
     private challengeStats: {
         easyChallenges: number;
         mediumChallenges: number;
@@ -40,11 +41,21 @@ export class Game {
         totalChallenges: number;
     };
 
-    constructor(startRoom: GameRoom) {
-        this.room = startRoom;
+    constructor(
+        players: Player[],
+        rememberedChallenges: number,
+        mode: 'normal' | 'random',
+        roomId: number,
+        showChallenges: boolean = true
+    ) {
+        this.players = players;
+        this.roomId = roomId;
+        this.mode = mode;
+        this.rememberedChallenges = rememberedChallenges;
+        this.showChallenges = showChallenges;
+
         this.currentPlayerIndex = 0;
         this.currentRound = 1;
-        this.lastChallengeIds = [];
         this.stats = {
             completedChallenges: 0,
             totalRounds: 0
@@ -64,24 +75,19 @@ export class Game {
 
     async initialize(socketServer: Server): Promise<void> {
         try {
-            Game.io = socketServer;
-            await getChallengeStats();
+            this.io = socketServer;
+            this.challengeStats = await getChallengeStats();
             console.log("stats:", this.challengeStats);
             await this.loadInitialChallenge();
         } catch (error) {
             console.error("Game initialization failed:", error);
             this.handleInitializationError();
         }
+
+        this.setChallengeTimeout();
     }
-    // Accessors
-    get players() { return this.room.players; }
-    get mode() { return this.room.mode; }
-    get rememberedChallenges() { return this.room.rememberedChallenges; }
 
     // Game initialization
-    private async getChallengeNumbers() {
-        this.challengeStats = await getChallengeStats();
-    }
 
     private createNewTurn(): PlayerTurn {
         return {
@@ -123,8 +129,16 @@ export class Game {
 
     // Game flow
     async nextTurn(): Promise<void> {
+        this.secondPlayer = undefined;
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
         this.stats.totalRounds++;
+
+        //every penalty round -1 and if 0 remove
+        this.players.forEach((player: Player) => {player.penalties = player.penalties?.filter(pen => {
+            if (pen.rounds === 0) return false;
+            pen.rounds--;
+            return true;
+        })});
 
 
         try {
@@ -153,7 +167,7 @@ export class Game {
         const difficulty = this.getDifficultyLevel(currentPlayer);
 
         // Get challenge from backend
-        let challenge = await fetchFromDB(difficulty, this.lastChallengeIds);
+        let challenge = await fetchFromDB(difficulty, this.rememberedChallenges);
 
         // Process challenge text (replace player name placeholders)
         let randomPlayer: string | undefined;
@@ -166,18 +180,9 @@ export class Game {
             }
         }
 
-        challenge = this.processChallenge(challenge, randomPlayer);
+        const processedChallenge = this.processChallenge(challenge, randomPlayer);
 
-        if (challenge?._id) {
-            const stringId = challenge._id.toString();
-
-            // Update the last challenge IDs
-            if (this.lastChallengeIds.length >= this.rememberedChallenges) {
-                this.lastChallengeIds.shift();
-            }
-            this.lastChallengeIds.push(stringId);
-        }
-        return challenge;
+        return processedChallenge;
     }
 
     // Process challenge text (replace player placeholders)
@@ -203,15 +208,19 @@ export class Game {
                 text = text.replace(/{x}/g, challenge.sips);
             }
         } else if (text.includes('Everyone')) {
-            this.currentPlayerIndex -= 1;
+            this.currentPlayerIndex = (this.players.length + this.currentPlayerIndex - 1) % this.players.length;
         }
 
         //if penalty add to penalties
         if (challenge.type === 'penalty' && challenge.penalty_params) {
-            this.room.players[this.currentPlayerIndex].penalties?.push({
-                text: challenge.penalty_params.text!,
-                rounds: challenge.penalty_params.rounds!
-            });
+            const player = this.getCurrentPlayer();
+            if (player) {
+                player.penalties = player.penalties || []; // Ensure array exists
+                player.penalties.push({
+                    text: challenge.penalty_params?.text || 'Drink',
+                    rounds: challenge.penalty_params?.rounds || 1
+                });
+            }
         }
         // Update challenge text
         processedChallenge.challenge = text;
@@ -235,7 +244,7 @@ export class Game {
     }
 
     public sendCurrentChallenge(): void {
-        if (!Game.io || !this.currentTurn.challenge) return;
+        if (!this.io || !this.currentTurn.challenge) return;
 
         const currentPlayer = this.getCurrentPlayer();
         if (!currentPlayer) return;
@@ -244,71 +253,46 @@ export class Game {
             this.handleEveryoneChallenge();
         } else {
             this.sendIndividualChallenge(currentPlayer);
-            if (this.secondPlayer)
-                this.sendIndividualChallenge(this.players.filter(pl => pl.name === this.secondPlayer)[0]);
+            if (this.secondPlayer && this.showChallenges)
+                this.sendIndividualChallenge(this.players.filter(pl => pl.name === this.secondPlayer)[0], false);
         }
 
-        this.setChallengeCompletionHandler();
+        this.io.emit('admin-challenge-text', this.currentTurn.challenge.challenge
+        );
+
+        this.setChallengeTimeout();
     }
 
     private handleEveryoneChallenge(): void {
-        Game.io!.to(this.room.id.toString()).emit('everyone-challenge', {
+        this.io!.to(this.roomId.toString()).emit('everyone-challenge', {
             challenge: this.currentTurn.challenge!.challenge,
             round: this.currentRound
         });
     }
 
-    private sendIndividualChallenge(player: Player): void {
-        debugger
+    private sendIndividualChallenge(player: Player, notifyOthers: boolean = true): void {
         const challengeData = {
             text: this.currentTurn.challenge?.challenge ?? '',
+            difficulty: this.currentTurn.challenge?.difficulty ?? 1,
             round: this.currentRound,
             playerName: player.name,
-            // Enviar apenas dados necessários das penalidades
             playerPenalties: player.penalties?.map(p => ({
                 text: p.text,
                 rounds: p.rounds
             })) || []
         };
+        console.log("SENT:", challengeData);
+        this.io!.to(player.socketId).emit('your-challenge', challengeData);
 
-        Game.io!.to(player.socketId).emit('your-challenge', challengeData);
-        this.notifyOtherPlayersAboutChallenge(player);
+        if (notifyOthers) {
+            this.notifyOtherPlayersAboutChallenge(player);
+        }
+
     }
 
-    private setChallengeCompletionHandler(): void {
-        if (!Game.io) return;
 
-        const cleanup = () => {
-            Game.io!.off('challenge-completed', handleComplete);
-            Game.io!.off('challenge-drunk', handleDrunk);
-            if (this.challengeTimeout) clearTimeout(this.challengeTimeout);
-        };
-
-        const handleComplete = (roomId: number) => {
-            if (roomId === this.room.id) {
-                cleanup();
-                this.handleChallengeCompletion(true);
-            }
-        };
-
-        const handleDrunk = (roomId: number) => {
-            if (roomId === this.room.id) {
-                cleanup();
-                this.handleChallengeCompletion(false);
-            }
-        };
-
-        Game.io.on('challenge-completed', handleComplete);
-        Game.io.on('challenge-drunk', handleDrunk);
-
-        // Add timeout for challenge completion
-        this.challengeTimeout = setTimeout(() => {
-            cleanup();
-            this.handleChallengeTimeout();
-        }, 120000); // 2-minute timeout
-    }
-
-    private handleChallengeCompletion(success: boolean): void {
+    async handleChallengeCompletion(success: boolean) {
+        this.cleanupChallengeListeners();
         if (success) {
             this.stats.completedChallenges++;
         }
@@ -318,13 +302,7 @@ export class Game {
             return true;
         })});
 
-        this.nextTurn();
-    }
-
-    private handleChallengeTimeout(): void {
-        console.log(`Challenge timeout in room ${this.room.id}`);
-        Game.io!.to(this.room.id.toString()).emit('challenge-timeout');
-        this.nextTurn();
+        await this.nextTurn();
     }
 
     private notifyOtherPlayersAboutChallenge(currentPlayer: Player): void {
@@ -333,15 +311,17 @@ export class Game {
         const sips = this.currentTurn.challenge.sips ?? 0;
 
 
-        if (!Game.io) {
+        if (!this.io) {
             throw new Error("Socket server not set, cannot notify other players about challenge");
         }
 
         const text = `${currentPlayer.name} is performing a challenge or drinking ${sips}` ;
-        this.room.players.forEach(player => {
+        this.players.forEach(player => {
             if (player.id !== this.currentTurn.playerId) {
-                Game.io?.to(player.socketId).emit('other-player-challenge', {
+                console.log("NOTIFIED:", player.name);
+                this.io?.to(player.socketId).emit('other-player-challenge', {
                     text: text,
+                    difficulty: this.currentTurn.challenge?.difficulty || 1,
                     round: this.currentRound,
                     playerPenalties: player.penalties?.map(p => ({
                         text: p.text,
@@ -351,4 +331,22 @@ export class Game {
             }
         });
     }
+
+
+    public cleanupChallengeListeners() {
+        if (this.challengeTimeout)  {
+            clearTimeout(this.challengeTimeout);
+            this.challengeTimeout = undefined;
+        }
+
+    }
+
+    private setChallengeTimeout() {
+        this.cleanupChallengeListeners();
+        this.challengeTimeout = setTimeout(async () =>  {
+            this.io?.to(this.roomId.toString()).emit('challenge-timeout');
+            await this.nextTurn();
+        }, 3 * 60 * 1000); // 3 minutes
+    }
+
 }

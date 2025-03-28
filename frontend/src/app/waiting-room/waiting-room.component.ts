@@ -94,6 +94,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       this.router.navigate(['/game'], {
         state: {
           //string list of names
+          self: this.players.filter(p => p.id === this.currentPlayerId)[0],
           players: this.players.map(p => p.name),
           roomId: this.roomId
         }

@@ -1,17 +1,20 @@
 import Challenge, { IChallenge } from '../models/challenge';
 import { Difficulty } from "../models/difficulty";
 import { Types } from 'mongoose';
+
+let recentChallengeIds: string[] = [];
+
 /**
  * Get a challenge with specific difficulty, excluding certain IDs
  * 
  * @param difficulty Difficulty level ('easy', 'medium', 'hard', 'extreme')
- * @param excludeIds Array of challenge IDs to exclude
+ * @param recent Number of recent challenges to exclude
  * @returns A challenge matching the criteria
  */
-export async function getChallenge(difficulty: string, excludeIds: string[] = []): Promise<IChallenge> {
+export async function getChallenge(difficulty: string, recent: number): Promise<IChallenge> {
     console.log('Getting challenge with difficulty:', difficulty);
 
-    //difficulty map
+    // Difficulty map remains the same
     const difficultyMap: Record<string, number> = {
         'easy': Difficulty.EASY,
         'medium': Difficulty.MEDIUM,
@@ -19,52 +22,50 @@ export async function getChallenge(difficulty: string, excludeIds: string[] = []
         'extreme': Difficulty.EXTREME
     };
 
-    let query: any = {};
-
-    // Only apply difficulty filter if we have a valid difficulty value
-    if (difficulty && difficultyMap[difficulty]) {
-        query.difficulty = difficultyMap[difficulty];
-    }
-
-    // Exclude previously used challenge IDs
-    if (excludeIds && excludeIds.length > 0) {
-        // Convert string IDs to ObjectIds, filtering out any invalid ones
-        const objectIds = excludeIds
-            .map(id => {
-                try {
-                    return new Types.ObjectId(id);
-                } catch (e) {
-                    console.warn(`Invalid ObjectId in excludeIds: ${id}`);
-                    return null;
-                }
-            })
-            .filter(id => id !== null);
-
-        if (objectIds.length > 0) {
-            query._id = { $nin: objectIds };
-        }
-    }
+    const query = {
+        difficulty: difficultyMap[difficulty],
+        ...(recentChallengeIds.length > 0 && { _id: { $nin: recentChallengeIds } })
+    };
 
     try {
-        // Try to get a challenge matching our criteria
+        // Get challenge WITH _id first
         const challenges = await Challenge.aggregate([
             { $match: query },
             { $sample: { size: 1 } }
         ]);
 
         if (challenges.length > 0) {
-            return challenges[0];
+            // Store ID before removing it from response
+            const challengeId = challenges[0]._id.toString();
+            recentChallengeIds.push(challengeId);
+            if (recentChallengeIds.length > recent) recentChallengeIds.shift();
+
+            // Return challenge WITHOUT _id
+            return {
+                challenge: challenges[0].challenge,
+                difficulty: challenges[0].difficulty,
+                sexes: challenges[0].sexes,
+                sips: challenges[0].sips,
+                type: challenges[0].type,
+                penalty_params: challenges[0].penalty_params
+            };
         }
+
+        return fallbackChallenge();
 
     } catch (error) {
         console.error('Error getting challenge:', error);
+        return fallbackChallenge();
     }
+}
 
-    // Fallback challenge if all else fails
+// Add fallback function
+function fallbackChallenge(): IChallenge {
     return {
-        challenge: 'Failed to get challenge... EVERYONE DRINK!',
+        challenge: 'Failed... Everyone drink 2 sips!',
         difficulty: Difficulty.EASY,
         sexes: ['All'],
+        sips: 2,
         type: 'challenge'
     };
 }

@@ -4,11 +4,12 @@ import { Game } from "./types/game";
 import { Server } from "socket.io";
 
 
-let game: Game;
+let activeGames = new Map<number, Game>();
 let io: Server; //send game updates to all players
 
 export function initializeGameFunctions(socketServer: Server) {
     io = socketServer;
+    activeGames = new Map<number, Game>();
 }
 
 /**
@@ -47,10 +48,20 @@ export async function startGame(roomId: number, adminSocketId: string) {
     }
 
     //create and start game
-    game = new Game(room);
+    let game = new Game(
+        room.players,
+        room.rememberedChallenges,
+        room.mode,
+        room.id,
+        room.showChallenges
+    );
     await game.initialize(io);
     room.game = game;
     room.status = 'playing';
+
+    room.game = game as Omit<Game, 'players'|'roomId'>;
+
+    activeGames.set(room.id, game);
 
     return {
         currentPlayerId: game.currentTurn.playerId,
@@ -90,6 +101,21 @@ export function endGame(roomId: number, sockId: string) {
 
     room.status = 'finished';
     room.game = undefined;
+    activeGames.delete(room.id);
+}
+
+export function getGame(roomId: number) {
+    const room = getRoom(roomId);
+
+    if (!room) {
+        throw new Error('Room not found');
+    }
+
+    if (!room.game) {
+        throw new Error('Game not found');
+    }
+
+    return room.game;
 }
 
 /**
@@ -149,6 +175,11 @@ export async function forcedSkipChallenge(roomId: number, adminSocketId: string)
 
     if (room.admin.socketId !== adminSocketId) {
         throw new Error('Only the admin can force skip a challenge');
+    }
+
+    let game = activeGames.get(room.id);
+    if (!game) {
+        throw new Error('Game not found');
     }
 
     //Skip here

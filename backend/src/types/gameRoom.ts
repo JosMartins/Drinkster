@@ -24,5 +24,5 @@ export interface GameRoom {
     mode: 'normal' | 'random';
     rememberedChallenges: number;
     showChallenges: boolean;
-    game?: Game;
+    game?: Omit<Game, 'players'|'roomId'>;  // Prevent circular refs
 }

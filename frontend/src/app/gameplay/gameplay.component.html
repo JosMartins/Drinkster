@@ -2,7 +2,7 @@
 
   <div *ngIf="isAdmin" class="admin-box">
     <h3>Admin Challenge View</h3>
-    <div class="admin-challenge">{{ currentChallenge }}</div>
+    <div class="admin-challenge">{{ adminText }}</div>
     <button class="force-skip-btn" (click)="forceSkip()">Force Skip</button>
   </div>
 
@@ -18,7 +18,7 @@
         </div>
       </div>
 
-      <div class="players-box">
+      <!--<div class="players-box">
         <h2 class="box-title">Players</h2>
         <div class="content-box players-content">
           <div *ngFor="let player of players"
@@ -27,13 +27,16 @@
             {{ player }}
           </div>
         </div>
-      </div>
+
+      </div>-->
+
     </div>
 
     <!-- Right Column -->
     <div class="challenge-box">
       <h2 class="round-number">Round {{ currentRound }}</h2>
       <h2 class="box-title">Current Challenge</h2>
+      <h4 class="box-subtitle">Difficulty: {{ currentChallenge?.difficulty }}</h4>
       <div class="content-box challenge-content">
         <div *ngIf="currentChallenge">
           <div class="challenge-text">{{ currentChallenge.text }}</div>

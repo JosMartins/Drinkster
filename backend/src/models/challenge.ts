@@ -1,4 +1,4 @@
-import { ObjectId, Schema, model} from 'mongoose';
+import {ObjectId, Schema, model, Types} from 'mongoose';
 import { Difficulty } from './difficulty';
 import { Sex } from '../types/sex';
 
@@ -12,7 +12,6 @@ interface IPenaltyParams {
 }
 
 export interface IChallenge {
-    _id?: ObjectId;
     challenge: string;
     difficulty: Difficulty;
     sexes: Array<Sex | 'All'>;

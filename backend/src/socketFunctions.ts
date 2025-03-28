@@ -4,6 +4,7 @@ import * as gameFunctions from './gameFunctions';
 import { GameRoomConfig } from './types/gameRoom';
 import { PlayerConfig, Player } from './types/player';
 import { findPlayerRoom, findPlayerRoomById } from './stores/gameRoomStore';
+import {getGame} from "./gameFunctions";
 
 const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
 const creationCooldowns = new Map<string, number>();
@@ -340,18 +341,14 @@ function setupGameplayHandlers(socket: Socket) {
     socket.on('challenge-completed', async () => {
         // Get the room this socket is in
         const rooms = Array.from(socket.rooms).filter(room => room !== socket.id);
-        if (rooms.length !== 1) {
-            socket.emit('error', 'Player is not in exactly one room');
-            return;
-        }
+        if (rooms.length !== 1) return;
 
         const roomId = parseInt(rooms[0]);
+        const game = getGame(roomId);
 
-        try {
-            // Handle when player completes a challenge
-            await gameFunctions.completedChallenge(roomId, socket.id);
-        } catch (err) {
-            socket.emit('error', err);
+        if (game) {
+            await game.handleChallengeCompletion(true);
+            game.cleanupChallengeListeners(); // New cleanup method
         }
     });
 
@@ -471,11 +468,11 @@ function setupDisconnectHandler(socket: Socket, io: Server) {
                 roomFunctions.deleteRoom(playerRoom.id);
             }
             disconnectTimeouts.delete(socket.id);
-            sendRoomUpdate(io);
+            //sendRoomUpdate(io);
         }, 5 * 60 * 1000);
 
         // Use player ID as key if available, otherwise socket ID
-        disconnectTimeouts.set(playerId ?? socket.id, timeout);
+        disconnectTimeouts.set(`${playerId}|${socket.id}`, timeout);
     });
 }
 
@@ -506,17 +503,27 @@ function setupSessionHandlers(socket: Socket, io: Server) {
                 socket.join(playerRoom.id.toString());
 
                 socket.emit('session-restored', {
+                    me: filterPlayerData(player, socket.id),
                     status: playerRoom.status,
                     roomId: playerRoom.id,
-                    players: playerRoom.players,
+                    players: playerRoom.players.map(p => filterPlayerData(p, socket.id)),
                     isAdmin: player.isAdmin,
                     penalties: player.penalties || [],
                     // Add game-specific fields if available
-                    ...(playerRoom.status === 'playing' && {
-                        playerName: player.name,
-                        currentChallenge: playerRoom.game?.currentTurn.challenge,
-                        currentPlayer: playerRoom.game?.currentTurn.playerName,
-                        currentRound: playerRoom.game?.currentRound
+                    ...(playerRoom.status === 'playing' &&
+                        playerRoom.game?.currentTurn.playerName === player.name && {
+                        text: playerRoom.game.currentTurn.challenge?.challenge,
+                        type:  playerRoom.game.currentTurn.challenge?.type,
+                        round: playerRoom.game.currentRound,
+                        playerName: playerRoom.game.currentTurn.playerName
+                    }),
+                    ...(playerRoom.status === 'playing' &&
+                        playerRoom.game?.currentTurn.playerName !== player.name && {
+                        text: `${playerRoom.game?.currentTurn.playerName} is doing a challenge or drinking ${playerRoom.game?.currentTurn.challenge?.sips} sips.`,
+                            difficulty: playerRoom.game?.currentTurn.challenge?.difficulty,
+                        type:  playerRoom.game?.currentTurn.challenge?.type,
+                        round: playerRoom.game?.currentRound,
+                        playerName: playerRoom.game?.currentTurn.playerName
                     })
                 });
 
@@ -526,7 +533,7 @@ function setupSessionHandlers(socket: Socket, io: Server) {
                 return;
             }
 
-            sendRoomUpdate(io)
+            sendRoomUpdate(io);
 
         } else {
             socket.emit('session-not-found');
