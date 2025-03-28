@@ -33,7 +33,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   roomName: string = '';
   roomId: number = 0;
   players: Player[] = [];
-  currentPlayerId: string = '';
+  currentPlayer: { name: string, id: string} = {name: '', id: ''};
   isAdmin: boolean = false;
   gameMode: string = 'normal';
   showChallenges: boolean = true;
@@ -59,7 +59,8 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
     this.roomId = storedId;
 
-    this.currentPlayerId = localStorage.getItem('sessionId') || '';
+    this.currentPlayer.id = localStorage.getItem('sessionId') || '';
+    this.currentPlayer.name = localStorage.getItem('playerName') || '';
 
     //Player Status Update
     this.subscriptions.push(
@@ -94,7 +95,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       this.router.navigate(['/game'], {
         state: {
           //string list of names
-          self: this.players.filter(p => p.id === this.currentPlayerId)[0],
+          self: this.players.filter(p => p.name === this.currentPlayer.name),
           players: this.players.map(p => p.name),
           roomId: this.roomId
         }
@@ -194,6 +195,6 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   // HELPER FUNCTIONS
 
   isPlayerAdmin(): boolean {
-    return this.players.find(player => player.id === this.currentPlayerId)?.isAdmin || false;
+    return this.players.find(player => player.id === this.currentPlayer?.id)?.isAdmin || false;
   }
 }

@@ -66,6 +66,7 @@ export class PlayerConfigComponent implements OnInit {
           const { roomId, presistId } = data;
           console.log('Room joined room:', roomId);
           localStorage.setItem('sessionId', presistId);
+          localStorage.setItem('playerName', this.playerForm.value.name);
           localStorage.setItem('roomId', roomId);
 
           errorSubscription.unsubscribe();

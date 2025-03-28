@@ -67,7 +67,7 @@ export class GameplayComponent implements OnInit {
             round: sesData.round,
             playerName: sesData.playerName
           };
-          this.myChallenge = sesData.playerName === self.name;
+          this.myChallenge = true;
         }
       })
     )
@@ -79,15 +79,22 @@ export class GameplayComponent implements OnInit {
       this.players = navigationData.extras.state['players'] || [];
       this.self = navigationData.extras.state['self'];
     }
-
+    this.isAdmin = this.self?.name === this.players[0];
     this.listenForChallenges();
 
+    if (this.isAdmin) {
+      this.subscriptions.push(
+        this.io.on('admin-challenge-text').subscribe(data => {
+          console.log("Admin text:", data);
+          this.adminText = data;
+        })
+      )
+    }
   }
 
   private listenForChallenges(): void {
     this.subscriptions.push(
       this.io.gotChallenge().subscribe((data) => {
-        console.log("MINE:", data);
         this.myChallenge = true;
         this.currentChallenge = {
           text: data.text,
@@ -96,12 +103,13 @@ export class GameplayComponent implements OnInit {
           round: data.round,
           playerName: data.playerName
         };
+        console.log(this.currentChallenge.playerName, ";;;;;", this.self?.name);
         this.currentRound = data.round;
         this.penalties = data.playerPenalties;
+        this.myChallenge = this.self?.name === data.playerName;
       }),
 
       this.io.otherPlayerChallenge().subscribe((data) => {
-        console.log("OTHER:", data);
         this.myChallenge = false;
         this.currentChallenge = {
           text: data.text,
@@ -110,27 +118,22 @@ export class GameplayComponent implements OnInit {
           round: data.round,
           playerName: data.playerName
         };
+        console.log(this.currentChallenge.playerName, ";;;;;", this.self?.name);
         this.currentRound = data.round;
         this.penalties = data.playerPenalties;
       })
     );
-
-    if (this.isAdmin) {
-      this.subscriptions.push(
-        this.io.on('admin-challenge-text').subscribe(data => {
-          console.log("Admin text:", data);
-          this.adminText = data;
-        })
-        )}
-    }
+  }
 
   completeChallenge(): void {
-    if (!this.currentChallenge) return;
+    if (!this.currentChallenge || !this.myChallenge) return;
+    this.myChallenge = false;
     this.io.challengeCompleted(this.roomId);
   }
 
   drunkChallenge(): void {
-    if (!this.currentChallenge) return;
+    if (!this.currentChallenge || !this.myChallenge) return;
+    this.myChallenge = false;
     this.io.challengeDrunk(this.roomId);
   }
 

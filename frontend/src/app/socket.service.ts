@@ -11,7 +11,7 @@ export class SocketService {
   private readonly socket: Socket;
 
   constructor(private router: Router) {
-    this.socket = io("http://localhost:25568", {
+    this.socket = io("http://autistassv.ddns.net:25568", {
       transports: ['websocket'],
       autoConnect: true,
       reconnection: true,
