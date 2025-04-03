@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
-Test set: com.drinkster.controller.GameWebSocketControllerTest
+Test set: com.drinkster.ApplicationIT
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.065 s <<< FAILURE! -- in com.drinkster.controller.GameWebSocketControllerTest
-com.drinkster.controller.GameWebSocketControllerTest -- Time elapsed: 0.065 s <<< ERROR!
+Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.335 s <<< FAILURE! -- in com.drinkster.ApplicationIT
+com.drinkster.ApplicationIT -- Time elapsed: 0.335 s <<< ERROR!
 java.lang.AbstractMethodError: Receiver class org.junit.jupiter.engine.descriptor.ClassExtensionContext does not define or inherit an implementation of the resolved method 'abstract org.junit.jupiter.api.extension.ExecutableInvoker getExecutableInvoker()' of interface org.junit.jupiter.api.extension.ExtensionContext.
 	at org.springframework.test.context.junit.jupiter.SpringExtension.registerMethodInvoker(SpringExtension.java:381)
 	at org.springframework.test.context.junit.jupiter.SpringExtension.beforeAll(SpringExtension.java:132)
