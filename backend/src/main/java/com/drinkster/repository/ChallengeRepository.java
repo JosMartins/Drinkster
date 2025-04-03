@@ -9,13 +9,9 @@ import java.util.List;
 
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
-    Challenge findById(long id);
-
     Challenge findByText(String text);
 
     List<Challenge> findByDifficulty(Difficulty difficulty);
-
-    void deleteById(long id);
 
     void deleteByText(String text);
 }
