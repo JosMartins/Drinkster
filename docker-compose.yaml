@@ -1,50 +1,25 @@
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-    # Change the port here if you want to run the frontend on a different port. it should be <port>:443
-      - "<your-port>:443"
-    depends_on:
-      - backend
-    networks:
-      - drinkster-network
-    volumes:
-    # Change both these values to the path of your ssl certificates on your host machine
-      - type: bind
-        source: /path/to/host/fullchain.pem #1
-        target: /conf/ssl/fullchain.pem
-        read_only: true
-      - type: bind
-        source: /path/to/host/privkey.pem #2
-        target: /conf/ssl/privkey.pem
-        read_only: true
-
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "3432:3432"
+  postgres:
+    image: postgres:15-alpine
     environment:
-      - MONGO_URI=mongodb://mongo:27017/drinkster
-    depends_on:
-      - mongo
-    networks:
-      - drinkster-network
-    
-  mongo:
-    image: mongo
+      POSTGRES_DB: drinkster
+      POSTGRES_USER: drinkster
+      POSTGRES_PASSWORD: drinkster
+    ports:
+      - "5432:5432"
     volumes:
-      - drinkster-data:/data/db 
-    networks:
-      - drinkster-network
-
-networks:
-  drinkster-network:
-    driver: bridge
+      - pg_data:/var/lib/postgresql/data
+  
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/drinkster
+      SPRING_DATASOURCE_USERNAME: drinkster
+      SPRING_DATASOURCE_PASSWORD: drinkster
+    depends_on:
+      - postgres
 
 volumes:
-  drinkster-data:
-    driver: local
+  pg_data:    

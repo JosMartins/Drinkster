@@ -1,0 +1,13 @@
+C:\Users\josemartins\Git\Drinkster\backend\src\main\java\com\drinkster\exception\GlobalExceptionHandler.java
+C:\Users\josemartins\Git\Drinkster\backend\src\main\java\com\drinkster\dto\GameStartMessage.java
+C:\Users\josemartins\Git\Drinkster\backend\src\main\java\com\drinkster\model\enums\Sex.java
+C:\Users\josemartins\Git\Drinkster\backend\src\main\java\com\drinkster\Application.java
+C:\Users\josemartins\Git\Drinkster\backend\src\main\java\com\drinkster\model\Challenge.java
+C:\Users\josemartins\Git\Drinkster\backend\src\main\java\com\drinkster\model\enums\Difficulty.java
+C:\Users\josemartins\Git\Drinkster\backend\src\main\java\com\drinkster\config\WebSocketConfig.java
+C:\Users\josemartins\Git\Drinkster\backend\src\main\java\com\drinkster\repository\ChallengeRepository.java
+C:\Users\josemartins\Git\Drinkster\backend\src\main\java\com\drinkster\config\DataLoader.java
+C:\Users\josemartins\Git\Drinkster\backend\src\main\java\com\drinkster\dto\ErrorResponse.java
+C:\Users\josemartins\Git\Drinkster\backend\src\main\java\com\drinkster\controller\GameWebSocketController.java
+C:\Users\josemartins\Git\Drinkster\backend\src\main\java\com\drinkster\dto\StartRequest.java
+C:\Users\josemartins\Git\Drinkster\backend\src\main\java\com\drinkster\model\BaseEntity.java

@@ -1,0 +1,13 @@
+com\drinkster\model\enums\Difficulty.class
+com\drinkster\repository\ChallengeRepository.class
+com\drinkster\exception\GlobalExceptionHandler.class
+com\drinkster\controller\GameWebSocketController.class
+com\drinkster\model\Challenge.class
+com\drinkster\model\enums\Sex.class
+com\drinkster\config\DataLoader.class
+com\drinkster\config\WebSocketConfig.class
+com\drinkster\dto\ErrorResponse.class
+com\drinkster\model\BaseEntity.class
+com\drinkster\Application.class
+com\drinkster\dto\StartRequest.class
+com\drinkster\dto\GameStartMessage.class

@@ -1,0 +1,50 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+    # Change the port here if you want to run the frontend on a different port. it should be <port>:443
+      - "<your-port>:443"
+    depends_on:
+      - backend
+    networks:
+      - drinkster-network
+    volumes:
+    # Change both these values to the path of your ssl certificates on your host machine
+      - type: bind
+        source: /path/to/host/fullchain.pem #1
+        target: /conf/ssl/fullchain.pem
+        read_only: true
+      - type: bind
+        source: /path/to/host/privkey.pem #2
+        target: /conf/ssl/privkey.pem
+        read_only: true
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3432:3432"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/drinkster
+    depends_on:
+      - mongo
+    networks:
+      - drinkster-network
+    
+  mongo:
+    image: mongo
+    volumes:
+      - drinkster-data:/data/db 
+    networks:
+      - drinkster-network
+
+networks:
+  drinkster-network:
+    driver: bridge
+
+volumes:
+  drinkster-data:
+    driver: local
