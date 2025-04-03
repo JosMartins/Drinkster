@@ -4,7 +4,7 @@ import com.drinkster.model.enums.Sex;
 import com.drinkster.model.enums.Difficulty;
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,10 +13,10 @@ import java.util.List;
  * Challenge is a class that represents a challenge in the application.
  *
  */
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "challenges")
 @Data
-@NoArgsConstructor
 public class Challenge extends BaseEntity {
     @Column(nullable = false)
     private String text;
@@ -37,6 +37,7 @@ public class Challenge extends BaseEntity {
     private int sips;
 
 
+    public Challenge() { }
 
     public Challenge(String text, Difficulty diff, List<Sex> sex, int player, int sips) {
         this.text = text;
@@ -45,4 +46,6 @@ public class Challenge extends BaseEntity {
         this.players = player;
         this.sips = sips;
     }
+
+
 }
