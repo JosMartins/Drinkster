@@ -75,7 +75,7 @@ class ChallengeRepositoryTest {
     @Test
     void whenDeleteById_thenRemoveChallenge() {
         challengeRepo.deleteById(challenge1.getId());
-        assertThat(challengeRepo.findById(challenge1.getId())).isNull();
+        assertThat(challengeRepo.findById(challenge1.getId())).isEmpty();
         assertThat(challengeRepo.count()).isEqualTo(1);
     }
 
