@@ -7,14 +7,14 @@
 | Story                | Task Breakdown                                                                                                             | Points | Hours | Priority |
 |----------------------|----------------------------------------------------------------------------------------------------------------------------|--------|-------|----------|
 | 1.1 Spring Boot Core | • Initialize project (Web/Data JPA/WebSocket)<br>• PostgreSQL containerization<br>• Health endpoints (/health, /metrics)   | 5      | 6     | Critical |
-| 1.2 Domain Modeling  | • User Entity (UUID, oauthLink)<br>• Challenge Entity (content, difficulty)<br>• GameSession (relationships)               | 4      | 5     | High     |
+| 1.2 Domain Modeling  | • Challenge Entity (content, difficulty)<br>• GameSession (relationships)                                                  | 4      | 5     | High     |
 | 1.3 WebSocket Layer  | • STOMP broker configuration<br>• Session authentication<br>• Heartbeat mechanism (30s)<br>• Error payload standardization | 7      | 8     | Critical |
 | 1.4 Data Pipeline    | • Flyway migration scripts<br>• Test data seeding<br>• H2 test profile setup                                               | 3      | 4     | Medium   |
 
 ## Phase 2: Game Engine (32 pts)
 | Story                | Task Breakdown                                                                                               | Points | Hours | Priority |
 |----------------------|--------------------------------------------------------------------------------------------------------------|--------|-------|----------|
-| 2.1 Room Management  | • Room state machine (5 states)<br>• Redis session storage<br>• Player capacity rules<br>• Auto-cleanup cron | 8      | 10    | Critical |
+| 2.1 Room Management  | • Room state machine (3 states)<br>• Redis session storage<br>• Player capacity rules<br>• Auto-cleanup cron | 8      | 10    | Critical |
 | 2.2 Challenge System | • Weighted random selection<br>• Category-based filtering<br>• Cooldown mechanism<br>• NSFW content flagging | 9      | 12    | Critical |
 | 2.3 Turn Logic       | • Turn order algorithm<br>• Timeout handling<br>• Interrupt management<br>• State synchronization            | 7      | 9     | High     |
 | 2.4 Penalty System   | • Drink counter service<br>• Penalty escalation rules<br>• Visual effect triggers                            | 5      | 6     | High     |

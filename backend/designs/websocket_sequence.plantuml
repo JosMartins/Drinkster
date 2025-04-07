@@ -1,0 +1,17 @@
+@startuml
+actor User as U
+participant "WebSocketClient" as WSC
+participant "GameWebSocketController" as GameController
+participant "STOMPBroker" as SB
+
+U -> WSC: Connect to /ws
+WSC -> SB: STOMP Connect
+SB -> WSC: STOMP Connected
+
+U -> WSC: Send StartRequest to /app/game.start
+WSC -> GameController: handleGameStart(StartRequest)
+
+GameController -> SB: Send GameStartMessage to /topic/game-events
+SB -> WSC: Broadcast GameStartMessage
+WSC -> U: Receive GameStartMessage
+@enduml

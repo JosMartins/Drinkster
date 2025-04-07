@@ -5,9 +5,10 @@ import com.drinkster.model.enums.Difficulty;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 
-public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
+public interface ChallengeRepository extends JpaRepository<Challenge, UUID> {
 
     Challenge findByText(String text);
 

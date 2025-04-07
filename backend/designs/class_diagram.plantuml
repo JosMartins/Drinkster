@@ -1,0 +1,77 @@
+@startuml
+' Entities and Enums
+class BaseEntity {
+  - Long id
+  - LocalDateTime createdAt
+}
+
+class Challenge {
+  - String text
+  - Difficulty difficulty
+  - List<Sex> sexes
+  - int players
+  - int sips
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  ALL
+}
+
+class GameSession {
+  - List<User> players
+  - List<Challenge> challenges
+  - LocalDateTime startTime
+}
+
+class User {
+  - UUID uuid
+  - String oauthLink
+}
+
+' DTOs
+class StartRequest {
+  - Long roomId
+}
+
+class GameStartMessage {
+  - String content
+}
+
+' Controllers
+class GameWebSocketController {
+  + handleGameStart(StartRequest): GameStartMessage
+}
+
+' Configurations
+class WebSocketConfig {
+  + configureMessageBroker()
+  + registerStompEndpoints()
+}
+
+class DataLoader {
+  + initDatabase()
+}
+
+' Relationships
+BaseEntity <|-- Challenge
+BaseEntity <|-- User
+BaseEntity <|-- GameSession
+
+Challenge "1" *-- "1" Difficulty
+Challenge "1" *-- "n" Sex
+
+GameSession "1" o-- "n" User
+GameSession "1" o-- "n" Challenge
+
+GameWebSocketController ..> StartRequest
+GameWebSocketController ..> GameStartMessage
+
+@enduml

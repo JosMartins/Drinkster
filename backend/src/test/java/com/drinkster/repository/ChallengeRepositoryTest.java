@@ -7,10 +7,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,7 +30,7 @@ class ChallengeRepositoryTest {
         challenge1 = new Challenge(
                 "Test Challenge 1",
                 Difficulty.EASY,
-                List.of(Sex.ALL),
+                new ArrayList<>(List.of(Sex.ALL)),
                 0,
                 3
         );
@@ -38,7 +38,7 @@ class ChallengeRepositoryTest {
         Challenge challenge2 = new Challenge(
                 "Test Challenge 2",
                 Difficulty.MEDIUM,
-                List.of(Sex.MALE),
+                new ArrayList<>(List.of(Sex.MALE)),
                 1,
                 4
         );
@@ -85,4 +85,11 @@ class ChallengeRepositoryTest {
         assertThat(challengeRepo.findByText("Test Challenge 2")).isNull();
         assertThat(challengeRepo.count()).isEqualTo(1);
     }
+
+    @Test
+    void shouldPersistDifficultyAsString() {
+        Challenge c = challengeRepo.save(challenge1);
+        assertThat(c.getDifficulty().name()).isEqualTo("EASY");
+    }
+
 }

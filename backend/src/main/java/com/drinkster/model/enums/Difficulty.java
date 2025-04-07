@@ -1,23 +1,24 @@
 package com.drinkster.model.enums;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 public enum Difficulty {
-    EASY(1),
-    MEDIUM(2),
-    HARD(3),
-    EXTREME(4);
+    EASY("EASY"),
+    MEDIUM("MEDIUM"),
+    HARD("HARD"),
+    EXTREME("EXTREME");
 
-    private final int value;
+    private final String value;
 
-    Difficulty(int value) {
+    Difficulty(String value) {
         this.value = value;
     }
 
 
-    public static Difficulty fromValue(int value) {
+    public static Difficulty fromValue(String value) {
         return Arrays.stream(values())
-                .filter(d -> d.value == value)
+                .filter(d -> Objects.equals(d.value, value))
                 .findFirst()
                 .orElseThrow(IllegalArgumentException::new);
     }

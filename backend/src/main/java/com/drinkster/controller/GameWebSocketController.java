@@ -1,19 +1,27 @@
 package com.drinkster.controller;
 
-import com.drinkster.dto.GameStartMessage;
-import com.drinkster.dto.StartRequest;
+import com.drinkster.dto.JoinRequest;
+import com.drinkster.dto.JoinResponse;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 
-import javax.naming.ldap.StartTlsRequest;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Controller
 public class GameWebSocketController {
 
-    @MessageMapping("/game.start")
-    @SendTo("/topic/game-events")
-    public GameStartMessage handleGameStart(StartRequest request) {
-        return new GameStartMessage("Game Started for room " + request.roomId());
+    // Track session IDs and room associations
+    private final Map<String, String> sessionRoomMap = new ConcurrentHashMap<>();
+
+    @MessageMapping("/join-room")
+    @SendTo("/topic/room-events")
+    public JoinResponse handleJoinRoom(JoinRequest request) {
+        String sessionId = UUID.randomUUID().toString();
+        sessionRoomMap.put(sessionId, request.roomId());
+        return new JoinResponse(sessionId, "Joined room: " + request.roomId());
     }
+
 }
