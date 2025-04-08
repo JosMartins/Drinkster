@@ -28,6 +28,21 @@ public class GameRoom {
     private int currentPlayerIndex;
 
 
+    public GameRoom(String name, boolean isPrivate, String password, Player admin, RoomMode mode) {
+        this.id = UUID.randomUUID();
+        this.name = name;
+        this.isPrivate = isPrivate;
+        this.password = password;
+        this.admin = admin;
+        this.players = List.of(admin);
+        this.state = RoomState.LOBBY;
+        this.mode = mode;
+        this.rememberedChallenges = 0;
+        this.showChallenges = false;
+        this.currentChallenge = null;
+        this.currentPlayerIndex = 0;
+    }
+
     public void addPlayer(Player player) {
         if (state == RoomState.LOBBY) {
             players.add(player);
@@ -64,5 +79,6 @@ public class GameRoom {
             throw new IllegalStateException("Cannot end game from current state: " + state);
         }
     }
+
 
 }
