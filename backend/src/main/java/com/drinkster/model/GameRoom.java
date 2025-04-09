@@ -2,7 +2,6 @@ package com.drinkster.model;
 
 import com.drinkster.model.enums.RoomMode;
 import com.drinkster.model.enums.RoomState;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,7 +10,6 @@ import java.util.UUID;
 
 @Getter
 @Setter
-@AllArgsConstructor
 public class GameRoom {
 
     private UUID id;
@@ -28,17 +26,17 @@ public class GameRoom {
     private int currentPlayerIndex;
 
 
-    public GameRoom(String name, boolean isPrivate, String password, Player admin, RoomMode mode) {
+    public GameRoom(String roomName, boolean isPrivate, String password, Player admin, RoomMode mode, int rememberedChallenges, boolean showChallenges) {
         this.id = UUID.randomUUID();
-        this.name = name;
+        this.name = roomName;
         this.isPrivate = isPrivate;
         this.password = password;
         this.admin = admin;
         this.players = List.of(admin);
         this.state = RoomState.LOBBY;
         this.mode = mode;
-        this.rememberedChallenges = 0;
-        this.showChallenges = false;
+        this.rememberedChallenges = rememberedChallenges;
+        this.showChallenges = showChallenges;
         this.currentChallenge = null;
         this.currentPlayerIndex = 0;
     }
@@ -81,4 +79,10 @@ public class GameRoom {
     }
 
 
+    public Player getPlayer(UUID playerID) {
+        return players.stream()
+                .filter(player -> player.getId().equals(playerID))
+                .findFirst()
+                .orElse(null);
+    }
 }

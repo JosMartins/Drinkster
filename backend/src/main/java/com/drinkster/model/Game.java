@@ -13,6 +13,8 @@ import java.util.UUID;
 @Getter
 @Setter
 public class Game {
+    private static final int SISP_PER_GLASS = 4;
+
     // Communication
     private WebSocketSession webSocketSession;
     private List<Player> players;
@@ -61,20 +63,24 @@ public class Game {
     }
 
     public void nextTurn() {
-        this.secondPlayer = null;
-        this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.size();
-        this.stats.incrementTotalRounds();
-
-        // Process penalties
-        for (Player player : players) {
-            player.getPenalties().removeIf(penalty -> {
-                if (penalty.getRounds() <= 0) return true;
-                penalty.setRounds(penalty.getRounds() - 1);
-                return false;
-            });
-        }
 
         // TODO: Implement challenge fetching logic
         this.currentTurn = createNewTurn();
+    }
+
+    public void handleCompletedChallenge(boolean success) {
+
+
+        /*TODO: Implement logic to handle the completion of a challenge.
+         * Check if player succeeded or drunk the challenge.
+         * process penalties, i.e. remove one round from each penalty.
+         * */
+
+        /*TODO: implement glass almost empty chance:
+         * CHECK THIS FOR ALL PLAYERS (some challenges are to give sips, so the drinker might not be the current player
+         * Find out a way to decouple this from this function, so that the popup can appear at any time rather then only when the game changes turn
+         * if the player's sips % SIPS_PER_GLASS == 0, then the player has a chance to have its glass almost empty.
+         * this will add a 30% chance for a game_event -> send to player (popup): ("Your glass is almost empty. Drink the rest of it and refill!") something like that
+         * */
     }
 }

@@ -17,16 +17,25 @@ public class Player {
     private Sex sex;
     private String socketId;
     private DifficultyValues difficultyValues;
-    private List<Penalty> penalties;
-    private int isAdmin;
-    private int isReady;
-    private int isPlaying;
+    private List<Penalty> penalties = new ArrayList<>();
+    private int drinked = 0;
+    private boolean isAdmin = false;
+    private boolean isReady = false;
+    private boolean isPlaying = false;
 
 
     public Player() {
         this.id = UUID.randomUUID();
         this.difficultyValues = new DifficultyValues();
-        this.penalties = new ArrayList<>();
+    }
+
+    public Player(String name, Sex sex, DifficultyValues difficultyValues, boolean admin, String socket) {
+        this.id = UUID.randomUUID();
+        this.name = name;
+        this.sex = sex;
+        this.difficultyValues = difficultyValues;
+        this.socketId = socket;
+        this.isAdmin = admin;
     }
 
     public void addPenalty(Penalty penalty) {

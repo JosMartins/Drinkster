@@ -1,7 +1,7 @@
 package com.drinkster.controller;
 
-import com.drinkster.dto.JoinRequest;
-import com.drinkster.dto.JoinResponse;
+import com.drinkster.dto.request.JoinRequest;
+import com.drinkster.dto.response.JoinResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;

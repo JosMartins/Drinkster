@@ -1,7 +1,7 @@
 package com.drinkster.controller;
 
-import com.drinkster.dto.JoinRequest;
-import com.drinkster.dto.JoinResponse;
+import com.drinkster.dto.request.JoinRequest;
+import com.drinkster.dto.response.JoinResponse;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
