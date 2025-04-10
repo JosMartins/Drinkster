@@ -18,7 +18,7 @@ public class Player {
     private String socketId;
     private DifficultyValues difficultyValues;
     private List<Penalty> penalties = new ArrayList<>();
-    private int drinked = 0;
+    private int drinks = 0;
     private boolean isAdmin = false;
     private boolean isReady = false;
     private boolean isPlaying = false;

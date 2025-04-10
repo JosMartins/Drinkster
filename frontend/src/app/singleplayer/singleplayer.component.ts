@@ -44,7 +44,6 @@ export class SingleplayerComponent {
 
   startGame() {
     //TODO create the room (check backend requirements)
-    this.socketService.createSinglePlayer(undefined);
     //TODO
     //this.router.navigate(['/game']);
 

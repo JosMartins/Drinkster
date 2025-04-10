@@ -25,7 +25,7 @@ public class RoomWebSocketController {
 
 
     @MessageMapping("/list-rooms")
-    @SendTo("/topic/room-list")
+    @SendTo("/topic/rooms-list")
     public RoomListResponse listRooms() {
         return new RoomListResponse(roomService.getRooms());
 

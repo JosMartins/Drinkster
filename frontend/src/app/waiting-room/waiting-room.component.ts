@@ -31,7 +31,7 @@ interface Player {
 })
 export class WaitingRoomComponent implements OnInit, OnDestroy {
   roomName: string = '';
-  roomId: number = 0;
+  roomId: string = '';
   players: Player[] = [];
   currentPlayerId: string = '';
   isAdmin: boolean = false;
@@ -50,7 +50,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit() {
-    const storedId = parseInt(localStorage.getItem("roomId") || '');
+    const storedId = localStorage.getItem("roomId") || '';
 
     if (!storedId) {
       console.log("No room ID found, redirecting to multiplayer");
@@ -69,8 +69,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       }),
 
       merge(
-        this.io.playerJoined(),
-        this.io.adminJoined()
+        this.io.playerJoined()
       ).subscribe((newPlayer) => {
         // Use unique ID for admins, fallback to name for non-admins
         const uniqueKey = newPlayer.id || newPlayer.name;
@@ -128,16 +127,16 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
   toggleReady(): void {
     if (!this.isReady) {
-      this.io.playerReady();
+      this.io.playerReady(this.roomId, this.currentPlayerId);
     } else {
-      this.io.playerUnready();
+      this.io.playerUnready(this.roomId, this.currentPlayerId);
     }
     this.isReady = !this.isReady;
   }
 
 
   leaveRoom(): void {
-    this.io.leaveRoom();
+    this.io.leaveRoom(this.roomId, this.currentPlayerId);
     this.router.navigate(['/multiplayer']).then(_ => null);
   }
 
@@ -149,7 +148,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.io.startGame();
+      this.io.startGame(this.roomId, this.currentPlayerId);
       this.router.navigate(['/game']).then(_ => null);
     }
   }
@@ -169,7 +168,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       if (player.id) {
          this.io.updatePlayerDifficulty(this.roomId, player.id, difficulty);
 
-         let diffSub= this.io.playerDifficultyUpdate().subscribe(
+         let diffSub= this.io.on("lol").subscribe(
            async (data)  => {
               if (data.playerId === player.id) {
                 player.difficulty = data.difficultyValues;

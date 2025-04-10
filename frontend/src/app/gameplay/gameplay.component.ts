@@ -26,7 +26,7 @@ export class GameplayComponent implements OnInit {
   private subscriptions: Subscription[] = [];
   self?: Player;
   players: string[] = [];
-  roomId: number = 0;
+  roomId: string = '';
   currentRound: number = 1;
   isAdmin: boolean = false;
   adminText?: string;
@@ -83,7 +83,7 @@ export class GameplayComponent implements OnInit {
     const navigationData = this.router.getCurrentNavigation();
 
     if (navigationData?.extras.state) {
-      this.roomId = navigationData.extras.state['roomId'] || 0;
+      this.roomId = navigationData.extras.state['roomId'];
       this.players = navigationData.extras.state['players'] || [];
       this.self = navigationData.extras.state['self'];
     }
