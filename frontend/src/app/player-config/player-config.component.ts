@@ -33,7 +33,7 @@ export class PlayerConfigComponent implements OnInit {
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<PlayerConfigComponent>,
     private socketService: SocketService,
-    @Inject(MAT_DIALOG_DATA) public roomId: number
+    @Inject(MAT_DIALOG_DATA) public roomId: string
   ) {
     this.playerForm = this.fb.group({
       id: [''], // backend fills in the id

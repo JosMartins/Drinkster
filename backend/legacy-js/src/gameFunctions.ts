@@ -219,7 +219,7 @@ export async function completedChallenge(roomId: number, sockId: string) {
         throw new Error('Player is not the current player');
     }
 
-    await room.game.nextTurn();
+    await room.game.handleChallengeCompletion(true);
 
     return {
         nextPlayerId: room.game.currentTurn.playerId,

@@ -1,0 +1,32 @@
+package com.drinkster.model;
+
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+
+/**
+ * BaseEntity is a base class for all entities in the application.
+ * It provides a common structure for all entities.
+ */
+@MappedSuperclass
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public abstract class BaseEntity {
+    @Id
+    @GeneratedValue(strategy =  GenerationType.UUID)
+
+    private UUID id;
+
+
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+}

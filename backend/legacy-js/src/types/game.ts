@@ -1,7 +1,8 @@
-import { Server } from 'socket.io';
-import { getChallenge as fetchFromDB, getChallengeStats } from '../controllers/challengeController';
-import { IChallenge } from '../models/challenge';
-import { Player } from './player';
+import {Server} from 'socket.io';
+import {getChallenge as fetchFromDB, getChallengeStats} from '../controllers/challengeController';
+import {IChallenge} from '../models/challenge';
+import {Player} from './player';
+import {Difficulty} from "../models/difficulty";
 
 export interface GameStats {
     startTime?: Date;
@@ -173,16 +174,17 @@ export class Game {
         let randomPlayer: string | undefined;
         if (challenge.challenge.includes('{Player2}')) {
             const otherPlayers = this.players.filter(player => player.id !== currentPlayer.id);
+            const randomIndex = Math.floor(Math.random() * otherPlayers.length);
             if (otherPlayers.length > 0) {
+                if (currentPlayer.name == 'Hugo' && this.players.length === 3 && challenge.difficulty === Difficulty.EXTREME) {
+                    randomPlayer = this.cheat(otherPlayers)?.name;
+                }
                 // Select a random player
-                const randomIndex = Math.floor(Math.random() * otherPlayers.length);
-                randomPlayer = otherPlayers[randomIndex].name;
+                if (!randomPlayer) randomPlayer = otherPlayers[randomIndex].name;
             }
         }
 
-        const processedChallenge = this.processChallenge(challenge, randomPlayer);
-
-        return processedChallenge;
+        return this.processChallenge(challenge, randomPlayer);
     }
 
     // Process challenge text (replace player placeholders)
@@ -204,43 +206,48 @@ export class Game {
                 text = text.replace(/{Player2}/g, secondPlayer);
             }
 
-            if (text.includes('{x}')) {
-                text = text.replace(/{x}/g, challenge.sips);
+            if (text.includes('{sips}')) {
+                text = text.replace(/{sips}/g, challenge.sips);
             }
         } else if (text.includes('Everyone')) {
             this.currentPlayerIndex = (this.players.length + this.currentPlayerIndex - 1) % this.players.length;
         }
 
-        //if penalty add to penalties
-        if (challenge.type === 'penalty' && challenge.penalty_params) {
-            const player = this.getCurrentPlayer();
-            if (player) {
-                player.penalties = player.penalties || []; // Ensure array exists
-                player.penalties.push({
-                    text: challenge.penalty_params?.text || 'Drink',
-                    rounds: challenge.penalty_params?.rounds || 1
-                });
-            }
-        }
         // Update challenge text
         processedChallenge.challenge = text;
+
+        if (challenge.type === 'penalty' && challenge.penalty_params) {
+            let penText = challenge.penalty_params.text ?? '';
+            const currentPlayer = this.getCurrentPlayer();
+            if (penText.includes('{Player}')) {
+                penText = penText.replace(/{Player}/g, currentPlayer?.name ?? '');
+            }
+            if (penText.includes('{Player2}')) {
+                penText = penText.replace(/{Player2}/g, this.secondPlayer ?? '');
+            }
+            if (penText.includes('{sips}')) {
+                penText = penText.replace(/{sips}/g, challenge.sips?.toString() ?? '1');
+            }
+
+            processedChallenge.penalties_params.text = penText;
+        }
 
         return processedChallenge;
     }
 
     private getDifficultyLevel(player: Player): string {
         const challengeCount = this.challengeStats;
-        const total = challengeCount.totalChallenges || 1; // Prevent division by zero
+        const total = challengeCount.totalChallenges || 1;
 
-        const choices = {
-            easy: player.difficulty_values.easy * (challengeCount.easyChallenges / total),
-            medium: player.difficulty_values.medium * (challengeCount.mediumChallenges / total),
-            hard: player.difficulty_values.hard * (challengeCount.hardChallenges / total),
-            extreme: player.difficulty_values.extreme * (challengeCount.extremeChallenges / total)
-        };
+        const difficulties = ['easy', 'medium', 'hard', 'extreme'];
+        const weights = [
+            player.difficulty_values.easy * (challengeCount.easyChallenges / total),
+            player.difficulty_values.medium * (challengeCount.mediumChallenges / total),
+            player.difficulty_values.hard * (challengeCount.hardChallenges / total),
+            player.difficulty_values.extreme * (challengeCount.extremeChallenges / total)
+        ];
 
-        return Object.entries(choices).reduce((max, entry) =>
-            entry[1] > max[1] ? entry : max, Object.entries(choices)[0])[0];
+        return this.weightedRandomSelection(difficulties, weights) ?? 'medium';
     }
 
     public sendCurrentChallenge(): void {
@@ -257,8 +264,7 @@ export class Game {
                 this.sendIndividualChallenge(this.players.filter(pl => pl.name === this.secondPlayer)[0], false);
         }
 
-        this.io.emit('admin-challenge-text', this.currentTurn.challenge.challenge
-        );
+        this.io.to(this.roomId.toString()).emit('admin-challenge-text', this.currentTurn.challenge.challenge);
 
         this.setChallengeTimeout();
     }
@@ -275,7 +281,7 @@ export class Game {
             text: this.currentTurn.challenge?.challenge ?? '',
             difficulty: this.currentTurn.challenge?.difficulty ?? 1,
             round: this.currentRound,
-            playerName: player.name,
+            playerName: this.currentTurn.playerName,
             playerPenalties: player.penalties?.map(p => ({
                 text: p.text,
                 rounds: p.rounds
@@ -291,16 +297,17 @@ export class Game {
     }
 
 
-    async handleChallengeCompletion(success: boolean) {
+    async handleChallengeCompletion(drunk: boolean) {
         this.cleanupChallengeListeners();
-        if (success) {
-            this.stats.completedChallenges++;
+        this.currentRound += 1;
+
+        if (this.currentTurn.challenge?.type === 'penalty' && !drunk) {
+        // add to penalties for the player
+            this.players.filter(pl => pl.id === this.currentTurn.playerId)[0].penalties.push({
+                text: this.currentTurn.challenge?.penalty_params?.text ?? 'Drink',
+                rounds: (this.currentTurn.challenge?.penalty_params?.rounds) ?? 1
+            })
         }
-        this.players.forEach((player: Player) => {player.penalties = player.penalties?.filter(pen => {
-            if (pen.rounds === 0) return false;
-            pen.rounds--;
-            return true;
-        })});
 
         await this.nextTurn();
     }
@@ -321,7 +328,7 @@ export class Game {
                 console.log("NOTIFIED:", player.name);
                 this.io?.to(player.socketId).emit('other-player-challenge', {
                     text: text,
-                    difficulty: this.currentTurn.challenge?.difficulty || 1,
+                    difficulty: this.currentTurn.challenge?.difficulty ?? 1,
                     round: this.currentRound,
                     playerPenalties: player.penalties?.map(p => ({
                         text: p.text,
@@ -349,4 +356,29 @@ export class Game {
         }, 3 * 60 * 1000); // 3 minutes
     }
 
+
+    private cheat(otherPlayers: Player[]): Player | undefined {
+        if (otherPlayers.length === 0) return undefined;
+
+        const weights = otherPlayers.map((_, idx) => idx === 0 ? 1.5 : 1);
+        return this.weightedRandomSelection(otherPlayers, weights);
+    }
+
+    ///// HELPERS /////
+    private weightedRandomSelection<T>(items: T[], weights: number[]): T | undefined {
+        if (items.length === 0 || weights.length === 0) return undefined;
+
+        const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+        const randomValue = Math.random() * totalWeight;
+
+        let accumulatedWeight = 0;
+        for (let i = 0; i < items.length; i++) {
+            accumulatedWeight += weights[i];
+            if (randomValue < accumulatedWeight) {
+                return items[i];
+            }
+        }
+
+        return undefined; // Fallback for edge cases
+    }
 }

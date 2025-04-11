@@ -3,7 +3,7 @@ import * as roomFunctions from './roomFunctions';
 import * as gameFunctions from './gameFunctions';
 import { GameRoomConfig } from './types/gameRoom';
 import { PlayerConfig, Player } from './types/player';
-import { findPlayerRoom, findPlayerRoomById } from './stores/gameRoomStore';
+import {findPlayerRoom, findPlayerRoomById, getRoom} from './stores/gameRoomStore';
 import {getGame} from "./gameFunctions";
 
 const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
@@ -347,8 +347,7 @@ function setupGameplayHandlers(socket: Socket) {
         const game = getGame(roomId);
 
         if (game) {
-            await game.handleChallengeCompletion(true);
-            game.cleanupChallengeListeners(); // New cleanup method
+            await game.handleChallengeCompletion(false);
         }
     });
 
@@ -362,9 +361,16 @@ function setupGameplayHandlers(socket: Socket) {
 
         const roomId = parseInt(rooms[0]);
 
+        const game = getGame(roomId);
+        const requestingPlayer = getRoom(roomId)?.players.find(p => p.socketId === socket.id);
+        if (requestingPlayer?.name !== game.currentTurn.playerName) {
+            socket.emit('error', 'Player is not playing the round.');
+            return;
+        }
+
         try {
             // Handle when player completes a challenge
-            await gameFunctions.completedChallenge(roomId, socket.id);
+            await game.handleChallengeCompletion(true);
         } catch (err) {
             socket.emit('error', err);
         }

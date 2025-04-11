@@ -1,0 +1,14 @@
+@startuml
+rectangle "Frontend" as FE
+rectangle "Backend" {
+  component "WebSocket Controller" as WS
+  component "Game Logic" as GL
+  component "Database" as DB
+  component "In-Memory State" as MEM
+}
+
+FE --> WS : WebSocket (STOMP)
+WS --> GL : Process game events
+GL --> DB : Load challenges
+GL --> MEM : Track active rooms/players
+@enduml

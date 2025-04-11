@@ -12,6 +12,7 @@ import { DifficultyDialogComponent } from '../difficulty-dialog/difficulty-dialo
 import { DEFAULT_DIFFICULTY, Difficulty } from '../models/difficulty';
 import { SocketService} from "../socket.service";
 import { Router } from '@angular/router';
+import {RoomConfig} from "../models/RoomConfig";
 
 
 @Component({
@@ -77,7 +78,7 @@ export class CreateRoomDialogComponent {
 
   onSubmit(): void {
     if (this.roomForm.valid) {
-      const roomConfig = {
+      const roomConfig: RoomConfig = {
         roomName: this.roomForm.value.name,
         private: this.roomForm.value.isPrivate,
         password: this.roomForm.value.password,

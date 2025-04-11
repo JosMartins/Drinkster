@@ -1,16 +1,14 @@
-# Base image for Node.js
-FROM node:18
-
-# Set the working directory
+# backend/Dockerfile
+# Stage 1: Build the JAR
+FROM maven:3.8.6-eclipse-temurin-17 AS build
 WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Copy code, install backend dependencies, build and prune dev dependencies
-COPY . ./backend/
-WORKDIR /app/backend
-RUN npm install && npm run build --omit-dev && npm prune --omit=dev
-
-# Expose port
-EXPOSE 3432
-
-# Start the backend
-CMD ["node", "/app/backend/dist/app.js"]
+# Stage 2: Run the JAR
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+EXPOSE 800
+ENTRYPOINT ["java", "-jar", "app.jar"]
