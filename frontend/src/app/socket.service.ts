@@ -13,7 +13,7 @@ export class SocketService {
   private stompClient!: Client;
   private readonly serverUrl = 'http://localhost:8080/ws';
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private readonly maxReconnectAttempts = 5;
 
   constructor(private router: Router) {
     this.initializeConnection();

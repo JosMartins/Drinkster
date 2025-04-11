@@ -2,7 +2,6 @@ package com.drinkster.model.enums;
 
 import java.util.Arrays;
 
-import static java.util.Arrays.stream;
 
 public enum Sex {
     MALE("M"),

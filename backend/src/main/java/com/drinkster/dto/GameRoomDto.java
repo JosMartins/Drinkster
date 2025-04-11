@@ -1,19 +1,11 @@
 package com.drinkster.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
-@AllArgsConstructor
-public class GameRoomDto {
-
-    private String roomId;
-    private String roomName;
-    private boolean isPrivate;
-    private String password;
-    private int playerCount;
-    private String roomState;
-
-}
+public record GameRoomDto (String roomId,
+                           String roomName,
+                           boolean isPrivate,
+                           String roomState,
+                           String roomMode,
+                           int playerCount,
+                           int rememberedChallenges,
+                           String adminId) {  }

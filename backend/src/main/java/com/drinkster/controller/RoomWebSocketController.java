@@ -39,7 +39,7 @@ public class RoomWebSocketController {
 
         Player admin = new Player(
                 request.player().name(),
-                Sex.valueOf(request.player().sex()),
+                Sex.fromDbCode(request.player().sex()),
                 request.player().difficulty_values(),
                 true,
                 sessionId

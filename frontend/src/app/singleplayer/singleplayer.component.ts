@@ -44,8 +44,7 @@ export class SingleplayerComponent {
 
   startGame() {
     //TODO create the room (check backend requirements)
-    //TODO
-    //this.router.navigate(['/game']);
+    this.router.navigate(['/game']);
 
   }
 
