@@ -84,6 +84,13 @@ public class RoomService {
             throw new IllegalArgumentException("Player not found in the room");
         }
 
+        if (sockId == null) {
+            throw new IllegalArgumentException("Socket ID is null");
+        }
+        if (roomPlayer.getSocketId() == null) {
+            throw new IllegalArgumentException("Player socket ID is null");
+        }
+
         if (!roomPlayer.getSocketId().equals(sockId)) {
             throw new IllegalArgumentException("Request Identifier does not match the player");
         }
@@ -109,18 +116,22 @@ public class RoomService {
      *
      * @param roomId The ID of the room.
      * @param playerID The ID of the player to be kicked.
-     * @param adminId The ID of the admin who is kicking the player.
+     * @param adminSockId The ID of the admin who is kicking the player.
      */
-    public void kickPlayer(UUID roomId, UUID playerID, UUID adminId) {
-        GameRoom gameRoom = gameRooms.get(roomId);
+    public void kickPlayer(UUID roomId, UUID playerID, String adminSockId) {
 
+        if (roomId == null || playerID == null || adminSockId == null) {
+            throw new IllegalArgumentException("Room ID, Player ID, and Admin Socket ID cannot be null");
+        }
+
+        GameRoom gameRoom = gameRooms.get(roomId);
 
         if (gameRoom == null) {
             throw new IllegalArgumentException("Room does not exist");
         }
 
 
-        if (!gameRoom.getAdmin().getId().equals(adminId)) {
+        if (!gameRoom.getAdmin().getSocketId().equals(adminSockId)) {
             throw new IllegalArgumentException("Only the admin can kick players");
         }
 
@@ -139,15 +150,15 @@ public class RoomService {
      * @param roomId The ID of the room.
      * @param playerId The ID of the player whose difficulty is to be changed.
      * @param difficulty The new difficulty values for the player.
-     * @param adminId The ID of the admin who is changing the difficulty.
+     * @param adminSocketId The ID of the admin who is changing the difficulty.
      */
-    public void changePlayerDifficulty(UUID roomId, UUID playerId, DifficultyValues difficulty, UUID adminId) {
+    public void changePlayerDifficulty(UUID roomId, UUID playerId, DifficultyValues difficulty, String adminSocketId) {
         GameRoom gameRoom = gameRooms.get(roomId);
         if (gameRoom == null) {
             throw new IllegalArgumentException("Room does not exist");
         }
 
-        if (!gameRoom.getAdmin().getId().equals(adminId)) {
+        if (!gameRoom.getAdmin().getSocketId().equals(adminSocketId)) {
             throw new IllegalArgumentException("Only the admin can change player difficulty");
         }
 
@@ -168,19 +179,37 @@ public class RoomService {
      *
      * @param roomId The ID of the room.
      * @param mode The new challenge mode (show challenges to other players or no).
-     * @param adminId The ID of the admin who is changing the mode.
+     * @param adminSocketId The ID of the admin who is changing the mode.
      */
-    public void changeChallengeMode(UUID roomId, boolean mode, UUID adminId) {
+    public void changeChallengeMode(UUID roomId, boolean mode, String adminSocketId) {
         GameRoom gameRoom = gameRooms.get(roomId);
         if (gameRoom == null) {
             throw new IllegalArgumentException("Room does not exist");
         }
 
-        if (!gameRoom.getAdmin().getId().equals(adminId)) {
+        if (!gameRoom.getAdmin().getSocketId().equals(adminSocketId)) {
             throw new IllegalArgumentException("Only the admin can change challenge mode");
         }
 
         gameRoom.setShowChallenges(mode);
     }
 
+    /**
+     * Start the game in the room.
+     *
+     * @param roomId The ID of the room.
+     * @param adminSocketId The ID of the admin who is starting the game.
+     */
+    public void startGame(UUID roomId, String adminSocketId) {
+        GameRoom gameRoom = gameRooms.get(roomId);
+        if (gameRoom == null) {
+            throw new IllegalArgumentException("Room does not exist");
+        }
+
+        if (!gameRoom.getAdmin().getSocketId().equals(adminSocketId)) {
+            throw new IllegalArgumentException("Only the admin can start the game");
+        }
+
+        gameRoom.startGame();
+    }
 }

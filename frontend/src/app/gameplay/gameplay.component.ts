@@ -5,6 +5,8 @@ import {NgForOf, NgIf} from "@angular/common";
 import {Subscription} from "rxjs";
 import {Router} from "@angular/router";
 import {Player} from "../models/player";
+import {EventDialogComponent} from "../event-dialog/event-dialog.component";
+import {MatDialog} from "@angular/material/dialog";
 
 interface Penalty {
   text: string;
@@ -23,7 +25,7 @@ interface Penalty {
 })
 
 export class GameplayComponent implements OnInit {
-  private subscriptions: Subscription[] = [];
+  private readonly subscriptions: Subscription[] = [];
   self?: Player;
   players: string[] = [];
   roomId: string = '';
@@ -45,8 +47,9 @@ export class GameplayComponent implements OnInit {
   myChallenge: boolean = false;
 
   constructor(
-    private io: SocketService,
-    private router: Router
+    private readonly io: SocketService,
+    private readonly router: Router,
+    private readonly dialog: MatDialog
   ) { }
 
   ngOnInit(): void {
@@ -77,7 +80,7 @@ export class GameplayComponent implements OnInit {
             );
           }
         }
-      })
+      }),
     );
 
     const navigationData = this.router.getCurrentNavigation();
@@ -96,6 +99,7 @@ export class GameplayComponent implements OnInit {
         })
       )}
 
+    this.handleRandomEvents();
     this.listenForChallenges();
 
   }
@@ -147,8 +151,18 @@ export class GameplayComponent implements OnInit {
     this.io.forceSkipChallenge(this.roomId);
   }
 
-  ngOnDestroy(): void {
-    this.subscriptions.forEach(sub => sub.unsubscribe());
-  }
 
+  private handleRandomEvents(): void {
+    this.subscriptions.push(
+      this.io.randomEvent().subscribe((data) => {
+        console.log("Random event:", data);
+
+        this.dialog.open(EventDialogComponent, {
+          width: '400px',
+          panelClass: ['custom-dialog', 'transparent-overlay'],
+          data: { message: data.message || data.text || "A random event has occurred!" }
+        });
+      })
+    );
+  }
 }

@@ -43,9 +43,9 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription[] = [];
 
   constructor(
-    private io: SocketService,
-    private router: Router,
-    private dialog: MatDialog
+    private readonly io: SocketService,
+    private readonly router: Router,
+    private readonly dialog: MatDialog
   ) {
   }
 

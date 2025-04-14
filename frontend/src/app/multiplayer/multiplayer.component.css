@@ -67,9 +67,19 @@
 
   .room-lock {
     margin-left: 10px;
-    color: #6c757d;
   }
 
+  .room-players {
+    font-size: 14px;
+    margin-left: 20px;
+    color: #06dcf1;
+  }
+
+  .room-state {
+    font-size: 14px;
+    margin-left: 20px;
+    color: #28a745;
+  }
   .join-button {
     background-color: #28a745;
     color: white;

@@ -9,13 +9,15 @@ import {PlayerConfig, RoomConfig} from "./models/RoomConfig";
   providedIn: 'root'
 })
 export class SocketService {
-  private sessionData$ = new BehaviorSubject<any>(null);
+  private readonly sessionData$ = new BehaviorSubject<any>(null);
+  public isConnected$ = new BehaviorSubject<boolean>(false);
   private stompClient!: Client;
-  private readonly serverUrl = 'http://localhost:8080/ws';
+  private pendingSubscriptions: Array<{ destination: string, callback: (payload: any) => void }> = [];
+  private readonly serverUrl = 'http://localhost:8000/ws';
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 5;
 
-  constructor(private router: Router) {
+  constructor(private readonly router: Router) {
     this.initializeConnection();
   }
 
@@ -32,6 +34,9 @@ export class SocketService {
       this.stompClient.subscribe(destination, (message) => {
         callback(JSON.parse(message.body));
       });
+    } else {
+      // Queue the subscription if not connected
+      this.pendingSubscriptions.push({ destination, callback });
     }
   }
 
@@ -51,10 +56,16 @@ export class SocketService {
 
     this.stompClient.connect({}, (frame) => {
       console.log('Connected: ' + frame);
+      this.isConnected$.next(true);
       this.reconnectAttempts = 0;
       this.setupReconnection();
+      this.pendingSubscriptions.forEach(sub => {
+        this.subscribe(sub.destination, sub.callback);
+      });
+      this.pendingSubscriptions = [];
     }, (error) => {
       console.log('Connection error: ', error);
+      this.isConnected$.next(false);
       this.handleReconnection();
     });
   }
@@ -90,15 +101,18 @@ export class SocketService {
 
   public disconnect(): void {
     if (this.stompClient?.connected) {
-      this.stompClient.disconnect(() => {}); // Add empty callback
+      this.stompClient.disconnect(() => {});
     }
-    localStorage.removeItem('sessionId');
+    //remove sessionId and roomId from cookies
+    this.deleteCookie('sessionId');
+    this.deleteCookie('roomId');
+
   }
 
   // Session Management
 
   private handleRestoredSession(data: any): void {
-    localStorage.setItem('roomId', data.roomId);
+    this.setCookie('roomId', data.roomId, 12);
 
     if (data.status === 'waiting') {
       this.router.navigate(['/room']).then();
@@ -227,10 +241,13 @@ export class SocketService {
     this.send('/app/challenge-drunk', roomId);
   }
 
+  public randomEvent(): Observable<any> {
+    return this.on('/topic/random-event');
+  }
+
   public forceSkipChallenge(roomId: string): void {
     this.send('/app/admin-force-skip', roomId);
   }
-
 
 
   // ERROR
@@ -241,6 +258,40 @@ export class SocketService {
   // Session Data
   public getSessionData(): Observable<any> {
     return this.sessionData$.asObservable();
+  }
+
+  // Connection Status
+  public connectionStatus(): Observable<boolean> {
+    return this.isConnected$.asObservable();
+  }
+
+  //Cookies
+  public setCookie(name: string, value: string, hours: number): void {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + hours * 60 * 60 * 1000);
+    const encodedName = encodeURIComponent(name);
+    const encodedValue = encodeURIComponent(value);
+    let cookie = `${encodedName}=${encodedValue};expires=${expires.toUTCString()};path=/`;
+    if (location.protocol === 'https:') cookie += ';Secure';
+    document.cookie = cookie;
+  }
+
+  getCookie(name: string): string | null {
+    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = RegExp(new RegExp(`(^| )${escapedName}=([^;]+)`)).exec(document.cookie);
+    return match ? decodeURIComponent(match[2]) : null;
+  }
+
+  deleteCookie(name: string): void {
+    const encodedName = encodeURIComponent(name);
+    let cookie = `${encodedName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+
+    // Only add Secure if current connection is HTTPS
+    if (location.protocol === 'https:') {
+      cookie += '; Secure';
+    }
+
+    document.cookie = cookie;
   }
 
 }

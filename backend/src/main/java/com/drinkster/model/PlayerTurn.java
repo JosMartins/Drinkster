@@ -10,7 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlayerTurn {
-    private String playerId;
-    private String playerName;
+    private Player player;
     private Challenge challenge;
 }
