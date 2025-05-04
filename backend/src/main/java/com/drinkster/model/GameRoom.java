@@ -1,13 +1,14 @@
 package com.drinkster.model;
 
+import com.drinkster.exception.IncompatibleSexException;
 import com.drinkster.model.enums.RoomMode;
 import com.drinkster.model.enums.RoomState;
+import com.drinkster.model.enums.Sex;
+import com.drinkster.utils.FixedSizeQueue;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Represents a game room where players can join and play.
@@ -29,7 +30,10 @@ public class GameRoom {
     private int rememberedChallenges;
     private boolean showChallenges;
     private int currentPlayerIndex;
-    private PlayerTurn currentTurn;
+    private PlayerTurn currentTurn = null;
+
+    //challenge tracker
+    private FixedSizeQueue<UUID> usedUUIDS;
 
 
 
@@ -56,6 +60,7 @@ public class GameRoom {
         this.rememberedChallenges = rememberedChallenges;
         this.showChallenges = showChallenges;
         this.currentPlayerIndex = 0;
+        this.usedUUIDS = new FixedSizeQueue<>(rememberedChallenges);
     }
 
     /**
@@ -87,6 +92,7 @@ public class GameRoom {
         if (players.size() >= 2 && state == RoomState.LOBBY) {
             state = RoomState.PLAYING;
 
+            this.currentTurn = new PlayerTurn(this.getCurrentPlayer(), null);
         } else {
             throw new IllegalStateException("Cannot start game from current state: " + state);
         }
@@ -95,6 +101,7 @@ public class GameRoom {
 
     /**
      * Ends the game if the room is in the {@code PLAYING} state.
+     * Note: This method right now has no use because rooms are not saved in the database, therefore, we don't need to have {@code RoomState.FINISHED} rooms. A delete is enough.
      */
     public void endGame() {
         if (state.canTransitionTo(RoomState.FINISHED)) {
@@ -117,14 +124,23 @@ public class GameRoom {
     /**
      * Advances to the next player in the list and returns them.
      * If the current player is the last in the list, it wraps around to the first player.
-     *
-     * @return The next player, or null if there are no players.
      */
-    public Player nextPlayer() {
-        if (players.isEmpty()) return null;
-        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+    public void nextPlayer() {
+        if (!players.isEmpty()) {
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+        }
 
-        return players.get(currentPlayerIndex);
+    }
+
+    /**
+     * Returns the next player in the list, not advancing to it.
+
+     * @return the next player, or null if no players are available
+     */
+    public Player peekNextPlayer() {
+        if (players.isEmpty()) return null;
+        int nextIndex = (currentPlayerIndex + 1) % players.size();
+        return players.get(nextIndex);
     }
 
     /**
@@ -160,27 +176,91 @@ public class GameRoom {
 
     /// Game functions ///
 
+
     /**
+     * Starts the next turn by processing the challenge and updating the current turn.
      *
+     * @param challenge the challenge to process
+        * @param advance whether to advance to the next player
+     *
+     * @return true if the turn was successfully started, false if the sex of the player is incompatible with the challenge
      */
-    public void nextTurn() {
-        Player player = nextPlayer();
-        Challenge challenge = new Challenge(); // TODO: Implement challenge fetching logic
+    public boolean nextTurn(Challenge challenge, boolean advance) {
+        if (advance) nextPlayer();
+        try {
+            Challenge processedChallenge = this.processChallenge(challenge);
+            this.currentTurn = new PlayerTurn(this.getCurrentPlayer(), processedChallenge);
 
-        this.currentTurn = new PlayerTurn(player, challenge);
+            this.usedUUIDS.add(this.currentTurn.challenge().getId());
+            return true;
+        } catch (IncompatibleSexException e) {
+            return false;
+        }
 
+    }
+
+    /**
+     * Processes a challenge by replacing placeholders with player names.
+     *
+     * @param challenge the challenge to process
+     * Note: Currently only replaces {Player} and {Player2} placeholders. Only 2 players are supported for now.
+     * @return the processed challenge with player names replaced and sips added
+     * @throws IncompatibleSexException if the challenge is incompatible with the player's sex
+     */
+
+    private Challenge processChallenge(Challenge challenge) throws IncompatibleSexException {
+
+        String text = challenge.getText();
+        //Sex needs to be either the player sex or All
+         if (challenge.getPlayers() == 1) {
+             Sex challengeSex = challenge.getSexes().getFirst();
+             if (currentTurn.player().getSex() != challengeSex) {
+                    throw new IncompatibleSexException();
+             }
+
+            text = text.replace("{Player}", currentTurn.player().getName());
+         } else if (challenge.getPlayers() == 2) {
+             Sex challengeSex = challenge.getSexes().getFirst();
+             Sex secondChallengeSex = challenge.getSexes().get(1);
+
+            Player player1 = currentTurn.player();
+            Player player2 = this.getRandomPlayer(List.of(player1));
+
+            if (player1.getSex() != challengeSex || player2.getSex() != secondChallengeSex) {
+                throw new IncompatibleSexException();
+            }
+
+            text = text.replace("{Player}", player1.getName());
+            text = text.replace("{Player2}", player2.getName());
+         }
+
+         text = text.replace("{sips}", String.valueOf(challenge.getSips()));
+
+
+        Challenge processedChallenge = new Challenge();
+        processedChallenge.setId(challenge.getId());
+        processedChallenge.setText(text);
+        processedChallenge.setDifficulty(challenge.getDifficulty());
+        processedChallenge.setSips(challenge.getSips());
+        processedChallenge.setType(challenge.getType());
+
+        return processedChallenge;
     }
 
     /**
      * Handles the completion of a challenge.
      *
-     * @param success true if the challenge was completed successfully, false if the player drank
+     * @param drunk if the player drunk the challenge
      */
-    public void handleChallengeCompletion(boolean success) {
+    public void handleChallengeCompletion(boolean drunk) {
 
-        //TODO: Implement logic to handle the completion of a challenge.
+        Player player = currentTurn.player();
 
+        if (drunk) { //player completed a challenge
+            int sips = currentTurn.challenge().getSips();
+            player.addSips(sips);
+            player.processPenalties();
+        }
 
-        nextTurn();
     }
 }

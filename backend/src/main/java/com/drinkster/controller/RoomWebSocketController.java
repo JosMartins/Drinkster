@@ -1,7 +1,6 @@
 package com.drinkster.controller;
 
 import com.drinkster.dto.DifficultyDto;
-import com.drinkster.dto.GameRoomDto;
 import com.drinkster.dto.RoomListItemDto;
 import com.drinkster.dto.response.*;
 import com.drinkster.dto.request.CreateRoomRequest;
@@ -15,7 +14,6 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
 
-import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -27,7 +25,11 @@ public class RoomWebSocketController {
         this.roomService = roomService;
     }
 
-
+    /**
+     * Handles the request to get the list of rooms.
+     *
+     * @return a list of rooms.
+     */
     @MessageMapping("/list-rooms")
     @SendTo("/topic/rooms-list")
     public RoomListResponse listRooms() {
@@ -118,6 +120,44 @@ public class RoomWebSocketController {
         }
     }
 
+    @MessageMapping("/player-ready")
+    @SendTo("/topic/{roomId}/player-status-update")
+    public BaseResponse playerReady(String roomId, String playerId,
+                                    SimpMessageHeaderAccessor headerAccessor){
+        try {
+            UUID roomUUID = UUID.fromString(roomId);
+            UUID playerUUID = UUID.fromString(playerId);
+            roomService.playerReady(roomUUID, playerUUID, headerAccessor.getSessionId());
+
+            return new PlayerStatusResponse(roomId, playerId, true);
+        } catch (IllegalArgumentException e) {
+            return new ErrorResponse(
+                    "400", // Bad Request
+                    e.getMessage()
+            );
+        }
+
+    }
+
+    @MessageMapping("/player-unready")
+    @SendTo("/topic/{roomId}/player-status-update")
+    public BaseResponse playerUnready(String roomId, String playerId,
+                                    SimpMessageHeaderAccessor headerAccessor){
+        try {
+            UUID roomUUID = UUID.fromString(roomId);
+            UUID playerUUID = UUID.fromString(playerId);
+            roomService.playerUnready(roomUUID, playerUUID, headerAccessor.getSessionId());
+
+            return new PlayerStatusResponse(roomId, playerId, false);
+        } catch (IllegalArgumentException e) {
+            return new ErrorResponse(
+                    "400", // Bad Request
+                    e.getMessage()
+            );
+        }
+
+    }
+
     @MessageMapping("/kick-player")
     @SendTo("/topic/{roomId}/player-left")
     public BaseResponse handleAdminKickPlayer(String roomId, String playerId,
@@ -143,18 +183,9 @@ public class RoomWebSocketController {
         try {
             UUID roomUUID = UUID.fromString(roomId);
             UUID playerUUID = UUID.fromString(playerId);
-            GameRoom gameRoom = roomService.getRoom(roomUUID);
 
-            if (gameRoom == null) {
-                return new ErrorResponse("404", "Room not found");
-            }
-
-            Player player = gameRoom.getPlayer(playerUUID);
-            if (player == null) {
-                return new ErrorResponse("404", "Player not found");
-            }
-
-            return new GetPlayerDifficultyResponse(DifficultyDto.fromDifficultyValues(player.getDifficultyValues()));
+            DifficultyDto diff = roomService.getPlayerDifficulty(roomUUID, playerUUID, headerAccessor.getSessionId());
+            return new GetPlayerDifficultyResponse(diff);
         } catch (IllegalArgumentException e) {
             return new ErrorResponse(
                     "400", // Bad Request
@@ -190,7 +221,26 @@ public class RoomWebSocketController {
             UUID roomUUID = UUID.fromString(roomId);
             roomService.startGame(roomUUID, headerAccessor.getSessionId());
 
-            return new StartGameResponse("Game started successfully");
+            return new StartGameResponse();
+        } catch (IllegalArgumentException e) {
+            return new ErrorResponse(
+                    "400", // Bad Request
+                    e.getMessage()
+            );
+        }
+    }
+
+    /// SESSION RESTORE ///
+
+
+    @MessageMapping("/restore-session")
+    @SendTo("/topic/{playerId}/session-restored")
+    public BaseResponse restoreSession(String roomId, String playerId, SimpMessageHeaderAccessor headerAccessor) {
+        UUID roomUUID = UUID.fromString(roomId);
+        UUID playerUUID = UUID.fromString(playerId);
+
+        try {
+            return roomService.restoreSession(roomUUID, playerUUID, headerAccessor.getSessionId());
         } catch (IllegalArgumentException e) {
             return new ErrorResponse(
                     "400", // Bad Request

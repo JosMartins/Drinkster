@@ -1,4 +1,4 @@
 package com.drinkster.dto.response;
 
-public record StartGameResponse(String gameStartedSuccessfully) implements BaseResponse {
+public record StartGameResponse() implements BaseResponse {
 }

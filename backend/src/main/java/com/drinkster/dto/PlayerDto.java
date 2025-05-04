@@ -1,5 +1,7 @@
 package com.drinkster.dto;
 
+import com.drinkster.model.Player;
+
 public record PlayerDto(
         String id,
         String name,
@@ -7,4 +9,15 @@ public record PlayerDto(
         boolean isAdmin,
         boolean isReady,
         boolean isPlaying
-) {  }
+) {
+    public static PlayerDto fromPlayer(Player player) {
+        return new PlayerDto(
+                player.getId().toString(),
+                player.getName(),
+                player.getSex().toString(),
+                player.isAdmin(),
+                player.isReady(),
+                player.isPlaying()
+        );
+    }
+}

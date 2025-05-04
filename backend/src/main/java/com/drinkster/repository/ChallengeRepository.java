@@ -16,10 +16,20 @@ public interface ChallengeRepository extends JpaRepository<Challenge, UUID> {
     List<Challenge> findByDifficulty(Difficulty difficulty);
     void deleteById(@NonNull UUID id);
     void deleteByText(String text);
+    int countByDifficulty(Difficulty difficulty);
 
-    @Query(value = "SELECT * FROM challenge WHERE id NOT IN :excludeIds ORDER BY RAND() LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT COUNT(c) FROM Challenge c")
+    int countAll();
+
+    @Query(value = "SELECT * FROM challenge ORDER BY RANDOM() LIMIT 1", nativeQuery = true)
+    Challenge findRandomChallenge();
+
+    @Query(value = "SELECT * FROM challenge WHERE id NOT IN :excludeIds AND difficulty = :difficulty ORDER BY RANDOM() LIMIT 1", nativeQuery = true)
+    Challenge findRandomChallengeExcludingWithDifficulty(List<UUID> excludeIds, String difficulty);
+
+    @Query(value = "SELECT * FROM challenge WHERE id NOT IN :excludeIds ORDER BY RANDOM() LIMIT 1", nativeQuery = true)
     Challenge findRandomChallengeExcluding(List<UUID> excludeIds);
 
-    @Query(value = "SELECT * FROM challenge ORDER BY RAND() LIMIT 1", nativeQuery = true)
-    Challenge findRandomChallenge();
+    @Query(value = "SELECT * FROM challenge WHERE difficulty = :difficulty ORDER BY RANDOM() LIMIT 1", nativeQuery = true)
+    Challenge findRandomChallengeByDifficulty(String difficulty);
 }

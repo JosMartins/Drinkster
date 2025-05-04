@@ -1,9 +1,17 @@
 package com.drinkster.service;
 
+import com.drinkster.dto.DifficultyDto;
+import com.drinkster.dto.GameRoomDto;
+import com.drinkster.dto.PlayerDto;
+import com.drinkster.dto.response.ChallengeDto;
+import com.drinkster.dto.response.SessionRestoreResponse;
+import com.drinkster.model.Challenge;
 import com.drinkster.model.DifficultyValues;
 import com.drinkster.model.GameRoom;
 import com.drinkster.model.Player;
+import com.drinkster.model.enums.Difficulty;
 import com.drinkster.model.enums.RoomMode;
+import com.drinkster.model.enums.RoomState;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -12,33 +20,60 @@ import java.util.UUID;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+
 @Service
 public class RoomService {
 
 
     private final Map<UUID, GameRoom> gameRooms = new ConcurrentHashMap<>();
+    private final ChallengeService challengeService;
 
+
+    public RoomService(ChallengeService challengeService) {
+        this.challengeService = challengeService;
+    }
+
+    /// ROOM MANAGEMENT ///
+
+    /**
+     * Get a list of all game rooms.
+     *
+     * @return A list of game rooms.
+     */
     public List<GameRoom> getRooms() {
         return new ArrayList<>(gameRooms.values());
     }
 
+    /**
+     * Get a game room by its ID.
+     *
+     * @param roomId The ID of the room.
+     * @return The game room with the specified ID, or null if not found.
+     */
     public GameRoom getRoom(UUID roomId) {
         return gameRooms.get(roomId);
     }
 
+    /**
+     * Create a new game room.
+     *
+     * @param roomName The name of the room.
+     * @param isPrivate Whether the room is private or not.
+     * @param password The password for the room (if private).
+     * @param admin The admin player of the room.
+     * @param mode The mode of the room (e.g., public, private).
+     * @param rememberedChallenges The number of challenges to remember.
+     * @param showChallenges Whether to show challenges to other players or not.
+     *
+     * @return The created game room.
+     */
     public GameRoom createRoom(String roomName, boolean isPrivate, String password, Player admin, RoomMode mode, int rememberedChallenges, boolean showChallenges) {
         GameRoom gameRoom = new GameRoom(roomName, isPrivate, password, admin, mode, rememberedChallenges, showChallenges);
         gameRooms.put(gameRoom.getId(), gameRoom);
         return gameRoom;
     }
 
-    public void deleteRoom(UUID roomId) throws IllegalArgumentException {
-        if (!gameRooms.containsKey(roomId)) {
-            throw new IllegalArgumentException("Room does not exist");
-        }
-
-        gameRooms.remove(roomId);
-    }
+    /// PLAYER MANAGEMENT ///
 
     /**
      * Join a game room.
@@ -46,7 +81,7 @@ public class RoomService {
      * @param roomId The ID of the room.
      * @param player The player who is joining the room.
      *
-     * @throws IllegalArgumentException if the room does not exist or the player is already in the room.
+     * @throws IllegalArgumentException if the room does not exist, or the player is already in the room.
      */
     public void joinRoom(UUID roomId, Player player) throws IllegalArgumentException {
         GameRoom gameRoom = gameRooms.get(roomId);
@@ -63,7 +98,7 @@ public class RoomService {
     }
 
     /**
-     * Leave a game room.
+     * Leave the game room.
      *
      * @param roomId The ID of the room.
      * @param playerID The player who is leaving the room.
@@ -145,6 +180,103 @@ public class RoomService {
     }
 
     /**
+     * Set the player as ready in the game room.
+     *
+     * @param roomId The ID of the room.
+     * @param playerId The ID of the player who is ready.
+     * @param sockId The socket ID of the player.
+     *
+     * @throws IllegalArgumentException if the room does not exist or the player is not in the room or the socketId does not correspond to the player.
+     */
+    public void playerReady(UUID roomId, UUID playerId, String sockId) throws IllegalArgumentException {
+        GameRoom gameRoom = gameRooms.get(roomId);
+        if (gameRoom == null) {
+            throw new IllegalArgumentException("Room does not exist");
+        }
+
+        Player roomPlayer = gameRoom.getPlayer(playerId);
+
+        if (roomPlayer == null) {
+            throw new IllegalArgumentException("Player not found in the room");
+        }
+
+        if (sockId == null) {
+            throw new IllegalArgumentException("Socket ID is null");
+        }
+        if (roomPlayer.getSocketId() == null) {
+            throw new IllegalArgumentException("Player socket ID is null");
+        }
+
+        if (!roomPlayer.getSocketId().equals(sockId)) {
+            throw new IllegalArgumentException("Request Identifier does not match the player");
+        }
+
+        roomPlayer.setReady(true);
+    }
+
+    /**
+     * Set the player as unready in the game room.
+     *
+     * @param roomId The ID of the room.
+     * @param playerId The ID of the player who is unready.
+     * @param sockId The socket ID of the player.
+     *
+     * @throws IllegalArgumentException if the room does not exist or the player is not in the room or the socketId does not correspond to the player.
+     */
+    public void playerUnready(UUID roomId, UUID playerId, String sockId) throws IllegalArgumentException {
+        GameRoom gameRoom = gameRooms.get(roomId);
+        if (gameRoom == null) {
+            throw new IllegalArgumentException("Room does not exist");
+        }
+
+        Player roomPlayer = gameRoom.getPlayer(playerId);
+
+        if (roomPlayer == null) {
+            throw new IllegalArgumentException("Player not found in the room");
+        }
+
+        if (sockId == null) {
+            throw new IllegalArgumentException("Socket ID is null");
+        }
+        if (roomPlayer.getSocketId() == null) {
+            throw new IllegalArgumentException("Player socket ID is null");
+        }
+
+        if (!roomPlayer.getSocketId().equals(sockId)) {
+            throw new IllegalArgumentException("Request Identifier does not match the player");
+        }
+
+        roomPlayer.setReady(false);
+    }
+
+    /**
+     * Get the difficulty of a player in the game room.
+     *
+     * @param roomId The ID of the room.
+     * @param playerId The ID of the player whose difficulty is to be retrieved.
+     *
+     * @return The difficulty values for the player.
+     */
+    public DifficultyDto getPlayerDifficulty(UUID roomId, UUID playerId, String adminSockId) throws IllegalArgumentException {
+        GameRoom gameRoom = gameRooms.get(roomId);
+        if (gameRoom == null) {
+            throw new IllegalArgumentException("Room does not exist");
+        }
+
+        Player player = gameRoom.getPlayer(playerId);
+        if (player == null) {
+            throw new IllegalArgumentException("Player not found in the room");
+        }
+
+        if (!gameRoom.getAdmin().getSocketId().equals(adminSockId)) {
+            throw new IllegalArgumentException("Only the admin can get player difficulty");
+        }
+
+        DifficultyValues difficultyValues = player.getDifficultyValues();
+        return new DifficultyDto(difficultyValues.getEasy(), difficultyValues.getMedium(), difficultyValues.getHard(), difficultyValues.getExtreme());
+    }
+
+    /**
      * Change the difficulty of a player in the game room.
      *
      * @param roomId The ID of the room.
@@ -194,6 +326,8 @@ public class RoomService {
         gameRoom.setShowChallenges(mode);
     }
 
+    /// GAME MANAGEMENT ///
+
     /**
      * Start the game in the room.
      *
@@ -212,4 +346,137 @@ public class RoomService {
 
         gameRoom.startGame();
     }
+
+    /**
+     * Complete a challenge for the current player.
+     *
+     * @param roomId The ID of the room.
+     * @param playerId The ID of the player who completed the challenge.
+     * @param sockId The socket ID of the player.
+     * @param drunk Whether the player is drunk or not.
+     *
+     * @throws IllegalArgumentException if the room does not exist or the player is not in the room or the socketId does not correspond to the player.
+     */
+    public void completeChallenge(UUID roomId, UUID playerId, String sockId, boolean drunk) throws IllegalArgumentException {
+        GameRoom gameRoom = gameRooms.get(roomId);
+        if (gameRoom == null) {
+            throw new IllegalArgumentException("Room does not exist");
+        }
+
+        Player player = gameRoom.getPlayer(playerId);
+        if (player == null) {
+            throw new IllegalArgumentException("Player not found in the room");
+        }
+
+        if (sockId == null) {
+            throw new IllegalArgumentException("Socket ID is null");
+        }
+
+        if (player.getSocketId() == null || !player.getSocketId().equals(sockId)) {
+            throw new IllegalArgumentException("Request Identifier does not match the player");
+        }
+
+        if (gameRoom.getState() != RoomState.PLAYING) {
+            throw new IllegalArgumentException("Game is not in progress");
+        }
+
+        if (gameRoom.getCurrentPlayer().equals(player)) {
+            gameRoom.handleChallengeCompletion(drunk);
+
+            startNextTurn(gameRoom);
+        } else {
+            throw new IllegalArgumentException("Player is not the current player");
+        }
+
+    }
+
+    /**
+     * Force skip a challenge for the next player.
+     *
+     * @implNote This will only be available for the admin.
+     * @param roomId The ID of the room.
+     * @param adminSesId The session ID of the admin.
+     */
+    public void forceSkipChallenge(String roomId, String adminSesId) {
+        GameRoom gameRoom = gameRooms.get(UUID.fromString(roomId));
+        if (gameRoom == null) {
+            throw new IllegalArgumentException("Room does not exist");
+        }
+
+        if (gameRoom.getState() != RoomState.PLAYING) {
+            throw new IllegalArgumentException("Game is not in progress");
+        }
+
+        if (!gameRoom.getAdmin().getSocketId().equals(adminSesId)) {
+            throw new IllegalArgumentException("Only the admin can force skip a challenge");
+        }
+
+        startNextTurn(gameRoom);
+    }
+
+
+
+    /// SESSION RESTORATION ///
+
+    /**
+     * Restore the session for a player in the game room.
+     *
+     * @param roomUUID The UUID of the game room.
+     * @param playerUUID The UUID of the player.
+     * @param sessionId The session ID of the player.
+     * @return The {@link SessionRestoreResponse} response containing the player and room information.
+     */
+    public SessionRestoreResponse restoreSession(UUID roomUUID, UUID playerUUID, String sessionId) {
+
+        GameRoom gameRoom = gameRooms.get(roomUUID);
+        if (gameRoom == null) {
+            throw new IllegalArgumentException("Room does not exist");
+        }
+
+        Player player = gameRoom.getPlayer(playerUUID);
+        if (player == null) {
+            throw new IllegalArgumentException("Player not found in the room");
+        }
+
+        player.setSocketId(sessionId);
+
+        PlayerDto self = PlayerDto.fromPlayer(player);
+        GameRoomDto room = GameRoomDto.fromGameRoom(gameRoom);
+        ChallengeDto currentChallenge = null;
+        if (gameRoom.getState() == RoomState.PLAYING) {
+            if (gameRoom.getCurrentPlayer().equals(player)) {
+                currentChallenge = ChallengeDto.fromChallenge(gameRoom.getCurrentTurn().challenge());
+            } else {
+                currentChallenge = new ChallengeDto(
+                        gameRoom.getCurrentPlayer().getName() + "is performing a challenge or drinking " + gameRoom.getCurrentTurn().challenge().getSips() + "sips.",
+                        gameRoom.getCurrentTurn().challenge().getDifficulty().toString(),
+                        gameRoom.getCurrentTurn().challenge().getType().toString());
+            }
+        }
+        return new SessionRestoreResponse(self, room, currentChallenge);
+    }
+
+
+    /// HELPERS ///
+
+    /**
+     * Starts the next turn in the game room.
+     *
+     * @param gameRoom The game room.
+     */
+    private void startNextTurn(GameRoom gameRoom) {
+        // we peek first so we can use the player that the challenge is for
+        Player player = gameRoom.peekNextPlayer();
+        Difficulty challengeDifficulty = challengeService.getRandomWeightedDifficulty(player.getDifficultyValues());
+        Challenge challenge = challengeService.getRandomChallenge(gameRoom.getUsedUUIDS().getQueueAsList(), challengeDifficulty);
+
+        boolean isValid = gameRoom.nextTurn(challenge, true); // and then we advance the player
+
+        while (!isValid) {
+            // Get a new challenge
+            challenge = challengeService.getRandomChallenge(gameRoom.getUsedUUIDS().getQueueAsList(), challengeDifficulty);
+            isValid = gameRoom.nextTurn(challenge, false);
+        }
+    }
 }
+

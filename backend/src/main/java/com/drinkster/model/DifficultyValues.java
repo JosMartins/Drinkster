@@ -1,9 +1,12 @@
 package com.drinkster.model;
 
+import com.drinkster.model.enums.Difficulty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.Map;
 
 @Getter
 @Setter
@@ -14,4 +17,13 @@ public class DifficultyValues {
     private double medium= 0.35;
     private double hard = 0.35;
     private double extreme = 0;
+
+    public Map<Difficulty, Double> getMapping() {
+        return Map.of(
+                Difficulty.EASY, easy,
+                Difficulty.MEDIUM, medium,
+                Difficulty.HARD, hard,
+                Difficulty.EXTREME, extreme
+        );
+    }
 }

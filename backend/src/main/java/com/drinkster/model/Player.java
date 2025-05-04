@@ -46,4 +46,19 @@ public class Player {
         this.penalties.remove(penalty);
     }
 
+    public void addSips(int sips) {
+        this.drinks += sips;
+    }
+
+    public void processPenalties() {
+        for (Penalty penalty : penalties) {
+            if (penalty.getRounds() > 0) {
+                penalty.decrementRound();
+            } else {
+                penalties.remove(penalty);
+            }
+
+        }
+        penalties.clear();
+    }
 }
