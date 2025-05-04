@@ -48,7 +48,7 @@ export class SocketService {
     });
   }
 
-  //Connection
+  /// Connection ///
 
   private initializeConnection(): void {
     const socket = new SockJS(this.serverUrl);
@@ -109,7 +109,7 @@ export class SocketService {
 
   }
 
-  // Session Management
+  /// Session Management ///
 
   private handleRestoredSession(data: any): void {
     this.setCookie('roomId', data.roomId, 12);
@@ -134,7 +134,7 @@ export class SocketService {
     }
   }
 
-  // Room Management
+  /// Room Management ///
 
   public getRooms() {
     this.send("/app/list-rooms", {});
@@ -202,12 +202,12 @@ export class SocketService {
   }
 
   playerStatusUpdate(): Observable<any> {
-    return this.on('player-status-update');
+    return this.on('/topic/player-status-update');
   }
 
 
   public updatePlayerDifficulty(roomId: string, playerId: string, difficulty: any): void {
-    this.send('/aoo/admin-update-difficulty', { roomId, playerId, difficulty});
+    this.send('/app/admin-update-difficulty', { roomId, playerId, difficulty});
   }
 
   public kickPlayer(roomId: string, playerId: string): void {
@@ -215,7 +215,8 @@ export class SocketService {
   }
 
 
-  // Game Management
+  /// Game Management ///
+
   public startGame(roomId: string, playerId: string): void {
       this.send('/app/start-game', { roomId, playerId });
     }
@@ -233,12 +234,12 @@ export class SocketService {
     return this.on('/topic/other-player-challenge');
   }
 
-  public challengeCompleted(roomId: string): void {
-    this.send('/app/challenge-completed', roomId);
+  public challengeCompleted(roomId: string, playerId: string): void {
+    this.send('/app/challenge-completed', {roomId, playerId});
   }
 
-  public challengeDrunk(roomId: string): void {
-    this.send('/app/challenge-drunk', roomId);
+  public challengeDrunk(roomId: string, playerId: string): void {
+    this.send('/app/challenge-drunk', {roomId, playerId});
   }
 
   public randomEvent(): Observable<any> {
@@ -265,7 +266,9 @@ export class SocketService {
     return this.isConnected$.asObservable();
   }
 
-  //Cookies
+
+  /// Cookies ///
+
   public setCookie(name: string, value: string, hours: number): void {
     const expires = new Date();
     expires.setTime(expires.getTime() + hours * 60 * 60 * 1000);
@@ -286,7 +289,7 @@ export class SocketService {
     const encodedName = encodeURIComponent(name);
     let cookie = `${encodedName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
 
-    // Only add Secure if current connection is HTTPS
+    // Only add Secure if the current connection is HTTPS
     if (location.protocol === 'https:') {
       cookie += '; Secure';
     }
