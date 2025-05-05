@@ -7,6 +7,7 @@ import com.drinkster.model.enums.Sex;
 import com.drinkster.utils.FixedSizeQueue;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.security.core.parameters.P;
 
 import java.util.*;
 
@@ -92,7 +93,7 @@ public class GameRoom {
         if (players.size() >= 2 && state == RoomState.LOBBY) {
             state = RoomState.PLAYING;
 
-            this.currentTurn = new PlayerTurn(this.getCurrentPlayer(), null);
+            this.currentTurn = new PlayerTurn(this.getCurrentPlayer(), null, new ArrayList<>());
         } else {
             throw new IllegalStateException("Cannot start game from current state: " + state);
         }
@@ -188,9 +189,7 @@ public class GameRoom {
     public boolean nextTurn(Challenge challenge, boolean advance) {
         if (advance) nextPlayer();
         try {
-            Challenge processedChallenge = this.processChallenge(challenge);
-            this.currentTurn = new PlayerTurn(this.getCurrentPlayer(), processedChallenge);
-
+            this.currentTurn = processChallenge(challenge);
             this.usedUUIDS.add(this.currentTurn.challenge().getId());
             return true;
         } catch (IncompatibleSexException e) {
@@ -208,29 +207,31 @@ public class GameRoom {
      * @throws IncompatibleSexException if the challenge is incompatible with the player's sex
      */
 
-    private Challenge processChallenge(Challenge challenge) throws IncompatibleSexException {
+    private PlayerTurn processChallenge(Challenge challenge) throws IncompatibleSexException {
 
         String text = challenge.getText();
         //Sex needs to be either the player sex or All
+        ArrayList<Player> affectedPlayers = new ArrayList<>();
          if (challenge.getPlayers() == 1) {
+                affectedPlayers.add(getCurrentPlayer());
              Sex challengeSex = challenge.getSexes().getFirst();
              if (currentTurn.player().getSex() != challengeSex) {
                     throw new IncompatibleSexException();
              }
 
-            text = text.replace("{Player}", currentTurn.player().getName());
+            text = text.replace("{Player}", getCurrentPlayer().getName());
          } else if (challenge.getPlayers() == 2) {
              Sex challengeSex = challenge.getSexes().getFirst();
              Sex secondChallengeSex = challenge.getSexes().get(1);
+            Player player2 = this.getRandomPlayer(List.of(getCurrentPlayer()));
+            affectedPlayers.add(getCurrentPlayer());
+            affectedPlayers.add(player2);
 
-            Player player1 = currentTurn.player();
-            Player player2 = this.getRandomPlayer(List.of(player1));
-
-            if (player1.getSex() != challengeSex || player2.getSex() != secondChallengeSex) {
+            if (getCurrentPlayer().getSex() != challengeSex || player2.getSex() != secondChallengeSex) {
                 throw new IncompatibleSexException();
             }
 
-            text = text.replace("{Player}", player1.getName());
+            text = text.replace("{Player}", getCurrentPlayer().getName());
             text = text.replace("{Player2}", player2.getName());
          }
 
@@ -244,7 +245,7 @@ public class GameRoom {
         processedChallenge.setSips(challenge.getSips());
         processedChallenge.setType(challenge.getType());
 
-        return processedChallenge;
+        return new PlayerTurn(currentTurn.player(), processedChallenge, affectedPlayers);
     }
 
     /**

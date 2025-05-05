@@ -5,10 +5,7 @@ import com.drinkster.dto.GameRoomDto;
 import com.drinkster.dto.PlayerDto;
 import com.drinkster.dto.response.ChallengeDto;
 import com.drinkster.dto.response.SessionRestoreResponse;
-import com.drinkster.model.Challenge;
-import com.drinkster.model.DifficultyValues;
-import com.drinkster.model.GameRoom;
-import com.drinkster.model.Player;
+import com.drinkster.model.*;
 import com.drinkster.model.enums.Difficulty;
 import com.drinkster.model.enums.RoomMode;
 import com.drinkster.model.enums.RoomState;
@@ -383,11 +380,9 @@ public class RoomService {
         if (gameRoom.getCurrentPlayer().equals(player)) {
             gameRoom.handleChallengeCompletion(drunk);
 
-            startNextTurn(gameRoom);
         } else {
             throw new IllegalArgumentException("Player is not the current player");
         }
-
     }
 
     /**
@@ -410,8 +405,6 @@ public class RoomService {
         if (!gameRoom.getAdmin().getSocketId().equals(adminSesId)) {
             throw new IllegalArgumentException("Only the admin can force skip a challenge");
         }
-
-        startNextTurn(gameRoom);
     }
 
 
@@ -462,9 +455,15 @@ public class RoomService {
     /**
      * Starts the next turn in the game room.
      *
-     * @param gameRoom The game room.
+     * @param gameRoomUUID The game room.
      */
-    private void startNextTurn(GameRoom gameRoom) {
+    public PlayerTurn startNextTurn(UUID gameRoomUUID) {
+        GameRoom gameRoom = gameRooms.get(gameRoomUUID);
+
+        if (gameRoom == null) {
+            throw new IllegalArgumentException("Room does not exist");
+        }
+
         // we peek first so we can use the player that the challenge is for
         Player player = gameRoom.peekNextPlayer();
         Difficulty challengeDifficulty = challengeService.getRandomWeightedDifficulty(player.getDifficultyValues());
@@ -477,6 +476,9 @@ public class RoomService {
             challenge = challengeService.getRandomChallenge(gameRoom.getUsedUUIDS().getQueueAsList(), challengeDifficulty);
             isValid = gameRoom.nextTurn(challenge, false);
         }
+
+        return gameRoom.getCurrentTurn();
     }
+
 }
 

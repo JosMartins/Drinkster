@@ -2,12 +2,16 @@ package com.drinkster.controller;
 
 
 import com.drinkster.dto.response.ErrorResponse;
+import com.drinkster.model.Challenge;
+import com.drinkster.model.Player;
+import com.drinkster.model.PlayerTurn;
 import com.drinkster.service.RoomService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
 
@@ -33,6 +37,9 @@ public class GameWebSocketController {
             String sessionId = headerAccessor.getSessionId();
 
             roomService.completeChallenge(roomUUID, playerUUID, sessionId, false);
+
+            PlayerTurn nextTurn = roomService.startNextTurn(roomUUID);
+            this.sendNextChallenge(roomUUID, nextTurn);
 
         } catch (IllegalArgumentException e) {
             messagingTemplate.convertAndSend("/topic/" + playerId + "/error",
@@ -65,6 +72,43 @@ public class GameWebSocketController {
 
     /// HELPER ///
 
+    private void sendNextChallenge(UUID roomID,PlayerTurn nextTurn) {
 
+        if (nextTurn == null) {
+            return;
+        }
 
+        Challenge challenge = nextTurn.challenge();
+        ArrayList<Player> notInChallenge = (ArrayList<Player>) roomService.getRoom(roomID).getPlayers().stream()
+                                      .filter(p -> !nextTurn.affectedPlayers().contains(p)).toList();
+
+        // 4. Dispatch based on the challenge type by delegating to helper methods.
+        //    Each helper should:
+        //      - send WebSocket messages via messagingTemplate to relevant /topic/{playerId}
+        //      - manage UI flow (confirmations, votes, etc.)
+        switch (challenge.getType()) {
+            case YOU_DRINK -> {
+                // TODO: prompt only nextTurn.player() to drink or perform challenge.
+                //       Include challenge text and sip count in payload.
+            }
+            case BOTH_DRINK -> {
+                // TODO: prompt both players in nextTurn.affectedPlayers().
+                //       On first "drink" event, broadcast sip action to both.
+                //       On "done" from turn player, proceed to next turn.
+            }
+            case EVERYONE_DRINK -> {
+                // TODO: prompt everyone in the room.
+                //       Track confirmations so we know when all have drunk.
+                //       Then call startNextTurn.
+            }
+            case CHOSEN_DRINK -> {
+                // TODO: initiate vote among notInChallenge.
+                //       Collect votes, identify most voted player.
+                //       Send direct drink event to that player.
+            }
+            default -> {
+                // Graceful fallback for future types.
+            }
+        }
+    }
 }
