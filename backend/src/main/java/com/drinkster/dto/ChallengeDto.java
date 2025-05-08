@@ -1,4 +1,4 @@
-package com.drinkster.dto.response;
+package com.drinkster.dto;
 
 import com.drinkster.model.Challenge;
 

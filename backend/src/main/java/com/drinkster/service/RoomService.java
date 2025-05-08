@@ -3,7 +3,7 @@ package com.drinkster.service;
 import com.drinkster.dto.DifficultyDto;
 import com.drinkster.dto.GameRoomDto;
 import com.drinkster.dto.PlayerDto;
-import com.drinkster.dto.response.ChallengeDto;
+import com.drinkster.dto.ChallengeDto;
 import com.drinkster.dto.response.SessionRestoreResponse;
 import com.drinkster.model.*;
 import com.drinkster.model.enums.Difficulty;

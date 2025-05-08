@@ -1,5 +1,6 @@
 package com.drinkster.dto.response;
 
+import com.drinkster.dto.ChallengeDto;
 import com.drinkster.dto.PlayerDto;
 import com.drinkster.dto.GameRoomDto;
 

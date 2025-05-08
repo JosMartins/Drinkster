@@ -1,10 +1,10 @@
 package com.drinkster.controller;
 
 
+import com.drinkster.dto.PenaltyDto;
+import com.drinkster.dto.response.ChallengeResponse;
 import com.drinkster.dto.response.ErrorResponse;
-import com.drinkster.model.Challenge;
-import com.drinkster.model.Player;
-import com.drinkster.model.PlayerTurn;
+import com.drinkster.model.*;
 import com.drinkster.service.RoomService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -12,6 +12,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -77,19 +78,39 @@ public class GameWebSocketController {
         if (nextTurn == null) {
             return;
         }
+        GameRoom room = roomService.getRoom(roomID);
+
+        if (room == null) {
+            return;
+        }
 
         Challenge challenge = nextTurn.challenge();
-        ArrayList<Player> notInChallenge = (ArrayList<Player>) roomService.getRoom(roomID).getPlayers().stream()
+        ArrayList<Player> notInChallenge = (ArrayList<Player>) room.getPlayers().stream()
                                       .filter(p -> !nextTurn.affectedPlayers().contains(p)).toList();
 
         // 4. Dispatch based on the challenge type by delegating to helper methods.
         //    Each helper should:
         //      - send WebSocket messages via messagingTemplate to relevant /topic/{playerId}
+        //      -send to the players not in the challenge that the player X and Y are doing a challenge / drinking z
+        //      - handle any game logic (e.g., updating player states, etc.)
         //      - manage UI flow (confirmations, votes, etc.)
         switch (challenge.getType()) {
             case YOU_DRINK -> {
-                // TODO: prompt only nextTurn.player() to drink or perform challenge.
-                //       Include challenge text and sip count in payload.
+                for (Player player : room.getPlayers()) {
+                    List<PenaltyDto> penaltyDtos = player.getPenalties().stream()
+                            .map(PenaltyDto::fromPenalty)
+                            .toList();
+
+                    messagingTemplate.convertAndSend(
+                            "/topic/" + player.getId() + "/challenge",
+                            new ChallengeResponse(
+                                    challenge,  //the challenge
+                                    nextTurn.affectedPlayers(),  //players in the challenge
+                                    penaltyDtos //penalty list;
+                                    )
+                    );
+
+                }
             }
             case BOTH_DRINK -> {
                 // TODO: prompt both players in nextTurn.affectedPlayers().
