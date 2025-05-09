@@ -4,12 +4,15 @@ package com.drinkster.controller;
 import com.drinkster.dto.ChallengeDto;
 import com.drinkster.dto.PenaltyDto;
 import com.drinkster.dto.PlayerDto;
+import com.drinkster.dto.response.BaseResponse;
 import com.drinkster.dto.response.ChallengeResponse;
 import com.drinkster.dto.response.ErrorResponse;
+import com.drinkster.dto.response.StartGameResponse;
 import com.drinkster.model.*;
 import com.drinkster.service.RoomService;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.TaskScheduler;
@@ -38,6 +41,22 @@ public class GameWebSocketController {
     }
 
 
+    @MessageMapping("/start-game")
+    @SendTo("/topic/{roomId}/game-started")
+    public BaseResponse handleStartGame(String roomId,
+                                        SimpMessageHeaderAccessor headerAccessor) {
+        try {
+            UUID roomUUID = UUID.fromString(roomId);
+            roomService.startGame(roomUUID, headerAccessor.getSessionId());
+            this.sendNextChallenge(roomUUID);
+            return new StartGameResponse();
+        } catch (IllegalArgumentException e) {
+            return new ErrorResponse(
+                    "400", // Bad Request
+                    e.getMessage()
+            );
+        }
+    }
 
     @MessageMapping("/challenge-{action}")
     public void handleChallenge(@DestinationVariable String action,
@@ -49,31 +68,36 @@ public class GameWebSocketController {
             UUID roomId = UUID.fromString(payload.get("roomId"));
             UUID playerUUID = UUID.fromString(payload.get("playerId"));
             String sessionId = headerAccessor.getSessionId();
-            boolean drank = action.equals("drunk");
+            boolean drank = "drank".equals(action);
+            PlayerTurn currentTurn = roomService.getRoom(roomId).getCurrentTurn();
 
-            if (!drank) {
-                //Completed the challenge, so we complete challenge and see if there is a penalty to apply (handled in the service)
-                roomService.completeChallenge(roomId,playerUUID, sessionId, false);
-            } else {
-                PlayerTurn currentTurn = roomService.getRoom(roomId).getCurrentTurn();
-                switch (currentTurn.getChallenge().getType()) {
-                    case YOU_DRINK -> {
-                        currentTurn.registerResponse(playerUUID, true);
+            switch (currentTurn.getChallenge().getType()) {
+                    case YOU_DRINK, BOTH_DRINK, EVERYONE_DRINK -> currentTurn.registerResponse(playerUUID, drank);
+
+
+                case CHOSEN_DRINK -> {
+                        //TODO: Start vote for everyone, when all players vote, sned to the chosen player a drinking event.
+                        //doVote(playerUUID, votedUUID);
+                        //for now this will not be implemented. focus on making the game work.
+                        //do nothing because chosen is not affected...
                     }
-                    case BOTH_DRINK -> {}
-                    case CHOSEN_DRINK -> {}
-                    case EVERYONE_DRINK -> {}
-                    default -> {}
 
-                }
+                default -> { /*do nothing*/ }
+            }
 
-                roomService.completeChallenge(roomId, playerUUID, sessionId, true);
+            if (currentTurn.allResponded()) {
+                currentTurn.playersDrunk()
+                        .forEach(p -> p.addSips(currentTurn.getChallenge().getSips()));
+                currentTurn.playersCompleted()
+                        .forEach(p -> {
+                            var penalty = currentTurn.getChallenge().getPenalty();
+                            if (penalty != null) p.addPenalty(penalty);
+                        });
+
+                sendNextChallenge(roomId);
             }
 
 
-
-            // Send the next challenge to all players in the room
-            sendNextChallenge(roomId);
         } catch (IllegalArgumentException e) {
             messagingTemplate.convertAndSend("/topic/" + playerId + "/error",
                     new ErrorResponse("400", e.getMessage()));

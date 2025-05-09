@@ -41,4 +41,24 @@ public class PlayerTurn {
         return responses.values().stream().allMatch(Boolean::booleanValue);
     }
 
+
+    public List<Player> playersDrunk() {
+        List<Player> playersDrunk = new ArrayList<>();
+        for (Map.Entry<UUID, Boolean> entry : responses.entrySet()) {
+            if (entry.getValue() != null && entry.getValue()) {
+                playersDrunk.add(affectedPlayers.stream().filter(p -> p.getId().equals(entry.getKey())).findFirst().orElse(null));
+            }
+        }
+        return playersDrunk;
+    }
+
+    public List<Player> playersCompleted() {
+        List<Player> playersNotDrunk = new ArrayList<>();
+        for (Map.Entry<UUID, Boolean> entry : responses.entrySet()) {
+            if (entry.getValue() != null && !entry.getValue()) {
+                playersNotDrunk.add(affectedPlayers.stream().filter(p -> p.getId().equals(entry.getKey())).findFirst().orElse(null));
+            }
+        }
+        return playersNotDrunk;
+    }
 }

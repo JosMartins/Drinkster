@@ -461,7 +461,7 @@ public class RoomService {
      *
      * @param gameRoomUUID The game room.
      */
-    public PlayerTurn startNextTurn(UUID gameRoomUUID) {
+    public void startNextTurn(UUID gameRoomUUID) {
         GameRoom gameRoom = gameRooms.get(gameRoomUUID);
 
         if (gameRoom == null) {
@@ -481,7 +481,6 @@ public class RoomService {
             isValid = gameRoom.nextTurn(challenge, false);
         }
 
-        return gameRoom.getCurrentTurn();
     }
 
 }

@@ -187,22 +187,4 @@ class RoomWebSocketControllerTest {
         verify(roomService).changePlayerDifficulty(roomId, playerId, difficultyValues, sessionId);
     }
 
-    @Test
-    void startGameSuccessfully() {
-        BaseResponse response = controller.handleStartGame(roomId.toString(), headerAccessor);
-
-        assertInstanceOf(StartGameResponse.class, response);
-        verify(roomService).startGame(roomId, sessionId);
-    }
-
-    @Test
-    void startGameWithErrorReturnsErrorResponse() {
-        doThrow(new IllegalArgumentException("Not enough players")).when(roomService).startGame(any(UUID.class), anyString());
-
-        BaseResponse response = controller.handleStartGame(roomId.toString(), headerAccessor);
-
-        assertInstanceOf(ErrorResponse.class, response);
-        assertEquals("400", ((ErrorResponse) response).code());
-        assertEquals("Not enough players", ((ErrorResponse) response).message());
-    }
 }

@@ -6,7 +6,7 @@ import java.util.Arrays;
 public enum Sex {
     MALE("M"),
     FEMALE("F"),
-    ALL("A");
+    ALL("ALL");
 
     private final String dbCode;
 
@@ -18,7 +18,7 @@ public enum Sex {
         return Arrays.stream(values())
                 .filter(s -> s.dbCode.equals(dbCode))
                 .findFirst()
-                .orElseThrow(IllegalArgumentException::new);
+                .orElse(null);
     }
 
 }

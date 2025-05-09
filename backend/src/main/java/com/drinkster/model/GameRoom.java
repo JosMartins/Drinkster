@@ -1,9 +1,7 @@
 package com.drinkster.model;
 
 import com.drinkster.exception.IncompatibleSexException;
-import com.drinkster.model.enums.RoomMode;
-import com.drinkster.model.enums.RoomState;
-import com.drinkster.model.enums.Sex;
+import com.drinkster.model.enums.*;
 import com.drinkster.utils.FixedSizeQueue;
 import lombok.Getter;
 import lombok.Setter;
@@ -91,7 +89,8 @@ public class GameRoom {
         if (players.size() >= 2 && state == RoomState.LOBBY) {
             state = RoomState.PLAYING;
 
-            this.currentTurn = new PlayerTurn(this.getCurrentPlayer(), null, new ArrayList<>());
+            this.currentTurn = null;
+
         } else {
             throw new IllegalStateException("Cannot start game from current state: " + state);
         }

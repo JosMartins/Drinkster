@@ -213,22 +213,6 @@ public class RoomWebSocketController {
         }
     }
 
-    @MessageMapping("/start-game")
-    @SendTo("/topic/{roomId}/game-started")
-    public BaseResponse handleStartGame(String roomId,
-                                        SimpMessageHeaderAccessor headerAccessor) {
-        try {
-            UUID roomUUID = UUID.fromString(roomId);
-            roomService.startGame(roomUUID, headerAccessor.getSessionId());
-
-            return new StartGameResponse();
-        } catch (IllegalArgumentException e) {
-            return new ErrorResponse(
-                    "400", // Bad Request
-                    e.getMessage()
-            );
-        }
-    }
 
     /// SESSION RESTORE ///
 
