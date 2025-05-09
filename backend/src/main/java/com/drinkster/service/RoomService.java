@@ -377,22 +377,26 @@ public class RoomService {
             throw new IllegalArgumentException("Game is not in progress");
         }
 
-        if (gameRoom.getCurrentPlayer().equals(player)) {
-            gameRoom.handleChallengeCompletion(drunk);
-
-        } else {
+        if (!gameRoom.getCurrentPlayer().equals(player)) {
             throw new IllegalArgumentException("Player is not the current player");
         }
+
+        if (!gameRoom.getCurrentTurn().allResponded()) {
+            throw new IllegalArgumentException("Not all players have responded to the challenge");
+        }
+
+        gameRoom.handleChallengeCompletion(drunk);
     }
 
     /**
-     * Force skip a challenge for the next player.
+     * This methods checks if the condition to skip the challenge is met.
      *
-     * @implNote This will only be available for the admin.
-     * @param roomId The ID of the room.
+     * @param roomId     The ID of the room.
      * @param adminSesId The session ID of the admin.
+     * @implNote This will only be available for the admin.
+     * @throws IllegalArgumentException if the room does not exist, the game is not in progress, or the admin session ID does not match.
      */
-    public void forceSkipChallenge(String roomId, String adminSesId) {
+    public void forceSkipChallenge(String roomId, String adminSesId) throws IllegalArgumentException {
         GameRoom gameRoom = gameRooms.get(UUID.fromString(roomId));
         if (gameRoom == null) {
             throw new IllegalArgumentException("Room does not exist");
@@ -438,12 +442,12 @@ public class RoomService {
         ChallengeDto currentChallenge = null;
         if (gameRoom.getState() == RoomState.PLAYING) {
             if (gameRoom.getCurrentPlayer().equals(player)) {
-                currentChallenge = ChallengeDto.fromChallenge(gameRoom.getCurrentTurn().challenge());
+                currentChallenge = ChallengeDto.fromChallenge(gameRoom.getCurrentTurn().getChallenge());
             } else {
                 currentChallenge = new ChallengeDto(
-                        gameRoom.getCurrentPlayer().getName() + "is performing a challenge or drinking " + gameRoom.getCurrentTurn().challenge().getSips() + "sips.",
-                        gameRoom.getCurrentTurn().challenge().getDifficulty().toString(),
-                        gameRoom.getCurrentTurn().challenge().getType().toString());
+                        gameRoom.getCurrentPlayer().getName() + "is performing a challenge or drinking " + gameRoom.getCurrentTurn().getChallenge().getSips() + "sips.",
+                        gameRoom.getCurrentTurn().getChallenge().getDifficulty().toString(),
+                        gameRoom.getCurrentTurn().getChallenge().getType().toString());
             }
         }
         return new SessionRestoreResponse(self, room, currentChallenge);
@@ -465,8 +469,8 @@ public class RoomService {
         }
 
         // we peek first so we can use the player that the challenge is for
-        Player player = gameRoom.peekNextPlayer();
-        Difficulty challengeDifficulty = challengeService.getRandomWeightedDifficulty(player.getDifficultyValues());
+        Player nextPlayer = gameRoom.peekNextPlayer();
+        Difficulty challengeDifficulty = challengeService.getRandomWeightedDifficulty(nextPlayer.getDifficultyValues());
         Challenge challenge = challengeService.getRandomChallenge(gameRoom.getUsedUUIDS().getQueueAsList(), challengeDifficulty);
 
         boolean isValid = gameRoom.nextTurn(challenge, true); // and then we advance the player

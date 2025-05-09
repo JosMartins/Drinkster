@@ -7,7 +7,6 @@ import com.drinkster.model.enums.Sex;
 import com.drinkster.utils.FixedSizeQueue;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.security.core.parameters.P;
 
 import java.util.*;
 
@@ -35,7 +34,6 @@ public class GameRoom {
 
     //challenge tracker
     private FixedSizeQueue<UUID> usedUUIDS;
-
 
 
     /**
@@ -190,7 +188,7 @@ public class GameRoom {
         if (advance) nextPlayer();
         try {
             this.currentTurn = processChallenge(challenge);
-            this.usedUUIDS.add(this.currentTurn.challenge().getId());
+            this.usedUUIDS.add(this.currentTurn.getChallenge().getId());
             return true;
         } catch (IncompatibleSexException e) {
             return false;
@@ -215,7 +213,7 @@ public class GameRoom {
          if (challenge.getPlayers() == 1) {
                 affectedPlayers.add(getCurrentPlayer());
              Sex challengeSex = challenge.getSexes().getFirst();
-             if (currentTurn.player().getSex() != challengeSex) {
+             if (currentTurn.getPlayer().getSex() != challengeSex) {
                     throw new IncompatibleSexException();
              }
 
@@ -245,7 +243,7 @@ public class GameRoom {
         processedChallenge.setSips(challenge.getSips());
         processedChallenge.setType(challenge.getType());
 
-        return new PlayerTurn(currentTurn.player(), processedChallenge, affectedPlayers);
+        return new PlayerTurn(currentTurn.getPlayer(), processedChallenge, affectedPlayers);
     }
 
     /**
@@ -255,12 +253,26 @@ public class GameRoom {
      */
     public void handleChallengeCompletion(boolean drunk) {
 
-        Player player = currentTurn.player();
+        Player player = currentTurn.getPlayer();
 
-        if (drunk) { //player completed a challenge
-            int sips = currentTurn.challenge().getSips();
+        if (drunk) { //player drunk
+            int sips = currentTurn.getChallenge().getSips();
             player.addSips(sips);
-            player.processPenalties();
+
+        } else { //player completed the challenge
+            //check if the challenge has penalty associated
+            if (currentTurn.getChallenge().getPenalty() != null) {
+                //apply penalty to all affected players
+                for (Player p : currentTurn.getAffectedPlayers()) {
+                    p.addPenalty(currentTurn.getChallenge().getPenalty());
+                }
+            }
+
+        }
+
+        //decrement the penalty rounds for all players
+        for (Player p : currentTurn.getAffectedPlayers()) {
+            p.processPenalties();
         }
 
     }
