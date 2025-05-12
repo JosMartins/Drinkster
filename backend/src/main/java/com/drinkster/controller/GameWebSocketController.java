@@ -80,7 +80,7 @@ public class GameWebSocketController {
                         //doVote(playerUUID, votedUUID);
                         //for now this will not be implemented. focus on making the game work.
                         //do nothing because chosen is not affected...
-                    }
+                }
 
                 default -> { /*do nothing*/ }
             }

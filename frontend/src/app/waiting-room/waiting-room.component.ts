@@ -50,7 +50,8 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit() {
-    const storedId = localStorage.getItem("roomId") || '';
+    //from cookies
+    const storedId = document.get
 
     if (!storedId) {
       console.log("No room ID found, redirecting to multiplayer");

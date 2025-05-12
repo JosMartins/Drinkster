@@ -92,8 +92,6 @@ export class CreateRoomDialogComponent {
         showChallenges: this.roomForm.value.showChallenges,
       };
 
-      //store difficulty for admin, to be used in the waiting room, no need to query the server
-
       // Set up event listener first
       const errorSubscription = this.socketService.error().subscribe(
         (errorMessage) => {
@@ -117,9 +115,8 @@ export class CreateRoomDialogComponent {
           console.log('Room created:', roomId, 'Player ID:', playerId);
 
           // Store player ID for session restoration
-          localStorage.setItem('sessionId', playerId);
-          localStorage.setItem('roomId', roomId);
-          localStorage.setItem(`${playerId}_difficulty`, JSON.stringify(this.roomForm.value.player.difficulty));
+          this.socketService.setCookie('playerId', playerId, 12)
+          this.socketService.setCookie('roomId', roomId, 12)
           roomCreatedSubscription.unsubscribe();
 
           this.dialogRef.close({

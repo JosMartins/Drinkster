@@ -43,6 +43,7 @@ export class SocketService {
   public on(destination: string): Observable<any> {
     return new Observable(observer => {
       this.subscribe(destination, (data) => {
+        console.log("received:" + data);
         observer.next(data);
       });
     });

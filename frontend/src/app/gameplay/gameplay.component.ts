@@ -139,12 +139,14 @@ export class GameplayComponent implements OnInit {
 
   completeChallenge(): void {
     if (!this.currentChallenge) return;
-    this.io.challengeCompleted(this.roomId);
+    // @ts-ignore
+    this.io.challengeCompleted(this.roomId, this.self.id);
   }
 
   drunkChallenge(): void {
     if (!this.currentChallenge) return;
-    this.io.challengeDrunk(this.roomId);
+    // @ts-ignore
+    this.io.challengeDrunk(this.roomId, this.self.id);
   }
 
   forceSkip(): void {
