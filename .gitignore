@@ -1,6 +1,7 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
 # Compiled output
+/backend/dist
 /dist
 /tmp
 /out-tsc
@@ -42,9 +43,6 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Idea
-.idea/
-Backend/someQuests.json
 
 #Certs
 certbot

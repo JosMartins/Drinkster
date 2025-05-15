@@ -15,7 +15,6 @@ app.use(express.urlencoded({ extended: false }));
 const mongoDB = process.env.MONGO_URI;
 
 
-
 main().catch((err) => console.log(err));
 async function main() {
     await mongoose.connect(mongoDB);
