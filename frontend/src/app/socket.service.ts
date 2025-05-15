@@ -9,13 +9,15 @@ import {PlayerConfig, RoomConfig} from "./models/RoomConfig";
   providedIn: 'root'
 })
 export class SocketService {
-  private sessionData$ = new BehaviorSubject<any>(null);
+  private readonly sessionData$ = new BehaviorSubject<any>(null);
+  public isConnected$ = new BehaviorSubject<boolean>(false);
   private stompClient!: Client;
-  private readonly serverUrl = 'http://localhost:8080/ws';
+  private pendingSubscriptions: Array<{ destination: string, callback: (payload: any) => void }> = [];
+  private readonly serverUrl = 'http://localhost:8000/ws';
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
+  private readonly maxReconnectAttempts = 5;
 
-  constructor(private router: Router) {
+  constructor(private readonly router: Router) {
     this.initializeConnection();
   }
 
@@ -32,18 +34,22 @@ export class SocketService {
       this.stompClient.subscribe(destination, (message) => {
         callback(JSON.parse(message.body));
       });
+    } else {
+      // Queue the subscription if not connected
+      this.pendingSubscriptions.push({ destination, callback });
     }
   }
 
   public on(destination: string): Observable<any> {
     return new Observable(observer => {
       this.subscribe(destination, (data) => {
+        console.log("received:" + data);
         observer.next(data);
       });
     });
   }
 
-  //Connection
+  /// Connection ///
 
   private initializeConnection(): void {
     const socket = new SockJS(this.serverUrl);
@@ -51,10 +57,16 @@ export class SocketService {
 
     this.stompClient.connect({}, (frame) => {
       console.log('Connected: ' + frame);
+      this.isConnected$.next(true);
       this.reconnectAttempts = 0;
       this.setupReconnection();
+      this.pendingSubscriptions.forEach(sub => {
+        this.subscribe(sub.destination, sub.callback);
+      });
+      this.pendingSubscriptions = [];
     }, (error) => {
       console.log('Connection error: ', error);
+      this.isConnected$.next(false);
       this.handleReconnection();
     });
   }
@@ -90,15 +102,18 @@ export class SocketService {
 
   public disconnect(): void {
     if (this.stompClient?.connected) {
-      this.stompClient.disconnect(() => {}); // Add empty callback
+      this.stompClient.disconnect(() => {});
     }
-    localStorage.removeItem('sessionId');
+    //remove sessionId and roomId from cookies
+    this.deleteCookie('sessionId');
+    this.deleteCookie('roomId');
+
   }
 
-  // Session Management
+  /// Session Management ///
 
   private handleRestoredSession(data: any): void {
-    localStorage.setItem('roomId', data.roomId);
+    this.setCookie('roomId', data.roomId, 12);
 
     if (data.status === 'waiting') {
       this.router.navigate(['/room']).then();
@@ -120,7 +135,7 @@ export class SocketService {
     }
   }
 
-  // Room Management
+  /// Room Management ///
 
   public getRooms() {
     this.send("/app/list-rooms", {});
@@ -188,12 +203,12 @@ export class SocketService {
   }
 
   playerStatusUpdate(): Observable<any> {
-    return this.on('player-status-update');
+    return this.on('/topic/player-status-update');
   }
 
 
   public updatePlayerDifficulty(roomId: string, playerId: string, difficulty: any): void {
-    this.send('/aoo/admin-update-difficulty', { roomId, playerId, difficulty});
+    this.send('/app/admin-update-difficulty', { roomId, playerId, difficulty});
   }
 
   public kickPlayer(roomId: string, playerId: string): void {
@@ -201,7 +216,8 @@ export class SocketService {
   }
 
 
-  // Game Management
+  /// Game Management ///
+
   public startGame(roomId: string, playerId: string): void {
       this.send('/app/start-game', { roomId, playerId });
     }
@@ -219,18 +235,21 @@ export class SocketService {
     return this.on('/topic/other-player-challenge');
   }
 
-  public challengeCompleted(roomId: string): void {
-    this.send('/app/challenge-completed', roomId);
+  public challengeCompleted(roomId: string, playerId: string): void {
+    this.send('/app/challenge-completed', {roomId, playerId});
   }
 
-  public challengeDrunk(roomId: string): void {
-    this.send('/app/challenge-drunk', roomId);
+  public challengeDrunk(roomId: string, playerId: string): void {
+    this.send('/app/challenge-drunk', {roomId, playerId});
+  }
+
+  public randomEvent(): Observable<any> {
+    return this.on('/topic/random-event');
   }
 
   public forceSkipChallenge(roomId: string): void {
     this.send('/app/admin-force-skip', roomId);
   }
-
 
 
   // ERROR
@@ -241,6 +260,42 @@ export class SocketService {
   // Session Data
   public getSessionData(): Observable<any> {
     return this.sessionData$.asObservable();
+  }
+
+  // Connection Status
+  public connectionStatus(): Observable<boolean> {
+    return this.isConnected$.asObservable();
+  }
+
+
+  /// Cookies ///
+
+  public setCookie(name: string, value: string, hours: number): void {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + hours * 60 * 60 * 1000);
+    const encodedName = encodeURIComponent(name);
+    const encodedValue = encodeURIComponent(value);
+    let cookie = `${encodedName}=${encodedValue};expires=${expires.toUTCString()};path=/`;
+    if (location.protocol === 'https:') cookie += ';Secure';
+    document.cookie = cookie;
+  }
+
+  getCookie(name: string): string | null {
+    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = RegExp(new RegExp(`(^| )${escapedName}=([^;]+)`)).exec(document.cookie);
+    return match ? decodeURIComponent(match[2]) : null;
+  }
+
+  deleteCookie(name: string): void {
+    const encodedName = encodeURIComponent(name);
+    let cookie = `${encodedName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+
+    // Only add Secure if the current connection is HTTPS
+    if (location.protocol === 'https:') {
+      cookie += '; Secure';
+    }
+
+    document.cookie = cookie;
   }
 
 }

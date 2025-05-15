@@ -5,13 +5,20 @@ import { MatDialog } from '@angular/material/dialog';
 import { CreateRoomDialogComponent } from '../create-room-dialog/create-room-dialog.component';
 import {SocketService} from "../socket.service";
 import {PlayerConfigComponent} from "../player-config/player-config.component";
+import {filter, take} from "rxjs";
 
 interface Room {
   id: string;
   name: string;
   isPrivate: boolean;
-  playerCount: number;
+  players: number;
+  state: string;
 }
+
+interface RoomListResponse {
+  rooms: Room[];
+}
+
 
 @Component({
   selector: 'app-multiplayer',
@@ -25,23 +32,24 @@ export class MultiplayerComponent implements OnInit {
 
   constructor(
     private readonly router: Router,
-    private dialog: MatDialog,
-    private socketService: SocketService,
+    private readonly dialog: MatDialog,
+    private readonly socketService: SocketService,
   ) {}
 
   ngOnInit(): void {
-    // Subscribe to initial room list
-    this.socketService.listRooms().subscribe((rooms: Room[]) => {
-      this.rooms = rooms;
+
+    // Subscribe to room updates
+    this.socketService.listRooms().subscribe((response: RoomListResponse) => {
+      this.rooms = response.rooms;
     });
 
-    // Subscribe to real-time updates
-    this.socketService.roomUpdate().subscribe((rooms: Room[]) => {
-      this.rooms = rooms;
+    this.socketService.connectionStatus().pipe(
+      filter(isConnected => isConnected),
+      take(1)
+    ).subscribe(() => {
+      this.socketService.getRooms();
     });
 
-    // Request the initial room list
-    this.socketService.getRooms();
   }
 
   createRoom(): void {
@@ -55,7 +63,6 @@ export class MultiplayerComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         // Handle the result data from the dialog
-        console.log('Room created:', result);
       }
     });
   }

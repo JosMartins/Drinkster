@@ -21,13 +21,13 @@ export class SingleplayerComponent {
 
   constructor(public dialog: MatDialog, private readonly router: Router, private socketService: SocketService) { }
 
-  players: Player[] = [{ name: '', gender: 'M', difficulty: DEFAULT_DIFFICULTY }];
+  players: Player[] = [{id: "0", name: '', gender: 'M', difficulty: DEFAULT_DIFFICULTY }];
   numberOfRememberedChal: number = 20
   randomMode: boolean = false;
 
 
   addPlayer() {
-    this.players.push({ name: '', gender: 'M', difficulty: DEFAULT_DIFFICULTY });
+    this.players.push({ id:"1", name: '', gender: 'M', difficulty: DEFAULT_DIFFICULTY });
   }
 
   removePlayer(index: number) {
@@ -44,8 +44,7 @@ export class SingleplayerComponent {
 
   startGame() {
     //TODO create the room (check backend requirements)
-    //TODO
-    //this.router.navigate(['/game']);
+    this.router.navigate(['/game']);
 
   }
 

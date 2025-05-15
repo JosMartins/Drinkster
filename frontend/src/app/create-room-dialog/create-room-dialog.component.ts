@@ -37,11 +37,11 @@ export class CreateRoomDialogComponent {
   roomForm: FormGroup;
 
   constructor(
-    private fb: FormBuilder,
-    private dialogRef: MatDialogRef<CreateRoomDialogComponent>,
-    private dialog: MatDialog,
-    private socketService: SocketService,
-    private router: Router,
+    private readonly fb: FormBuilder,
+    private readonly dialogRef: MatDialogRef<CreateRoomDialogComponent>,
+    private readonly dialog: MatDialog,
+    private readonly socketService: SocketService,
+    private readonly router: Router,
   ) {
     this.roomForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
@@ -79,20 +79,18 @@ export class CreateRoomDialogComponent {
   onSubmit(): void {
     if (this.roomForm.valid) {
       const roomConfig: RoomConfig = {
-        roomName: this.roomForm.value.name,
-        private: this.roomForm.value.isPrivate,
+        name: this.roomForm.value.name,
+        isPrivate: this.roomForm.value.isPrivate,
         password: this.roomForm.value.password,
-        playerConfig: {
+        player: {
           name: this.roomForm.value.player.name,
           sex: this.roomForm.value.player.sex,
           difficulty_values: this.roomForm.value.player.difficulty
         },
         mode: this.roomForm.value.mode,
-        rememberedChallenges: this.roomForm.value.rememberedChallenges,
+        rememberCount: this.roomForm.value.rememberedChallenges,
         showChallenges: this.roomForm.value.showChallenges,
       };
-
-      //store difficulty for admin, to be used in the waiting room, no need to query the server
 
       // Set up event listener first
       const errorSubscription = this.socketService.error().subscribe(
@@ -117,9 +115,8 @@ export class CreateRoomDialogComponent {
           console.log('Room created:', roomId, 'Player ID:', playerId);
 
           // Store player ID for session restoration
-          localStorage.setItem('sessionId', playerId);
-          localStorage.setItem('roomId', roomId);
-          localStorage.setItem(`${playerId}_difficulty`, JSON.stringify(this.roomForm.value.player.difficulty));
+          this.socketService.setCookie('playerId', playerId, 12)
+          this.socketService.setCookie('roomId', roomId, 12)
           roomCreatedSubscription.unsubscribe();
 
           this.dialogRef.close({

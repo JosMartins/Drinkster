@@ -43,14 +43,15 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription[] = [];
 
   constructor(
-    private io: SocketService,
-    private router: Router,
-    private dialog: MatDialog
+    private readonly io: SocketService,
+    private readonly router: Router,
+    private readonly dialog: MatDialog
   ) {
   }
 
   async ngOnInit() {
-    const storedId = localStorage.getItem("roomId") || '';
+    //from cookies
+    const storedId = document.get
 
     if (!storedId) {
       console.log("No room ID found, redirecting to multiplayer");
@@ -64,8 +65,8 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
     //Player Status Update
     this.subscriptions.push(
-      this.io.playerStatusUpdate().subscribe(({playerName, isReady}) => {
-        const player = this.players.find(p => p.name === playerName);
+      this.io.playerStatusUpdate().subscribe(({roomId, playerId, isReady}) => {
+        const player = this.players.find((p) => p.id === playerId);
         if (player) player.isReady = isReady;
       }),
 

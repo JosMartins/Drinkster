@@ -2,12 +2,11 @@ package com.drinkster.model.enums;
 
 import java.util.Arrays;
 
-import static java.util.Arrays.stream;
 
 public enum Sex {
     MALE("M"),
     FEMALE("F"),
-    ALL("A");
+    ALL("ALL");
 
     private final String dbCode;
 
@@ -19,7 +18,7 @@ public enum Sex {
         return Arrays.stream(values())
                 .filter(s -> s.dbCode.equals(dbCode))
                 .findFirst()
-                .orElseThrow(IllegalArgumentException::new);
+                .orElse(null);
     }
 
 }

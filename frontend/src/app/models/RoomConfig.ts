@@ -8,11 +8,11 @@ export interface PlayerConfig {
 
 
 export interface RoomConfig {
-  roomName: string;
-  private: boolean
+  name: string;
+  isPrivate: boolean
   password: string,
-  playerConfig: PlayerConfig,
+  player: PlayerConfig,
   mode: string,
-  rememberedChallenges: number,
+  rememberCount: number,
   showChallenges: boolean
 }

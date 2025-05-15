@@ -1,19 +1,27 @@
 package com.drinkster.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import com.drinkster.model.GameRoom;
 
-@Getter
-@Setter
-@AllArgsConstructor
-public class GameRoomDto {
+public record GameRoomDto(
+        String roomId,
+        String roomName,
+        boolean isPrivate,
+        String roomState,
+        String roomMode,
+        int playerCount,
+        int rememberedChallenges,
+        String adminId) {
 
-    private String roomId;
-    private String roomName;
-    private boolean isPrivate;
-    private String password;
-    private int playerCount;
-    private String roomState;
-
+    public static GameRoomDto fromGameRoom(GameRoom gameRoom) {
+        return new GameRoomDto(
+                gameRoom.getId().toString(),
+                gameRoom.getName(),
+                gameRoom.isPrivate(),
+                gameRoom.getState().toString(),
+                gameRoom.getMode().toString(),
+                gameRoom.getPlayers().size(),
+                gameRoom.getRememberedChallenges(),
+                gameRoom.getAdmin().getId().toString()
+        );
+    }
 }
