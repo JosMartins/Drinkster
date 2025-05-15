@@ -26,22 +26,15 @@ interface Penalty {
 
 export class GameplayComponent implements OnInit {
   private readonly subscriptions: Subscription[] = [];
-  self?: Player;
-  players: string[] = [];
-  roomId: string = '';
+  self: Player;
+  players: Player[];
+  roomId: string;
   currentRound: number = 1;
-  isAdmin: boolean = false;
   adminText?: string;
   currentChallenge?: {
     text: string,
     difficulty: string,
-    type: 'challenge' | 'penalty',
-    round: number,
-    playerName: string,
-    penalty_opts?: {
-      rounds: number,
-      text: string
-    }
+    type: string
   };
   penalties: Penalty[] = [];
   myChallenge: boolean = false;
@@ -61,53 +54,32 @@ export class GameplayComponent implements OnInit {
           this.self = sesData.me;
           this.roomId = sesData.roomId;
           this.players = sesData.players.map((p: { name: any; }) => p.name);
-          this.isAdmin = sesData.isAdmin;
           this.penalties = sesData.penalties;
           this.currentChallenge = {
             text: sesData.text,
             difficulty: sesData.difficulty,
-            type: sesData.type,
             round: sesData.round,
-            playerName: sesData.playerName
           };
 
-          if (this.isAdmin) {
-            this.subscriptions.push(
-              this.io.on('admin-challenge-text').subscribe(data => {
-                console.log("Admin text:", data);
-                this.adminText = data;
-              })
-            );
-          }
         }
       }),
     );
 
     const navigationData = this.router.getCurrentNavigation();
 
-    if (navigationData?.extras.state) {
+    if (navigationData?.extras.state) { //TODO needs changing
       this.roomId = navigationData.extras.state['roomId'];
       this.players = navigationData.extras.state['players'] || [];
       this.self = navigationData.extras.state['self'];
     }
 
-    if (this.isAdmin) {
-      this.subscriptions.push(
-        this.io.on('admin-challenge-text').subscribe(data => {
-          console.log("Admin text:", data);
-          this.adminText = data;
-        })
-      )}
-
     this.handleRandomEvents();
     this.listenForChallenges();
 
   }
-
   private listenForChallenges(): void {
     this.subscriptions.push(
-      this.io.gotChallenge().subscribe((data) => {
-        console.log("MINE:", data);
+      this.io.onChallege(self.id).subscribe((data) => {
         this.currentChallenge = {
           text: data.text,
           difficulty: data.difficulty,
@@ -116,9 +88,7 @@ export class GameplayComponent implements OnInit {
           playerName: data.playerName
         };
         this.currentRound = data.round;
-        this.penalties = data.playerPenalties;
-        console.log(this.self?.name, ";;;", data.playerName);
-        this.myChallenge = this.self?.name === data.playerName;
+        this.penalties = data.penaltyList;
       }),
 
       this.io.otherPlayerChallenge().subscribe((data) => {

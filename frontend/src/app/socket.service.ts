@@ -115,22 +115,14 @@ export class SocketService {
   private handleRestoredSession(data: any): void {
     this.setCookie('roomId', data.roomId, 12);
 
+    this.sessionData$.next({
+      self: data.self, //Player
+      room: data.room, //GameRoom
+      challenge: data.currentChallenge //Challenge
+    });
     if (data.status === 'waiting') {
       this.router.navigate(['/room']).then();
     } else if (data.status === 'playing') {
-      this.sessionData$.next({
-        me: data.me,
-        status: data.status,
-        roomId: data.roomId,
-        players: data.players,
-        isAdmin: data.isAdmin,
-        penalties: data.penalties,
-        text: data.text || 'Loading challenge...',
-        difficulty: data.difficulty,
-        type: data.type || 'challenge',
-        round: data.round || 0,
-        playerName: data.playerName || '',
-      });
       this.router.navigate(['/game']).then();
     }
   }
@@ -150,8 +142,8 @@ export class SocketService {
     this.send("/app/create-room", room);
   }
 
-  public createSinglePlayer(room: RoomConfig) {
-    this.send("/app/create-singlePlayer", room);
+  public createSingleplayer(room: RoomConfig) {
+    this.send("/app/create-single-player", room);
   }
 
   public roomCreated(): Observable<any> {
@@ -204,9 +196,13 @@ export class SocketService {
     return this.on('/topic/player-status-update');
   }
 
+  getPlayerDifficulty(id: string): Observable<any> {
+    this.send('/app/get-player-difficulty', id);
 
+    return this.on('/topic/difficulty'+ id);
+  }
   public updatePlayerDifficulty(roomId: string, playerId: string, difficulty: any): void {
-    this.send('/app/admin-update-difficulty', { roomId, playerId, difficulty});
+    this.send('app/change-difficulty', { roomId, playerId, difficulty });
   }
 
   public kickPlayer(roomId: string, playerId: string): void {
@@ -225,13 +221,10 @@ export class SocketService {
   }
 
 
-  public gotChallenge(): Observable<any> {
-    return this.on('/topic/your-challenge');
+  public onChallege(playerId: string): Observable<any> {
+    return this.on('/topic/'+ playerId + '/challenge');
   }
 
-  public otherPlayerChallenge(): Observable<any> {
-    return this.on('/topic/other-player-challenge');
-  }
 
   public challengeCompleted(roomId: string, playerId: string): void {
     this.send('/app/challenge-completed', {roomId, playerId});
@@ -295,5 +288,6 @@ export class SocketService {
 
     document.cookie = cookie;
   }
+
 
 }

@@ -3,7 +3,7 @@ import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {Router} from '@angular/router';
 import {SocketService} from '../socket.service';
-import {firstValueFrom, Subscription, merge} from 'rxjs';
+import {firstValueFrom, Subscription} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {DifficultyDialogComponent} from "../difficulty-dialog/difficulty-dialog.component";
 
@@ -46,9 +46,9 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     //from cookies
     const storedId = this.io.getCookie('roomId');
     const playerId = this.io.getCookie('playerId');
-    if (!storedId || !playerId) {
+    if (!storedId || !playerId) { //if there isn't a roomId/playerId stored in cookies, redirect the user.
       console.log("No room ID found/ player ID, redirecting to multiplayer");
-      this.io.deleteCookie('roomId');
+      this.io.deleteCookie('roomId'); //safety
       this.io.deleteCookie('playerId');
       await this.router.navigate(['/multiplayer']).then(_ => null);
       return
@@ -57,13 +57,14 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     this.roomId = storedId;
     this.currentPlayerId = playerId
 
-    //Player Status Update
+    //Player Status Update (ready/unready)
     this.subscriptions.push(
       this.io.playerStatusUpdate().subscribe(({playerId, isReady}) => {
         const player = this.players.find((p) => p.id === playerId);
         if (player) player.isReady = isReady;
       }),
 
+      //Player Joined
       this.io.playerJoined().subscribe((newPlayer) => {
 
         if (!this.players.some(p => p.id === newPlayer.id)) {
@@ -77,16 +78,16 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
         }
       }),
 
+      //Player Left
       this.io.playerLeft().subscribe((leftPlayer) => {
         this.players = this.players.filter(p => p.name !== leftPlayer.name);
       }),
 
+      //Game Start
       this.io.gameStarted().subscribe(() => {
       this.router.navigate(['/game'], {
         state: {
-          //string list of names
-          self: this.players.filter(p => p.id === this.currentPlayerId)[0],
-          players: this.players.map(p => p.name),
+          players: this.players,
           roomId: this.roomId
         }
       });
@@ -153,7 +154,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       return;
     }
 
-    //TODO implement in the io
+
     const playerDifficulty = firstValueFrom(this.io.getPlayerDifficulty(player.id));
     const dialogRef = this.dialog.open(DifficultyDialogComponent, {
       data: {

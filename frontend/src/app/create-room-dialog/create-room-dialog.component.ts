@@ -92,12 +92,12 @@ export class CreateRoomDialogComponent {
         showChallenges: this.roomForm.value.showChallenges,
       };
 
-      // Set up event listener first
+      // Set up an event listener first
       const errorSubscription = this.socketService.error().subscribe(
         (errorMessage) => {
           console.error('Error creating room:', errorMessage);
 
-          // Clean up subscriptions
+          // Cleanup subscriptions
           errorSubscription.unsubscribe();
           roomCreatedSubscription.unsubscribe();
 
