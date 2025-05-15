@@ -76,7 +76,7 @@ public class GameWebSocketController {
 
 
                 case CHOSEN_DRINK -> {
-                        //TODO: Start vote for everyone, when all players vote, sned to the chosen player a drinking event.
+                        //TODO: Start vote for everyone, when all players vote, send to the chosen player a drinking event.
                         //doVote(playerUUID, votedUUID);
                         //for now this will not be implemented. focus on making the game work.
                         //do nothing because chosen is not affected...

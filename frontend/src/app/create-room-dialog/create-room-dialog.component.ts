@@ -112,7 +112,7 @@ export class CreateRoomDialogComponent {
       const roomCreatedSubscription = this.socketService.roomCreated().subscribe(
         (data) => {
           const { roomId, playerId } = data;
-          console.log('Room created:', roomId, 'Player ID:', playerId);
+          console.log('Room created:', roomId, '\nPlayer ID:', playerId);
 
           // Store player ID for session restoration
           this.socketService.setCookie('playerId', playerId, 12)

@@ -6,9 +6,9 @@ public record GameRoomDto(
         String roomId,
         String roomName,
         boolean isPrivate,
+        PlayerDto[] players,
         String roomState,
         String roomMode,
-        int playerCount,
         int rememberedChallenges,
         String adminId) {
 
@@ -17,9 +17,11 @@ public record GameRoomDto(
                 gameRoom.getId().toString(),
                 gameRoom.getName(),
                 gameRoom.isPrivate(),
+                gameRoom.getPlayers().stream()
+                        .map(PlayerDto::fromPlayer)
+                        .toArray(PlayerDto[]::new),
                 gameRoom.getState().toString(),
                 gameRoom.getMode().toString(),
-                gameRoom.getPlayers().size(),
                 gameRoom.getRememberedChallenges(),
                 gameRoom.getAdmin().getId().toString()
         );

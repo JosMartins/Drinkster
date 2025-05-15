@@ -8,17 +8,11 @@ import {MatDialog} from '@angular/material/dialog';
 import {DifficultyDialogComponent} from "../difficulty-dialog/difficulty-dialog.component";
 
 interface Player {
-  id?: string;
+  id: string;
   name: string;
-  sex?: string;
-  difficulty?: {
-    easy: number,
-    medium: number,
-    hard: number,
-    extreme: number
-  };
+  sex: string;
+  isAdmin: boolean;
   isReady: boolean;
-  isAdmin?: boolean;
 }
 
 @Component({
@@ -46,42 +40,39 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     private readonly io: SocketService,
     private readonly router: Router,
     private readonly dialog: MatDialog
-  ) {
-  }
+  ) {   }
 
   async ngOnInit() {
     //from cookies
-    const storedId = document.get
-
-    if (!storedId) {
-      console.log("No room ID found, redirecting to multiplayer");
+    const storedId = this.io.getCookie('roomId');
+    const playerId = this.io.getCookie('playerId');
+    if (!storedId || !playerId) {
+      console.log("No room ID found/ player ID, redirecting to multiplayer");
+      this.io.deleteCookie('roomId');
+      this.io.deleteCookie('playerId');
       await this.router.navigate(['/multiplayer']).then(_ => null);
+      return
     }
 
     this.roomId = storedId;
-
-    this.currentPlayerId = localStorage.getItem('sessionId') || '';
+    this.currentPlayerId = playerId
 
     //Player Status Update
     this.subscriptions.push(
-      this.io.playerStatusUpdate().subscribe(({roomId, playerId, isReady}) => {
+      this.io.playerStatusUpdate().subscribe(({playerId, isReady}) => {
         const player = this.players.find((p) => p.id === playerId);
         if (player) player.isReady = isReady;
       }),
 
-      merge(
-        this.io.playerJoined()
-      ).subscribe((newPlayer) => {
-        // Use unique ID for admins, fallback to name for non-admins
-        const uniqueKey = newPlayer.id || newPlayer.name;
+      this.io.playerJoined().subscribe((newPlayer) => {
 
-        if (!this.players.some(p => (p.id || p.name) === uniqueKey)) {
+        if (!this.players.some(p => p.id === newPlayer.id)) {
           this.players.push({
-            id: this.isAdmin ? newPlayer.id : undefined,
+            id: newPlayer.id,
             name: newPlayer.name,
-            isReady: newPlayer.isReady,
+            sex: newPlayer.sex,
             isAdmin: newPlayer.isAdmin,
-            difficulty: newPlayer.difficulty,
+            isReady: newPlayer.isReady,
           });
         }
       }),
@@ -105,12 +96,15 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     this.io.getRoom(this.roomId);
 
     try {
-      const roomInfo = await firstValueFrom(this.io.roomInfo());
-      console.log(roomInfo);
-      this.roomName = roomInfo.name;
-      this.gameMode = roomInfo.mode;
+      const roomInfo = await firstValueFrom(this.io.roomInfo(this.roomId));
+      if (roomInfo.roomId !== this.roomId) {
+        this.roomId = roomInfo.roomId;
+        this.io.deleteCookie('roomId');
+        this.io.setCookie('roomId', this.roomId, 8);
+      }
+      this.roomName = roomInfo.roomName;
+      this.gameMode = roomInfo.roomMode;
       this.players = roomInfo.players;
-      this.players[0].difficulty = JSON.parse(localStorage.getItem(`${this.players[0].id}_difficulty`) || '');
       this.rememberedChallenges = roomInfo.rememberedChallenges;
       this.showChallenges = roomInfo.showChallenges;
 
@@ -159,27 +153,19 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       return;
     }
 
+    //TODO implement in the io
+    const playerDifficulty = firstValueFrom(this.io.getPlayerDifficulty(player.id));
     const dialogRef = this.dialog.open(DifficultyDialogComponent, {
       data: {
-        difficultyValues: player.difficulty
+        difficultyValues: playerDifficulty
       }
     });
 
     dialogRef.afterClosed().subscribe( async (difficulty) => {
       if (player.id) {
          this.io.updatePlayerDifficulty(this.roomId, player.id, difficulty);
-
-         let diffSub= this.io.on("lol").subscribe(
-           async (data)  => {
-              if (data.playerId === player.id) {
-                player.difficulty = data.difficultyValues;
-              }
-           }
-        );
-        this.subscriptions.push(diffSub);
       }
     })
-
 
   }
 

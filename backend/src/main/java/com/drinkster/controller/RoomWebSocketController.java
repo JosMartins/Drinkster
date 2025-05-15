@@ -1,9 +1,12 @@
 package com.drinkster.controller;
 
 import com.drinkster.dto.DifficultyDto;
+import com.drinkster.dto.GameRoomDto;
+import com.drinkster.dto.PlayerDto;
 import com.drinkster.dto.RoomListItemDto;
 import com.drinkster.dto.response.*;
 import com.drinkster.dto.request.CreateRoomRequest;
+import com.drinkster.model.DifficultyValues;
 import com.drinkster.model.GameRoom;
 import com.drinkster.model.Player;
 import com.drinkster.model.enums.RoomMode;
@@ -12,6 +15,7 @@ import com.drinkster.service.RoomService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.util.UUID;
@@ -20,8 +24,10 @@ import java.util.UUID;
 public class RoomWebSocketController {
 
     private final RoomService roomService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public RoomWebSocketController(RoomService roomService) {
+    public RoomWebSocketController(RoomService roomService, SimpMessagingTemplate messagingTemplate) {
+        this.messagingTemplate = messagingTemplate;
         this.roomService = roomService;
     }
 
@@ -41,6 +47,25 @@ public class RoomWebSocketController {
 
     }
 
+    @MessageMapping("/get-room")
+    public void getRoom(String roomId, SimpMessageHeaderAccessor headerAccessor) {
+        try {
+            UUID roomUUID = UUID.fromString(roomId);
+
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/info",
+                    GameRoomDto.fromGameRoom(roomService.getRoom(roomUUID))
+            );
+        } catch (IllegalArgumentException e) {
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/error",
+                    new ErrorResponse(
+                            "400", // Bad Request
+                            e.getMessage()
+                    )
+            );
+        }
+    }
 
     @MessageMapping("/create-room")
     @SendTo("/topic/room-created")
@@ -70,8 +95,7 @@ public class RoomWebSocketController {
 
 
     @MessageMapping("/join-room")
-    @SendTo("/topic/{roomId}/player-joined")
-    public BaseResponse handleJoinRoom(String roomId,
+    public void handleJoinRoom(String roomId,
                                        CreateRoomRequest.PlayerConfig playerConfig,
                                        SimpMessageHeaderAccessor headerAccessor) {
 
@@ -85,130 +109,163 @@ public class RoomWebSocketController {
         );
 
         try {
+
             UUID roomUUID = UUID.fromString(roomId);
             roomService.joinRoom(roomUUID, joiner);
 
-            return new JoinResponse(
-                    "Joined room successfully",
-                    joiner.getId().toString()
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/player-joined",
+                    PlayerDto.fromPlayer(joiner)
             );
+
         } catch (IllegalArgumentException e) {
-            return new ErrorResponse(
-                    "400", // Bad Request
-                    e.getMessage()
+
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/error",
+                    new ErrorResponse(
+                            "400", // Bad Request
+                            e.getMessage()
+                    )
             );
         }
-
-
     }
 
     @MessageMapping("/leave-room")
-    @SendTo("/topic/{roomId}/player-left")
-    public BaseResponse handleLeaveRoom(String roomId, String playerId,
+    public void handleLeaveRoom(String roomId, String playerId,
                                         SimpMessageHeaderAccessor headerAccessor) {
         try {
             UUID roomUUID = UUID.fromString(roomId);
             UUID playerUUID = UUID.fromString(playerId);
             roomService.leaveRoom(roomUUID, playerUUID, headerAccessor.getSessionId());
 
-            return new JoinResponse("Left room successfully", playerId);
+            this.messagingTemplate.convertAndSend("/topic/" + roomId + "/player-left",
+                    playerId
+            );
         } catch (IllegalArgumentException e) {
-            return new ErrorResponse(
-                    "400", // Bad Request
-                    e.getMessage()
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/error",
+                    new ErrorResponse(
+                            "400", // Bad Request
+                            e.getMessage()
+                    )
             );
         }
     }
 
     @MessageMapping("/player-ready")
-    @SendTo("/topic/{roomId}/player-status-update")
-    public BaseResponse playerReady(String roomId, String playerId,
+    public void playerReady(String roomId, String playerId,
                                     SimpMessageHeaderAccessor headerAccessor){
         try {
             UUID roomUUID = UUID.fromString(roomId);
             UUID playerUUID = UUID.fromString(playerId);
             roomService.playerReady(roomUUID, playerUUID, headerAccessor.getSessionId());
 
-            return new PlayerStatusResponse(roomId, playerId, true);
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/player-status-update",
+                    new PlayerStatusResponse(playerId, true)
+            );
         } catch (IllegalArgumentException e) {
-            return new ErrorResponse(
-                    "400", // Bad Request
-                    e.getMessage()
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/error",
+                    new ErrorResponse(
+                            "400", // Bad Request
+                            e.getMessage()
+                    )
             );
         }
 
     }
 
     @MessageMapping("/player-unready")
-    @SendTo("/topic/{roomId}/player-status-update")
-    public BaseResponse playerUnready(String roomId, String playerId,
+    public void playerUnready(String roomId, String playerId,
                                     SimpMessageHeaderAccessor headerAccessor){
         try {
             UUID roomUUID = UUID.fromString(roomId);
             UUID playerUUID = UUID.fromString(playerId);
             roomService.playerUnready(roomUUID, playerUUID, headerAccessor.getSessionId());
 
-            return new PlayerStatusResponse(roomId, playerId, false);
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/player-status-update",
+                    new PlayerStatusResponse(playerId, true)
+            );
         } catch (IllegalArgumentException e) {
-            return new ErrorResponse(
-                    "400", // Bad Request
-                    e.getMessage()
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/error",
+                    new ErrorResponse(
+                            "400", // Bad Request
+                            e.getMessage()
+                    )
             );
         }
 
     }
 
     @MessageMapping("/kick-player")
-    @SendTo("/topic/{roomId}/player-left")
-    public BaseResponse handleAdminKickPlayer(String roomId, String playerId,
+    public void handleAdminKickPlayer(String roomId, String playerId,
                                               SimpMessageHeaderAccessor headerAccessor) {
         try {
             UUID roomUUID = UUID.fromString(roomId);
             UUID playerUUID = UUID.fromString(playerId);
             roomService.kickPlayer(roomUUID, playerUUID, headerAccessor.getSessionId());
 
-            return new JoinResponse("Player kicked successfully", playerId);
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/player-left",
+                    playerId
+            );
         } catch (IllegalArgumentException e) {
-            return new ErrorResponse(
-                    "400", // Bad Request
-                    e.getMessage()
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/error",
+                    new ErrorResponse(
+                            "400", // Bad Request
+                            e.getMessage()
+                    )
             );
         }
     }
-
+    //TODO: change this method. admin should receive the difficulty, not the player with the id
     @MessageMapping("/get-player-difficulty")
-    @SendTo("/topic/{roomId}/{playerId}/difficulty")
-    public BaseResponse handleGetPlayerDifficulty(String roomId, String playerId,
+    public void handleGetPlayerDifficulty(String roomId, String playerId,
                                                   SimpMessageHeaderAccessor headerAccessor) {
         try {
             UUID roomUUID = UUID.fromString(roomId);
             UUID playerUUID = UUID.fromString(playerId);
 
             DifficultyDto diff = roomService.getPlayerDifficulty(roomUUID, playerUUID, headerAccessor.getSessionId());
-            return new GetPlayerDifficultyResponse(diff);
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/difficulty-changed",
+                    diff
+            );
         } catch (IllegalArgumentException e) {
-            return new ErrorResponse(
-                    "400", // Bad Request
-                    e.getMessage()
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/error",
+                    new ErrorResponse(
+                            "400", // Bad Request
+                            e.getMessage()
+                    )
             );
         }
     }
 
     @MessageMapping("/change-difficulty")
-    @SendTo("/topic/{roomId}/{playerId}/difficulty-changed")
-    public BaseResponse handleChangeDifficulty(String roomId, String playerId,
+    public void handleChangeDifficulty(String roomId, String playerId,
                                                CreateRoomRequest.PlayerConfig playerConfig,
                                                SimpMessageHeaderAccessor headerAccessor) {
         try {
             UUID roomUUID = UUID.fromString(roomId);
             UUID playerUUID = UUID.fromString(playerId);
-            roomService.changePlayerDifficulty(roomUUID, playerUUID, playerConfig.difficulty_values(), headerAccessor.getSessionId());
+            DifficultyValues newDiff =  roomService.changePlayerDifficulty(roomUUID, playerUUID, playerConfig.difficulty_values(), headerAccessor.getSessionId());
 
-            return new JoinResponse("Player difficulty changed successfully", playerId);
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/difficulty-changed",
+                    DifficultyDto.fromDifficultyValues(newDiff)
+            );
         } catch (IllegalArgumentException e) {
-            return new ErrorResponse(
-                    "400", // Bad Request
-                    e.getMessage()
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/error",
+                    new ErrorResponse(
+                            "400", // Bad Request
+                            e.getMessage()
+                    )
             );
         }
     }
@@ -218,17 +275,22 @@ public class RoomWebSocketController {
 
 
     @MessageMapping("/restore-session")
-    @SendTo("/topic/{playerId}/session-restored")
-    public BaseResponse restoreSession(String roomId, String playerId, SimpMessageHeaderAccessor headerAccessor) {
+    public void restoreSession(String roomId, String playerId, SimpMessageHeaderAccessor headerAccessor) {
         UUID roomUUID = UUID.fromString(roomId);
         UUID playerUUID = UUID.fromString(playerId);
 
         try {
-            return roomService.restoreSession(roomUUID, playerUUID, headerAccessor.getSessionId());
+            SessionRestoreResponse resp = roomService.restoreSession(roomUUID, playerUUID, headerAccessor.getSessionId());
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + playerId + "/session-restored",
+                    resp);
         } catch (IllegalArgumentException e) {
-            return new ErrorResponse(
-                    "400", // Bad Request
-                    e.getMessage()
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + playerId + "/error",
+                    new ErrorResponse(
+                            "400", // Bad Request
+                            e.getMessage()
+                    )
             );
         }
     }

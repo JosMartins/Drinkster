@@ -7,6 +7,7 @@ import {MatRadioButton, MatRadioGroup} from "@angular/material/radio";
 import {SocketService} from "../socket.service";
 import {MatButton} from "@angular/material/button";
 import {NgIf} from "@angular/common";
+import {DEFAULT_DIFFICULTY} from "../models/difficulty";
 
 @Component({
   selector: 'app-player-config',
@@ -37,8 +38,9 @@ export class PlayerConfigComponent implements OnInit {
   ) {
     this.playerForm = this.fb.group({
       id: [''], // backend fills in the id
-      name: ['', [Validators.required, Validators.minLength(3)]],
-      sex: ['M', Validators.required]
+      name: ['', [Validators.required, Validators.minLength(2)]],
+      sex: ['M', Validators.required],
+      difficulty_values: DEFAULT_DIFFICULTY,
     });
   }
 
@@ -63,9 +65,9 @@ export class PlayerConfigComponent implements OnInit {
 
       const roomJoinedSubscription = this.socketService.roomJoined().subscribe(
         (data) => {
-          const { roomId, presistId } = data;
+          const { roomId, playerId } = data;
           console.log('Room joined room:', roomId);
-          localStorage.setItem('sessionId', presistId);
+          localStorage.setItem('playerId', playerId);
           localStorage.setItem('roomId', roomId);
 
           errorSubscription.unsubscribe();
@@ -74,7 +76,7 @@ export class PlayerConfigComponent implements OnInit {
           this.dialogRef.close({
             success: true,
             roomId: roomId,
-            playerId: presistId
+            playerId: playerId
           });
         }
       )

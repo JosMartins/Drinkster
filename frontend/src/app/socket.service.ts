@@ -83,9 +83,9 @@ export class SocketService {
   }
 
   private setupReconnection(): void {
-    const sessionId = localStorage.getItem('sessionId');
-    if (sessionId) {
-      this.send('/app/restore-session', { sessionId });
+    const playerId = this.getCookie('playerId')
+    if (playerId) {
+      this.send('/app/restore-session', { playerId });
 
       this.subscribe('/user/queue/session-restored', (data) => {
         console.log('Session restored successfully', data);
@@ -94,8 +94,8 @@ export class SocketService {
 
       this.subscribe('/user/queue/session-not-found', () => {
         console.log('Session not found, creating new session');
-        localStorage.removeItem('sessionId');
-        localStorage.removeItem('roomId');
+        this.deleteCookie('playerId');
+        this.deleteCookie('roomId');
       });
     }
   }
@@ -104,8 +104,8 @@ export class SocketService {
     if (this.stompClient?.connected) {
       this.stompClient.disconnect(() => {});
     }
-    //remove sessionId and roomId from cookies
-    this.deleteCookie('sessionId');
+    //remove playerId and roomId from cookies
+    this.deleteCookie('playerId');
     this.deleteCookie('roomId');
 
   }
@@ -186,13 +186,11 @@ export class SocketService {
     this.send("/app/get-room", roomId);
   }
 
-  public roomInfo(): Observable<any> {
-    return this.on('room-info');
+  public roomInfo(roomId: string): Observable<any> {
+    return this.on("/topic/" + roomId + "/room-info");
   }
 
-  public roomUpdate(): Observable<any> {
-    return this.on('/topic/rooms-list-update');
-  }
+
   // Player Management
   public playerReady(roomId: string, playerId: string) {
     this.send('/app/player-ready', {roomId, playerId});
