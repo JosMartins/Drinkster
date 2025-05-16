@@ -81,6 +81,10 @@ export class GameplayComponent implements OnInit {
   }
 
 
+  ngOnDestroy(): void {
+    this.subscriptions.forEach(s => s.unsubscribe())
+  }
+
   private listenForChallenges(): void {
 
     if (!this.self || !this.roomId) {
