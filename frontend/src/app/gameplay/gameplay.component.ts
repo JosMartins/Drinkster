@@ -26,15 +26,16 @@ interface Penalty {
 
 export class GameplayComponent implements OnInit {
   private readonly subscriptions: Subscription[] = [];
-  self: Player;
-  players: Player[];
-  roomId: string;
+  self?: Player;
+  players?: Player[];
+  roomId: string = '';
   currentRound: number = 1;
   adminText?: string;
   currentChallenge?: {
     text: string,
     difficulty: string,
     type: string
+    affectedPlayers: string[],
   };
   penalties: Penalty[] = [];
   myChallenge: boolean = false;
@@ -51,14 +52,15 @@ export class GameplayComponent implements OnInit {
       this.io.getSessionData().subscribe(sesData => {
         console.log("Session data:", sesData);
         if (sesData && sesData.status === 'playing') {
-          this.self = sesData.me;
-          this.roomId = sesData.roomId;
-          this.players = sesData.players.map((p: { name: any; }) => p.name);
+          this.self = sesData.self;
+          this.roomId = sesData.room.roomId;
+          this.players = sesData.room.players
           this.penalties = sesData.penalties;
           this.currentChallenge = {
             text: sesData.text,
             difficulty: sesData.difficulty,
-            round: sesData.round,
+            type: sesData.type,
+            affectedPlayers: sesData.affectedPlayers.map((p: Player) => p.id),
           };
 
         }
@@ -67,43 +69,37 @@ export class GameplayComponent implements OnInit {
 
     const navigationData = this.router.getCurrentNavigation();
 
-    if (navigationData?.extras.state) { //TODO needs changing
+    if (navigationData?.extras.state) {
       this.roomId = navigationData.extras.state['roomId'];
-      this.players = navigationData.extras.state['players'] || [];
+      this.players = navigationData.extras.state['players'];
       this.self = navigationData.extras.state['self'];
+
     }
 
     this.handleRandomEvents();
     this.listenForChallenges();
-
   }
+
+
   private listenForChallenges(): void {
+
+    if (!this.self || !this.roomId) {
+      console.log("Self or roomId is undefined");
+      return;
+    }
+
     this.subscriptions.push(
-      this.io.onChallege(self.id).subscribe((data) => {
+      this.io.onChallenge(this.self.id).subscribe((data) => {
         this.currentChallenge = {
-          text: data.text,
-          difficulty: data.difficulty,
-          type: data.type,
-          round: data.round,
-          playerName: data.playerName
+          text: data.challenge.text,
+          difficulty: data.challenge.difficulty,
+          type: data.challenge.type,
+          affectedPlayers: data.challenge.affectedPlayers.map((p: Player) => p.id),
         };
         this.currentRound = data.round;
         this.penalties = data.penaltyList;
+        this.adminText = (this.self?.isAdmin) ? data.challenge.text : '';
       }),
-
-      this.io.otherPlayerChallenge().subscribe((data) => {
-        console.log("OTHER:", data);
-        this.myChallenge = false;
-        this.currentChallenge = {
-          text: data.text,
-          difficulty: data.difficulty,
-          type: data.type,
-          round: data.round,
-          playerName: data.playerName
-        };
-        this.currentRound = data.round;
-        this.penalties = data.playerPenalties;
-      })
     );
   }
 
@@ -132,7 +128,7 @@ export class GameplayComponent implements OnInit {
         this.dialog.open(EventDialogComponent, {
           width: '400px',
           panelClass: ['custom-dialog', 'transparent-overlay'],
-          data: { message: data.message || data.text || "A random event has occurred!" }
+          data: { message: (data.message ?? data.text) ?? "A random event has occurred!" }
         });
       })
     );

@@ -198,9 +198,9 @@ export class SocketService {
 
   getPlayerDifficulty(id: string): Observable<any> {
     this.send('/app/get-player-difficulty', id);
-
     return this.on('/topic/difficulty'+ id);
   }
+
   public updatePlayerDifficulty(roomId: string, playerId: string, difficulty: any): void {
     this.send('app/change-difficulty', { roomId, playerId, difficulty });
   }
@@ -221,7 +221,7 @@ export class SocketService {
   }
 
 
-  public onChallege(playerId: string): Observable<any> {
+  public onChallenge(playerId: string): Observable<any> {
     return this.on('/topic/'+ playerId + '/challenge');
   }
 
@@ -260,8 +260,9 @@ export class SocketService {
 
 
   /// Cookies ///
-
+ // this here is for testing, change to cookies again after localstorage testing
   public setCookie(name: string, value: string, hours: number): void {
+    /*
     const expires = new Date();
     expires.setTime(expires.getTime() + hours * 60 * 60 * 1000);
     const encodedName = encodeURIComponent(name);
@@ -269,15 +270,21 @@ export class SocketService {
     let cookie = `${encodedName}=${encodedValue};expires=${expires.toUTCString()};path=/`;
     if (location.protocol === 'https:') cookie += ';Secure';
     document.cookie = cookie;
+    */
+     localStorage.setItem(name, value);
   }
 
-  getCookie(name: string): string | null {
+  public getCookie(name: string): string | null {
+    /*
     const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const match = RegExp(new RegExp(`(^| )${escapedName}=([^;]+)`)).exec(document.cookie);
     return match ? decodeURIComponent(match[2]) : null;
+    */
+    return localStorage.getItem(name);
   }
 
   deleteCookie(name: string): void {
+    /*
     const encodedName = encodeURIComponent(name);
     let cookie = `${encodedName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
 
@@ -287,6 +294,9 @@ export class SocketService {
     }
 
     document.cookie = cookie;
+
+     */
+    localStorage.removeItem(name);
   }
 
 
