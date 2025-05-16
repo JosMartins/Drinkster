@@ -15,12 +15,12 @@
           <span class="player-name">{{player.name}}</span>
           <div>
             <span *ngIf="player.isAdmin" class="admin-badge">Admin</span>
-            <button *ngIf="isAdmin"
+            <button *ngIf="player.isAdmin"
                     class="admin-options-button"
                     (click)="kickPlayer(player)">
               Kick
             </button>
-            <button *ngIf="isAdmin"
+            <button *ngIf="player.isAdmin"
                     class="admin-options-button"
                     (click)="openDifficultyModal(player)">
               ⚙Difficulty
@@ -35,7 +35,7 @@
     </div>
   </div>
 
-  <div class="settings-container" *ngIf="isAdmin">
+  <div class="settings-container" *ngIf="isPlayerAdmin">
     <h2>Game Settings</h2>
     <div class="game-mode">
       <span>Game Mode: {{gameMode}}</span>
@@ -55,7 +55,7 @@
     </button>
 
     <button
-      *ngIf="isAdmin"
+      *ngIf="isPlayerAdmin"
       (click)="startGame()"
       class="start-button">
       Start Game

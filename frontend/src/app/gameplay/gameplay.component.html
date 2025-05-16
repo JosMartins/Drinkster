@@ -1,6 +1,6 @@
 <div class="game-container">
 
-  <div *ngIf="isAdmin" class="admin-box">
+  <div *ngIf="self?.isAdmin" class="admin-box">
     <h3>Admin Challenge View</h3>
     <div class="admin-challenge">{{ adminText }}</div>
     <button class="force-skip-btn" (click)="forceSkip()">Force Skip</button>
@@ -40,9 +40,11 @@
       <div class="content-box challenge-content">
         <div *ngIf="currentChallenge">
           <div class="challenge-text">{{ currentChallenge.text }}</div>
+          <!--TODO: Chage this. probably will need a for loop
           <div class="challenge-player" *ngIf="currentChallenge.playerName">
             For: {{ currentChallenge.playerName }}
           </div>
+          -->
         </div>
       </div>
     </div>

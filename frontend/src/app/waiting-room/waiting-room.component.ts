@@ -3,22 +3,16 @@ import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {Router} from '@angular/router';
 import {SocketService} from '../socket.service';
-import {firstValueFrom, Subscription, merge} from 'rxjs';
+import {firstValueFrom, Subscription} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {DifficultyDialogComponent} from "../difficulty-dialog/difficulty-dialog.component";
 
 interface Player {
-  id?: string;
+  id: string;
   name: string;
-  sex?: string;
-  difficulty?: {
-    easy: number,
-    medium: number,
-    hard: number,
-    extreme: number
-  };
+  sex: string;
+  isAdmin: boolean;
   isReady: boolean;
-  isAdmin?: boolean;
 }
 
 @Component({
@@ -30,95 +24,80 @@ interface Player {
   styleUrl: './waiting-room.component.css'
 })
 export class WaitingRoomComponent implements OnInit, OnDestroy {
+  self?: Player;
   roomName: string = '';
   roomId: string = '';
   players: Player[] = [];
-  currentPlayer: { name: string, id: string} = {name: '', id: ''};
-  isAdmin: boolean = false;
+  currentPlayerId: string = '';
   gameMode: string = 'normal';
   showChallenges: boolean = true;
   rememberedChallenges: number = 0;
   isReady: boolean = false;
 
-  private subscriptions: Subscription[] = [];
+  private readonly subscriptions: Subscription[] = [];
 
   constructor(
     private readonly io: SocketService,
     private readonly router: Router,
     private readonly dialog: MatDialog
-  ) {
-  }
+  ) {   }
 
-  async ngOnInit() {
+  ngOnInit() {
     //from cookies
-    const storedId = document.get
+    const storedId = this.io.getCookie('roomId');
+    const playerId = this.io.getCookie('playerId');
 
-    if (!storedId) {
-      console.log("No room ID found, redirecting to multiplayer");
-      await this.router.navigate(['/multiplayer']).then(_ => null);
+    if (!storedId || !playerId) { //if there isn't a roomId/playerId stored in cookies, redirect the user.
+      console.log("No room ID found/ player ID, redirecting to multiplayer");
+      this.io.deleteCookie('roomId'); //safety
+      this.io.deleteCookie('playerId');
+      this.router.navigate(['/multiplayer']).then();
+      return
     }
 
     this.roomId = storedId;
+    this.currentPlayerId = playerId
 
-    this.currentPlayer.id = localStorage.getItem('sessionId') || '';
-    this.currentPlayer.name = localStorage.getItem('playerName') || '';
-
-    //Player Status Update
+    //Player Status Update (ready/unready)
     this.subscriptions.push(
-      this.io.playerStatusUpdate().subscribe(({roomId, playerId, isReady}) => {
+      this.io.playerStatusUpdate().subscribe(({playerId, isReady}) => {
         const player = this.players.find((p) => p.id === playerId);
         if (player) player.isReady = isReady;
       }),
 
-      merge(
-        this.io.playerJoined()
-      ).subscribe((newPlayer) => {
-        // Use unique ID for admins, fallback to name for non-admins
-        const uniqueKey = newPlayer.id || newPlayer.name;
+      //Player Joined
+      this.io.playerJoined().subscribe((newPlayer) => {
 
-        if (!this.players.some(p => (p.id || p.name) === uniqueKey)) {
+        if (!this.players.some(p => p.id === newPlayer.id)) {
           this.players.push({
-            id: this.isAdmin ? newPlayer.id : undefined,
+            id: newPlayer.id,
             name: newPlayer.name,
-            isReady: newPlayer.isReady,
+            sex: newPlayer.sex,
             isAdmin: newPlayer.isAdmin,
-            difficulty: newPlayer.difficulty,
+            isReady: newPlayer.isReady,
           });
         }
       }),
 
+      //Player Left
       this.io.playerLeft().subscribe((leftPlayer) => {
         this.players = this.players.filter(p => p.name !== leftPlayer.name);
       }),
 
+      //Game Start
       this.io.gameStarted().subscribe(() => {
       this.router.navigate(['/game'], {
         state: {
-          //string list of names
-          self: this.players.filter(p => p.name === this.currentPlayer.name),
-          players: this.players.map(p => p.name),
+          self: this.self,
+          players: this.players,
           roomId: this.roomId
         }
-      });
+      }).then();
     })
     );
 
     this.io.getRoom(this.roomId);
-
-    try {
-      const roomInfo = await firstValueFrom(this.io.roomInfo());
-      console.log(roomInfo);
-      this.roomName = roomInfo.name;
-      this.gameMode = roomInfo.mode;
-      this.players = roomInfo.players;
-      this.players[0].difficulty = JSON.parse(localStorage.getItem(`${this.players[0].id}_difficulty`) || '');
-      this.rememberedChallenges = roomInfo.rememberedChallenges;
-      this.showChallenges = roomInfo.showChallenges;
-
-      this.isAdmin = this.isPlayerAdmin();
-    } catch (error) {
-      console.error('Error retrieving room info:', error);
-    }
+    this.initAsync().catch(err => console.error('Initialisation error:', err));
 
   }
 
@@ -139,11 +118,11 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
   leaveRoom(): void {
     this.io.leaveRoom(this.roomId, this.currentPlayerId);
-    this.router.navigate(['/multiplayer']).then(_ => null);
+    this.router.navigate(['/multiplayer']).then();
   }
 
   startGame(): void {
-    if (this.isAdmin) {
+    if (this.isPlayerAdmin()) {
       //everyone ready?
       if (this.players.some(p => !p.isReady)) {
         alert('Not all players are ready!');
@@ -151,41 +130,33 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       }
 
       this.io.startGame(this.roomId, this.currentPlayerId);
-      this.router.navigate(['/game']).then(_ => null);
+      this.router.navigate(['/game']).then();
     }
   }
 
   openDifficultyModal(player: Player): void {
-    if (!this.isAdmin) {
+    if (!this.isPlayerAdmin()) {
       return;
     }
 
+
+    const playerDifficulty = firstValueFrom(this.io.getPlayerDifficulty(player.id));
     const dialogRef = this.dialog.open(DifficultyDialogComponent, {
       data: {
-        difficultyValues: player.difficulty
+        difficultyValues: playerDifficulty
       }
     });
 
     dialogRef.afterClosed().subscribe( async (difficulty) => {
       if (player.id) {
          this.io.updatePlayerDifficulty(this.roomId, player.id, difficulty);
-
-         let diffSub= this.io.on("lol").subscribe(
-           async (data)  => {
-              if (data.playerId === player.id) {
-                player.difficulty = data.difficultyValues;
-              }
-           }
-        );
-        this.subscriptions.push(diffSub);
       }
     })
-
 
   }
 
   kickPlayer(player: Player): void {
-    if (this.isAdmin && player.id) {
+    if (this.isPlayerAdmin() && player.id) {
       if (confirm(`Are you sure you want to kick ${player.name}?`)) {
         this.io.kickPlayer(this.roomId, player.id);
       }
@@ -195,6 +166,23 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   // HELPER FUNCTIONS
 
   isPlayerAdmin(): boolean {
-    return this.players.find(player => player.id === this.currentPlayer?.id)?.isAdmin || false;
+    return this.players.find(player => player.id === this.currentPlayerId)?.isAdmin || false;
+  }
+
+
+  private async initAsync() {
+    const roomInfo = await firstValueFrom(this.io.roomInfo(this.roomId));
+    if (roomInfo.roomId !== this.roomId) {
+      this.roomId = roomInfo.roomId;
+      this.io.deleteCookie('roomId');
+      this.io.setCookie('roomId', this.roomId, 8);
+    }
+    this.roomName = roomInfo.roomName;
+    this.gameMode = roomInfo.roomMode;
+    this.players = roomInfo.players;
+    this.rememberedChallenges = roomInfo.rememberedChallenges;
+    this.showChallenges = roomInfo.showChallenges;
+
+    this.self = this.players.find(player => player.id === this.currentPlayerId);
   }
 }

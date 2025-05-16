@@ -6,7 +6,7 @@
     <div class="gender-selector">
       <div>
         <label for="male_{{i}}">
-          <input id="male_{{i}}" type="radio" [(ngModel)]="player.gender" [value]="'M'" [name]="'gender_' + i" [attr.aria-labelledby]="'male_' + i"/>
+          <input id="male_{{i}}" type="radio" [(ngModel)]="player.sex" [value]="'M'" [name]="'gender_' + i" [attr.aria-labelledby]="'male_' + i"/>
           <span class="male-symbol">
             <svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision"
               text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd"
@@ -23,7 +23,7 @@
 
 
         <label for="female_{{i}}">
-          <input id="female_{{i}}" type="radio" [(ngModel)]="player.gender" [value]="'F'" [name]="'gender_' +i" [attr.aria-labelledby]="'female_' + i"/>
+          <input id="female_{{i}}" type="radio" [(ngModel)]="player.sex" [value]="'F'" [name]="'gender_' +i" [attr.aria-labelledby]="'female_' + i"/>
           <span class="female-symbol">
             <svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision"
               text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd"

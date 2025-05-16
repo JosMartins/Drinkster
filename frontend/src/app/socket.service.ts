@@ -83,9 +83,9 @@ export class SocketService {
   }
 
   private setupReconnection(): void {
-    const sessionId = localStorage.getItem('sessionId');
-    if (sessionId) {
-      this.send('/app/restore-session', { sessionId });
+    const playerId = this.getCookie('playerId')
+    if (playerId) {
+      this.send('/app/restore-session', { playerId });
 
       this.subscribe('/user/queue/session-restored', (data) => {
         console.log('Session restored successfully', data);
@@ -94,8 +94,8 @@ export class SocketService {
 
       this.subscribe('/user/queue/session-not-found', () => {
         console.log('Session not found, creating new session');
-        localStorage.removeItem('sessionId');
-        localStorage.removeItem('roomId');
+        this.deleteCookie('playerId');
+        this.deleteCookie('roomId');
       });
     }
   }
@@ -104,8 +104,8 @@ export class SocketService {
     if (this.stompClient?.connected) {
       this.stompClient.disconnect(() => {});
     }
-    //remove sessionId and roomId from cookies
-    this.deleteCookie('sessionId');
+    //remove playerId and roomId from cookies
+    this.deleteCookie('playerId');
     this.deleteCookie('roomId');
 
   }
@@ -115,22 +115,14 @@ export class SocketService {
   private handleRestoredSession(data: any): void {
     this.setCookie('roomId', data.roomId, 12);
 
+    this.sessionData$.next({
+      self: data.self, //Player
+      room: data.room, //GameRoom
+      challenge: data.currentChallenge //Challenge
+    });
     if (data.status === 'waiting') {
       this.router.navigate(['/room']).then();
     } else if (data.status === 'playing') {
-      this.sessionData$.next({
-        me: data.me,
-        status: data.status,
-        roomId: data.roomId,
-        players: data.players,
-        isAdmin: data.isAdmin,
-        penalties: data.penalties,
-        text: data.text || 'Loading challenge...',
-        difficulty: data.difficulty,
-        type: data.type || 'challenge',
-        round: data.round || 0,
-        playerName: data.playerName || '',
-      });
       this.router.navigate(['/game']).then();
     }
   }
@@ -150,8 +142,8 @@ export class SocketService {
     this.send("/app/create-room", room);
   }
 
-  public createSinglePlayer(room: RoomConfig) {
-    this.send("/app/create-singlePlayer", room);
+  public createSingleplayer(room: RoomConfig) {
+    this.send("/app/create-single-player", room);
   }
 
   public roomCreated(): Observable<any> {
@@ -186,13 +178,11 @@ export class SocketService {
     this.send("/app/get-room", roomId);
   }
 
-  public roomInfo(): Observable<any> {
-    return this.on('room-info');
+  public roomInfo(roomId: string): Observable<any> {
+    return this.on("/topic/" + roomId + "/room-info");
   }
 
-  public roomUpdate(): Observable<any> {
-    return this.on('/topic/rooms-list-update');
-  }
+
   // Player Management
   public playerReady(roomId: string, playerId: string) {
     this.send('/app/player-ready', {roomId, playerId});
@@ -206,9 +196,13 @@ export class SocketService {
     return this.on('/topic/player-status-update');
   }
 
+  getPlayerDifficulty(id: string): Observable<any> {
+    this.send('/app/get-player-difficulty', id);
+    return this.on('/topic/difficulty'+ id);
+  }
 
   public updatePlayerDifficulty(roomId: string, playerId: string, difficulty: any): void {
-    this.send('/app/admin-update-difficulty', { roomId, playerId, difficulty});
+    this.send('app/change-difficulty', { roomId, playerId, difficulty });
   }
 
   public kickPlayer(roomId: string, playerId: string): void {
@@ -227,13 +221,10 @@ export class SocketService {
   }
 
 
-  public gotChallenge(): Observable<any> {
-    return this.on('/topic/your-challenge');
+  public onChallenge(playerId: string): Observable<any> {
+    return this.on('/topic/'+ playerId + '/challenge');
   }
 
-  public otherPlayerChallenge(): Observable<any> {
-    return this.on('/topic/other-player-challenge');
-  }
 
   public challengeCompleted(roomId: string, playerId: string): void {
     this.send('/app/challenge-completed', {roomId, playerId});
@@ -269,8 +260,9 @@ export class SocketService {
 
 
   /// Cookies ///
-
+ // this here is for testing, change to cookies again after localstorage testing
   public setCookie(name: string, value: string, hours: number): void {
+    /*
     const expires = new Date();
     expires.setTime(expires.getTime() + hours * 60 * 60 * 1000);
     const encodedName = encodeURIComponent(name);
@@ -278,15 +270,21 @@ export class SocketService {
     let cookie = `${encodedName}=${encodedValue};expires=${expires.toUTCString()};path=/`;
     if (location.protocol === 'https:') cookie += ';Secure';
     document.cookie = cookie;
+    */
+     localStorage.setItem(name, value);
   }
 
-  getCookie(name: string): string | null {
+  public getCookie(name: string): string | null {
+    /*
     const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const match = RegExp(new RegExp(`(^| )${escapedName}=([^;]+)`)).exec(document.cookie);
     return match ? decodeURIComponent(match[2]) : null;
+    */
+    return localStorage.getItem(name);
   }
 
   deleteCookie(name: string): void {
+    /*
     const encodedName = encodeURIComponent(name);
     let cookie = `${encodedName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
 
@@ -296,6 +294,10 @@ export class SocketService {
     }
 
     document.cookie = cookie;
+
+     */
+    localStorage.removeItem(name);
   }
+
 
 }

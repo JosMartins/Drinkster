@@ -92,12 +92,12 @@ export class CreateRoomDialogComponent {
         showChallenges: this.roomForm.value.showChallenges,
       };
 
-      // Set up event listener first
+      // Set up an event listener first
       const errorSubscription = this.socketService.error().subscribe(
         (errorMessage) => {
           console.error('Error creating room:', errorMessage);
 
-          // Clean up subscriptions
+          // Cleanup subscriptions
           errorSubscription.unsubscribe();
           roomCreatedSubscription.unsubscribe();
 
@@ -112,7 +112,7 @@ export class CreateRoomDialogComponent {
       const roomCreatedSubscription = this.socketService.roomCreated().subscribe(
         (data) => {
           const { roomId, playerId } = data;
-          console.log('Room created:', roomId, 'Player ID:', playerId);
+          console.log('Room created:', roomId, '\nPlayer ID:', playerId);
 
           // Store player ID for session restoration
           this.socketService.setCookie('playerId', playerId, 12)

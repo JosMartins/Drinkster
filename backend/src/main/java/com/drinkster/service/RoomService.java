@@ -281,7 +281,7 @@ public class RoomService {
      * @param difficulty The new difficulty values for the player.
      * @param adminSocketId The ID of the admin who is changing the difficulty.
      */
-    public void changePlayerDifficulty(UUID roomId, UUID playerId, DifficultyValues difficulty, String adminSocketId) {
+    public DifficultyValues changePlayerDifficulty(UUID roomId, UUID playerId, DifficultyValues difficulty, String adminSocketId) {
         GameRoom gameRoom = gameRooms.get(roomId);
         if (gameRoom == null) {
             throw new IllegalArgumentException("Room does not exist");
@@ -301,6 +301,7 @@ public class RoomService {
         }
 
         player.setDifficultyValues(difficulty);
+        return player.getDifficultyValues();
     }
 
     /**
@@ -440,6 +441,8 @@ public class RoomService {
         PlayerDto self = PlayerDto.fromPlayer(player);
         GameRoomDto room = GameRoomDto.fromGameRoom(gameRoom);
         ChallengeDto currentChallenge = null;
+
+        //TODO see this, maybe send the challenge to the player even if it is not their turn.
         if (gameRoom.getState() == RoomState.PLAYING) {
             if (gameRoom.getCurrentPlayer().equals(player)) {
                 currentChallenge = ChallengeDto.fromChallenge(gameRoom.getCurrentTurn().getChallenge());

@@ -7,6 +7,7 @@ import {MatRadioButton, MatRadioGroup} from "@angular/material/radio";
 import {SocketService} from "../socket.service";
 import {MatButton} from "@angular/material/button";
 import {NgIf} from "@angular/common";
+import {DEFAULT_DIFFICULTY} from "../models/difficulty";
 
 @Component({
   selector: 'app-player-config',
@@ -30,24 +31,27 @@ export class PlayerConfigComponent implements OnInit {
   playerForm: FormGroup;
 
   constructor(
-    private fb: FormBuilder,
-    private dialogRef: MatDialogRef<PlayerConfigComponent>,
-    private socketService: SocketService,
+    private readonly fb: FormBuilder,
+    private readonly dialogRef: MatDialogRef<PlayerConfigComponent>,
+    private readonly io: SocketService,
     @Inject(MAT_DIALOG_DATA) public roomId: string
   ) {
     this.playerForm = this.fb.group({
       id: [''], // backend fills in the id
-      name: ['', [Validators.required, Validators.minLength(3)]],
-      sex: ['M', Validators.required]
+      name: ['', [Validators.required, Validators.minLength(2)]],
+      sex: ['M', Validators.required],
+      difficulty_values: DEFAULT_DIFFICULTY,
     });
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    /* Nothing to init*/
+  }
 
   onSave(): void {
     if (this.playerForm.valid) {
 
-      const errorSubscription = this.socketService.error().subscribe(
+      const errorSubscription = this.io.error().subscribe(
         error => {
           console.log('Error joining room:', error);
 
@@ -61,12 +65,11 @@ export class PlayerConfigComponent implements OnInit {
         }
       )
 
-      const roomJoinedSubscription = this.socketService.roomJoined().subscribe(
+      const roomJoinedSubscription = this.io.roomJoined().subscribe(
         (data) => {
-          const { roomId, presistId } = data;
+          const { roomId, playerId } = data;
           console.log('Room joined room:', roomId);
-          localStorage.setItem('sessionId', presistId);
-          localStorage.setItem('playerName', this.playerForm.value.name);
+          localStorage.setItem('playerId', playerId);
           localStorage.setItem('roomId', roomId);
 
           errorSubscription.unsubscribe();
@@ -75,13 +78,13 @@ export class PlayerConfigComponent implements OnInit {
           this.dialogRef.close({
             success: true,
             roomId: roomId,
-            playerId: presistId
+            playerId: playerId
           });
         }
       )
 
 
-      this.socketService.joinRoom({
+      this.io.joinRoom({
         roomId: this.roomId,
         playerConfig: this.playerForm.value});
     }
