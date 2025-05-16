@@ -4,8 +4,8 @@ import com.drinkster.dto.DifficultyDto;
 import com.drinkster.dto.GameRoomDto;
 import com.drinkster.dto.PlayerDto;
 import com.drinkster.dto.RoomListItemDto;
+import com.drinkster.dto.request.*;
 import com.drinkster.dto.response.*;
-import com.drinkster.dto.request.CreateRoomRequest;
 import com.drinkster.model.DifficultyValues;
 import com.drinkster.model.GameRoom;
 import com.drinkster.model.Player;
@@ -48,7 +48,8 @@ public class RoomWebSocketController {
     }
 
     @MessageMapping("/get-room")
-    public void getRoom(String roomId, SimpMessageHeaderAccessor headerAccessor) {
+    public void getRoom(String roomId,
+                        SimpMessageHeaderAccessor headerAccessor) {
         try {
             UUID roomUUID = UUID.fromString(roomId);
 
@@ -69,7 +70,8 @@ public class RoomWebSocketController {
 
     @MessageMapping("/create-room")
     @SendTo("/topic/room-created")
-    public RoomCreatedResponse handleCreateRoom(CreateRoomRequest request, SimpMessageHeaderAccessor headerAccessor) {
+    public RoomCreatedResponse handleCreateRoom(CreateRoomRequest request,
+                                                SimpMessageHeaderAccessor headerAccessor) {
 
         String sessionId = headerAccessor.getSessionId();
 
@@ -95,33 +97,32 @@ public class RoomWebSocketController {
 
 
     @MessageMapping("/join-room")
-    public void handleJoinRoom(String roomId,
-                                       CreateRoomRequest.PlayerConfig playerConfig,
-                                       SimpMessageHeaderAccessor headerAccessor) {
+    public void handleJoinRoom(JoinRequest request,
+                               SimpMessageHeaderAccessor headerAccessor) {
 
         String sessionId = headerAccessor.getSessionId();
         Player joiner = new Player(
-                playerConfig.name(),
-                Sex.valueOf(playerConfig.sex()),
-                playerConfig.difficulty_values(),
+                request.playerConfig().name(),
+                Sex.valueOf(request.playerConfig().sex()),
+                request.playerConfig().difficulty_values(),
                 false,
                 sessionId
         );
 
         try {
 
-            UUID roomUUID = UUID.fromString(roomId);
+            UUID roomUUID = UUID.fromString(request.roomId());
             roomService.joinRoom(roomUUID, joiner);
 
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/player-joined",
+                    "/topic/" + request.roomId() + "/player-joined",
                     PlayerDto.fromPlayer(joiner)
             );
 
         } catch (IllegalArgumentException e) {
 
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/error",
+                    "/topic/" + request.roomId() + "/error",
                     new ErrorResponse(
                             "400", // Bad Request
                             e.getMessage()
@@ -131,19 +132,19 @@ public class RoomWebSocketController {
     }
 
     @MessageMapping("/leave-room")
-    public void handleLeaveRoom(String roomId, String playerId,
-                                        SimpMessageHeaderAccessor headerAccessor) {
+    public void handleLeaveRoom(LeaveRequest request,
+                                SimpMessageHeaderAccessor headerAccessor) {
         try {
-            UUID roomUUID = UUID.fromString(roomId);
-            UUID playerUUID = UUID.fromString(playerId);
+            UUID roomUUID = UUID.fromString(request.roomId());
+            UUID playerUUID = UUID.fromString(request.playerId());
             roomService.leaveRoom(roomUUID, playerUUID, headerAccessor.getSessionId());
 
-            this.messagingTemplate.convertAndSend("/topic/" + roomId + "/player-left",
-                    playerId
+            this.messagingTemplate.convertAndSend("/topic/" + request.roomId() + "/player-left",
+                    request.playerId()
             );
         } catch (IllegalArgumentException e) {
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/error",
+                    "/topic/" + request.roomId() + "/error",
                     new ErrorResponse(
                             "400", // Bad Request
                             e.getMessage()
@@ -153,20 +154,20 @@ public class RoomWebSocketController {
     }
 
     @MessageMapping("/player-ready")
-    public void playerReady(String roomId, String playerId,
+    public void playerReady(PlayerStatusUpdateRequest request,
                                     SimpMessageHeaderAccessor headerAccessor){
         try {
-            UUID roomUUID = UUID.fromString(roomId);
-            UUID playerUUID = UUID.fromString(playerId);
+            UUID roomUUID = UUID.fromString(request.roomId());
+            UUID playerUUID = UUID.fromString(request.playerId());
             roomService.playerReady(roomUUID, playerUUID, headerAccessor.getSessionId());
 
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/player-status-update",
-                    new PlayerStatusResponse(playerId, true)
+                    "/topic/" + request.roomId() + "/player-status-update",
+                    new PlayerStatusResponse(request.playerId(), true)
             );
         } catch (IllegalArgumentException e) {
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/error",
+                    "/topic/" + request.roomId() + "/error",
                     new ErrorResponse(
                             "400", // Bad Request
                             e.getMessage()
@@ -177,20 +178,20 @@ public class RoomWebSocketController {
     }
 
     @MessageMapping("/player-unready")
-    public void playerUnready(String roomId, String playerId,
+    public void playerUnready(PlayerStatusUpdateRequest request,
                                     SimpMessageHeaderAccessor headerAccessor){
         try {
-            UUID roomUUID = UUID.fromString(roomId);
-            UUID playerUUID = UUID.fromString(playerId);
+            UUID roomUUID = UUID.fromString(request.roomId());
+            UUID playerUUID = UUID.fromString(request.playerId());
             roomService.playerUnready(roomUUID, playerUUID, headerAccessor.getSessionId());
 
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/player-status-update",
-                    new PlayerStatusResponse(playerId, true)
+                    "/topic/" + request.roomId() + "/player-status-update",
+                    new PlayerStatusResponse(request.playerId(), true)
             );
         } catch (IllegalArgumentException e) {
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/error",
+                    "/topic/" + request.roomId() + "/error",
                     new ErrorResponse(
                             "400", // Bad Request
                             e.getMessage()
@@ -201,20 +202,20 @@ public class RoomWebSocketController {
     }
 
     @MessageMapping("/kick-player")
-    public void handleAdminKickPlayer(String roomId, String playerId,
+    public void handleAdminKickPlayer(LeaveRequest request,
                                               SimpMessageHeaderAccessor headerAccessor) {
         try {
-            UUID roomUUID = UUID.fromString(roomId);
-            UUID playerUUID = UUID.fromString(playerId);
+            UUID roomUUID = UUID.fromString(request.roomId());
+            UUID playerUUID = UUID.fromString(request.playerId());
             roomService.kickPlayer(roomUUID, playerUUID, headerAccessor.getSessionId());
 
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/player-left",
-                    playerId
+                    "/topic/" + request.roomId() + "/player-left",
+                    request.playerId()
             );
         } catch (IllegalArgumentException e) {
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/error",
+                    "/topic/" + request.roomId() + "/error",
                     new ErrorResponse(
                             "400", // Bad Request
                             e.getMessage()
@@ -224,20 +225,20 @@ public class RoomWebSocketController {
     }
     //TODO: change this method. admin should receive the difficulty, not the player with the id
     @MessageMapping("/get-player-difficulty")
-    public void handleGetPlayerDifficulty(String roomId, String playerId,
-                                                  SimpMessageHeaderAccessor headerAccessor) {
+    public void handleGetPlayerDifficulty(PlayerDifficultyRequest request,
+                                          SimpMessageHeaderAccessor headerAccessor) {
         try {
-            UUID roomUUID = UUID.fromString(roomId);
-            UUID playerUUID = UUID.fromString(playerId);
+            UUID roomUUID = UUID.fromString(request.roomId());
+            UUID playerUUID = UUID.fromString(request.playerId());
 
             DifficultyDto diff = roomService.getPlayerDifficulty(roomUUID, playerUUID, headerAccessor.getSessionId());
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/difficulty-changed",
+                    "/topic/" + request.playerId() + "/difficulty-changed",
                     diff
             );
         } catch (IllegalArgumentException e) {
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/error",
+                    "/topic/" + request.roomId() + "/error",
                     new ErrorResponse(
                             "400", // Bad Request
                             e.getMessage()
@@ -247,21 +248,21 @@ public class RoomWebSocketController {
     }
 
     @MessageMapping("/change-difficulty")
-    public void handleChangeDifficulty(String roomId, String playerId,
+    public void handleChangeDifficulty(PlayerDifficultyRequest request,
                                                CreateRoomRequest.PlayerConfig playerConfig,
                                                SimpMessageHeaderAccessor headerAccessor) {
         try {
-            UUID roomUUID = UUID.fromString(roomId);
-            UUID playerUUID = UUID.fromString(playerId);
+            UUID roomUUID = UUID.fromString(request.roomId());
+            UUID playerUUID = UUID.fromString(request.playerId());
             DifficultyValues newDiff =  roomService.changePlayerDifficulty(roomUUID, playerUUID, playerConfig.difficulty_values(), headerAccessor.getSessionId());
 
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/difficulty-changed",
+                    "/topic/" + request.roomId() + "/difficulty-changed",
                     DifficultyDto.fromDifficultyValues(newDiff)
             );
         } catch (IllegalArgumentException e) {
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/error",
+                    "/topic/" + request.roomId() + "/error",
                     new ErrorResponse(
                             "400", // Bad Request
                             e.getMessage()
@@ -275,21 +276,21 @@ public class RoomWebSocketController {
 
 
     @MessageMapping("/restore-session")
-    public void restoreSession(String roomId, String playerId, SimpMessageHeaderAccessor headerAccessor) {
-        UUID roomUUID = UUID.fromString(roomId);
-        UUID playerUUID = UUID.fromString(playerId);
+    public void restoreSession(SessionRestoreRequest request, SimpMessageHeaderAccessor headerAccessor) {
+        UUID roomUUID = UUID.fromString(request.roomId());
+        UUID playerUUID = UUID.fromString(request.playerId());
 
         try {
             SessionRestoreResponse resp = roomService.restoreSession(roomUUID, playerUUID, headerAccessor.getSessionId());
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + playerId + "/session-restored",
+                    "/topic/" + request.playerId() + "/session-restored",
                     resp);
         } catch (IllegalArgumentException e) {
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + playerId + "/error",
+                    "/topic/" + request.playerId() + "/session-not-found",
                     new ErrorResponse(
-                            "400", // Bad Request
-                            e.getMessage()
+                            "404", // Bad Request
+                            "Session not found"
                     )
             );
         }
