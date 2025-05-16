@@ -10,7 +10,7 @@
     <h2>Players</h2>
     <div class="players-list">
       <div *ngFor="let player of players" class="player-card"
-           [class.current-player]="player.id === currentPlayer.id">
+           [class.current-player]="player.id === currentPlayerId">
         <div class="player-info">
           <span class="player-name">{{player.name}}</span>
           <div>

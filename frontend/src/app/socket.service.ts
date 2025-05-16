@@ -43,7 +43,7 @@ export class SocketService {
   public on(destination: string): Observable<any> {
     return new Observable(observer => {
       this.subscribe(destination, (data) => {
-        console.log("received:" + data);
+        console.log("received:" + JSON.stringify(data));
         observer.next(data);
       });
     });
@@ -83,16 +83,17 @@ export class SocketService {
   }
 
   private setupReconnection(): void {
+    const roomId = this.getCookie('roomId')
     const playerId = this.getCookie('playerId')
-    if (playerId) {
-      this.send('/app/restore-session', { playerId });
+    if (roomId && playerId) {
+      this.send('/app/restore-session', { roomId , playerId });
 
-      this.subscribe('/user/queue/session-restored', (data) => {
+      this.subscribe('/topic/' + playerId + '/session-restored', (data) => {
         console.log('Session restored successfully', data);
         this.handleRestoredSession(data);
       });
 
-      this.subscribe('/user/queue/session-not-found', () => {
+      this.subscribe('topic/' + playerId +'/session-not-found', () => {
         console.log('Session not found, creating new session');
         this.deleteCookie('playerId');
         this.deleteCookie('roomId');
@@ -151,8 +152,8 @@ export class SocketService {
   }
 
 
-  public joinRoom(room: { roomId: string, playerConfig: PlayerConfig }) {
-    this.send("/app/join-room", room);
+  public joinRoom(roomId: string, playerConfig: PlayerConfig) {
+    this.send("/app/join-room", {roomId , playerConfig});
   }
 
   public roomJoined(): Observable<any> {
@@ -244,8 +245,8 @@ export class SocketService {
 
 
   // ERROR
-  public error(): Observable<any> {
-    return this.on('/topic/error');
+  public error(id: string): Observable<any> {
+    return this.on('/topic/' + id + '/error');
   }
 
   // Session Data
