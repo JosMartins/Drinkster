@@ -8,5 +8,6 @@ import java.util.List;
 
 public record ChallengeResponse (ChallengeDto challenge,
                                  List<PlayerDto> players,
+                                 int round,
                                  List<PenaltyDto> penaltyList)
         implements BaseResponse { }
