@@ -64,8 +64,27 @@ public class RoomService {
      *
      * @return The created game room.
      */
-    public GameRoom createRoom(String roomName, boolean isPrivate, String password, Player admin, RoomMode mode, int rememberedChallenges, boolean showChallenges) {
-        GameRoom gameRoom = new GameRoom(roomName, isPrivate, password, admin, mode, rememberedChallenges, showChallenges);
+    public GameRoom createRoom(String roomName, boolean isPrivate, String password, Player admin, String mode, int rememberedChallenges, boolean showChallenges) throws IllegalArgumentException {
+
+        if (roomName == null || roomName.isEmpty()) {
+            throw new IllegalArgumentException("Room name cannot be null or empty");
+        }
+
+        if (isPrivate && (password == null || password.isEmpty())) {
+            throw new IllegalArgumentException("Password cannot be null or empty for private rooms");
+        }
+
+        if (admin == null) {
+            throw new IllegalArgumentException("Admin cannot be null");
+        }
+
+
+        if (rememberedChallenges <= 0) {
+            throw new IllegalArgumentException("Remembered challenges must be greater than 0");
+        }
+
+
+        GameRoom gameRoom = new GameRoom(roomName, isPrivate, password, admin, RoomMode.valueOf(mode), rememberedChallenges, showChallenges);
         gameRooms.put(gameRoom.getId(), gameRoom);
         return gameRoom;
     }

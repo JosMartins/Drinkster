@@ -5,7 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { CreateRoomDialogComponent } from '../create-room-dialog/create-room-dialog.component';
 import {SocketService} from "../socket.service";
 import {PlayerConfigComponent} from "../player-config/player-config.component";
-import {filter, take} from "rxjs";
+import {filter, switchMap, take} from "rxjs";
 
 interface Room {
   id: string;
@@ -37,20 +37,19 @@ export class MultiplayerComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-
-    // Subscribe to room updates
-    this.socketService.listRooms().subscribe((response: RoomListResponse) => {
+    this.socketService.connectionStatus().pipe(
+      filter(Boolean),      // only TRUE values
+      take(1),
+      switchMap(() => {
+        const rooms$ = this.socketService.listRooms();
+        this.socketService.getRooms();
+        return rooms$;
+      })
+    ).subscribe((response: RoomListResponse) => {
       this.rooms = response.rooms;
     });
-
-    this.socketService.connectionStatus().pipe(
-      filter(isConnected => isConnected),
-      take(1)
-    ).subscribe(() => {
-      this.socketService.getRooms();
-    });
-
   }
+
 
   createRoom(): void {
     const dialogRef = this.dialog.open(CreateRoomDialogComponent, {
@@ -79,7 +78,7 @@ export class MultiplayerComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.router.navigate(['/room']).then(_ => null);
+        this.router.navigate(['/room']).then();
       }
     })
 

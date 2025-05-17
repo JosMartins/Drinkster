@@ -1,5 +1,4 @@
-// gameplay.component.ts
-import { Component, OnInit } from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import { SocketService} from "../socket.service";
 import {NgForOf, NgIf} from "@angular/common";
 import {Subscription} from "rxjs";
@@ -24,7 +23,7 @@ interface Penalty {
   styleUrls: ['./gameplay.component.css']
 })
 
-export class GameplayComponent implements OnInit {
+export class GameplayComponent implements OnInit, OnDestroy {
   private readonly subscriptions: Subscription[] = [];
   self?: Player;
   players?: Player[];
@@ -125,8 +124,12 @@ export class GameplayComponent implements OnInit {
 
 
   private handleRandomEvents(): void {
+    if (!this.self || !this.roomId) {
+      console.log("Self or roomId is undefined");
+      return;
+    }
     this.subscriptions.push(
-      this.io.randomEvent().subscribe((data) => {
+      this.io.randomEvent(this.self.id).subscribe((data) => {
         console.log("Random event:", data);
 
         this.dialog.open(EventDialogComponent, {

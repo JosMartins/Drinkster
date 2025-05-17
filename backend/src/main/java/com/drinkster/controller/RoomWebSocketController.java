@@ -9,7 +9,6 @@ import com.drinkster.dto.response.*;
 import com.drinkster.model.DifficultyValues;
 import com.drinkster.model.GameRoom;
 import com.drinkster.model.Player;
-import com.drinkster.model.enums.RoomMode;
 import com.drinkster.model.enums.Sex;
 import com.drinkster.service.RoomService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -54,7 +53,7 @@ public class RoomWebSocketController {
             UUID roomUUID = UUID.fromString(roomId);
 
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/info",
+                    "/topic/" + roomId + "/room-info",
                     GameRoomDto.fromGameRoom(roomService.getRoom(roomUUID))
             );
         } catch (IllegalArgumentException e) {
@@ -69,30 +68,39 @@ public class RoomWebSocketController {
     }
 
     @MessageMapping("/create-room")
-    @SendTo("/topic/room-created")
-    public RoomCreatedResponse handleCreateRoom(CreateRoomRequest request,
+    public void handleCreateRoom(CreateRoomRequest request,
                                                 SimpMessageHeaderAccessor headerAccessor) {
 
         String sessionId = headerAccessor.getSessionId();
 
-        Player admin = new Player(
+        try {
+
+            Player admin = new Player(
                 request.player().name(),
                 Sex.fromDbCode(request.player().sex()),
                 request.player().difficulty_values(),
                 true,
-                sessionId
-        );
+                sessionId);
 
-        GameRoom room = roomService.createRoom(
-                request.name(),
-                request.isPrivate(),
-                request.password(),
-                admin,
-                RoomMode.valueOf(request.mode().toUpperCase()),
-                request.rememberCount(),
-                request.showChallenges());
+            GameRoom room = roomService.createRoom(
+                    request.name(),
+                    request.isPrivate(),
+                    request.password(),
+                    admin,
+                    request.mode().toUpperCase(),
+                    request.rememberCount(),
+                    request.showChallenges());
 
-        return new RoomCreatedResponse(room.getId().toString(), admin.getId().toString());
+
+             messagingTemplate.convertAndSend("/topic/room-created", new RoomCreatedResponse(room.getId().toString(), admin.getId().toString()));
+        } catch (IllegalArgumentException e) {
+            messagingTemplate.convertAndSend("/topic/room-error", new ErrorResponse("400", e.getMessage()));
+        } catch (NullPointerException e) {
+            messagingTemplate.convertAndSend("/topic/room-error", new ErrorResponse("400", "Missing required parameters"));
+        }
+
+
+
     }
 
 
@@ -103,7 +111,7 @@ public class RoomWebSocketController {
         String sessionId = headerAccessor.getSessionId();
         Player joiner = new Player(
                 request.playerConfig().name(),
-                Sex.valueOf(request.playerConfig().sex()),
+                Sex.fromDbCode(request.playerConfig().sex()),
                 request.playerConfig().difficulty_values(),
                 false,
                 sessionId
@@ -187,7 +195,7 @@ public class RoomWebSocketController {
 
             this.messagingTemplate.convertAndSend(
                     "/topic/" + request.roomId() + "/player-status-update",
-                    new PlayerStatusResponse(request.playerId(), true)
+                    new PlayerStatusResponse(request.playerId(), false)
             );
         } catch (IllegalArgumentException e) {
             this.messagingTemplate.convertAndSend(
@@ -277,15 +285,16 @@ public class RoomWebSocketController {
 
     @MessageMapping("/restore-session")
     public void restoreSession(SessionRestoreRequest request, SimpMessageHeaderAccessor headerAccessor) {
-        UUID roomUUID = UUID.fromString(request.roomId());
-        UUID playerUUID = UUID.fromString(request.playerId());
 
         try {
+
+            UUID roomUUID = UUID.fromString(request.roomId());
+            UUID playerUUID = UUID.fromString(request.playerId());
             SessionRestoreResponse resp = roomService.restoreSession(roomUUID, playerUUID, headerAccessor.getSessionId());
             this.messagingTemplate.convertAndSend(
                     "/topic/" + request.playerId() + "/session-restored",
                     resp);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | NullPointerException e) {
             this.messagingTemplate.convertAndSend(
                     "/topic/" + request.playerId() + "/session-not-found",
                     new ErrorResponse(

@@ -50,8 +50,26 @@ export class PlayerConfigComponent implements OnInit {
 
   onSave(): void {
     if (this.playerForm.valid) {
+      debugger
+      const roomJoinedSubscription = this.io.playerJoined(this.roomId).subscribe(
+        (player) => {
+          debugger
+          console.log('Room joined room:', this.roomId);
+          localStorage.setItem('playerId', player.id);
+          localStorage.setItem('roomId', this.roomId);
 
-      const errorSubscription = this.io.error().subscribe(
+          errorSubscription.unsubscribe();
+          roomJoinedSubscription.unsubscribe();
+
+          this.dialogRef.close({
+            success: true,
+            roomId: this.roomId,
+            playerId: player.id
+          });
+        }
+      )
+
+      const errorSubscription = this.io.error(this.roomId).subscribe(
         error => {
           console.log('Error joining room:', error);
 
@@ -65,28 +83,10 @@ export class PlayerConfigComponent implements OnInit {
         }
       )
 
-      const roomJoinedSubscription = this.io.roomJoined().subscribe(
-        (data) => {
-          const { roomId, playerId } = data;
-          console.log('Room joined room:', roomId);
-          localStorage.setItem('playerId', playerId);
-          localStorage.setItem('roomId', roomId);
-
-          errorSubscription.unsubscribe();
-          roomJoinedSubscription.unsubscribe();
-
-          this.dialogRef.close({
-            success: true,
-            roomId: roomId,
-            playerId: playerId
-          });
-        }
-      )
 
 
-      this.io.joinRoom({
-        roomId: this.roomId,
-        playerConfig: this.playerForm.value});
+
+      this.io.joinRoom(this.roomId, this.playerForm.value);
     }
   }
 

@@ -93,7 +93,7 @@ export class CreateRoomDialogComponent {
       };
 
       // Set up an event listener first
-      const errorSubscription = this.socketService.error().subscribe(
+      const errorSubscription = this.socketService.roomError().subscribe(
         (errorMessage) => {
           console.error('Error creating room:', errorMessage);
 
@@ -110,14 +110,14 @@ export class CreateRoomDialogComponent {
       );
 
       const roomCreatedSubscription = this.socketService.roomCreated().subscribe(
-        (data) => {
-          const { roomId, playerId } = data;
+        ({roomId, playerId}) => {
           console.log('Room created:', roomId, '\nPlayer ID:', playerId);
 
           // Store player ID for session restoration
           this.socketService.setCookie('playerId', playerId, 12)
           this.socketService.setCookie('roomId', roomId, 12)
           roomCreatedSubscription.unsubscribe();
+          errorSubscription.unsubscribe();
 
           this.dialogRef.close({
             success: true,

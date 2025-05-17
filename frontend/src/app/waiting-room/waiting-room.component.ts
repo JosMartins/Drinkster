@@ -3,7 +3,7 @@ import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {Router} from '@angular/router';
 import {SocketService} from '../socket.service';
-import {firstValueFrom, Subscription} from 'rxjs';
+import {filter, firstValueFrom, Subscription, take} from 'rxjs';
 import {MatDialog} from '@angular/material/dialog';
 import {DifficultyDialogComponent} from "../difficulty-dialog/difficulty-dialog.component";
 
@@ -43,7 +43,6 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   ) {   }
 
   ngOnInit() {
-    //from cookies
     const storedId = this.io.getCookie('roomId');
     const playerId = this.io.getCookie('playerId');
 
@@ -60,13 +59,13 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
     //Player Status Update (ready/unready)
     this.subscriptions.push(
-      this.io.playerStatusUpdate().subscribe(({playerId, isReady}) => {
+      this.io.playerStatusUpdate(this.roomId).subscribe(({playerId, isReady}) => {
         const player = this.players.find((p) => p.id === playerId);
         if (player) player.isReady = isReady;
       }),
 
       //Player Joined
-      this.io.playerJoined().subscribe((newPlayer) => {
+      this.io.playerJoined(this.roomId).subscribe((newPlayer) => {
 
         if (!this.players.some(p => p.id === newPlayer.id)) {
           this.players.push({
@@ -80,25 +79,30 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       }),
 
       //Player Left
-      this.io.playerLeft().subscribe((leftPlayer) => {
+      this.io.playerLeft(this.roomId).subscribe((leftPlayer) => {
         this.players = this.players.filter(p => p.name !== leftPlayer.name);
       }),
 
       //Game Start
-      this.io.gameStarted().subscribe(() => {
-      this.router.navigate(['/game'], {
-        state: {
-          self: this.self,
-          players: this.players,
-          roomId: this.roomId
-        }
-      }).then();
-    })
+      this.io.gameStarted(this.roomId).subscribe(() => {
+        this.router.navigate(['/game'], {
+          state: {
+            self: this.self,
+            players: this.players,
+            roomId: this.roomId
+          }
+        }).then();
+      })
     );
 
-    this.io.getRoom(this.roomId);
-    this.initAsync().catch(err => console.error('Initialisation error:', err));
+    this.io.connectionStatus()
+      .pipe(filter(Boolean), take(1))
+      .subscribe(() => {
+        this.initAsync().then();
 
+        this.io.getRoom(this.roomId);
+
+      });
   }
 
   ngOnDestroy(): void {
@@ -134,13 +138,13 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     }
   }
 
-  openDifficultyModal(player: Player): void {
+  async openDifficultyModal(player: Player) {
     if (!this.isPlayerAdmin()) {
       return;
     }
 
+    const playerDifficulty = await firstValueFrom(this.io.getPlayerDifficulty(player.id));
 
-    const playerDifficulty = firstValueFrom(this.io.getPlayerDifficulty(player.id));
     const dialogRef = this.dialog.open(DifficultyDialogComponent, {
       data: {
         difficultyValues: playerDifficulty

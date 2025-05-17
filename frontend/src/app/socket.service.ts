@@ -25,7 +25,7 @@ export class SocketService {
 
   private send(destination: string, body: any): void {
     if (this.stompClient?.connected) {
-      this.stompClient.send(destination, {}, JSON.stringify(body));
+      this.stompClient.send(destination, {}, (typeof body === "string") ? body : JSON.stringify(body));
     }
   }
 
@@ -43,7 +43,7 @@ export class SocketService {
   public on(destination: string): Observable<any> {
     return new Observable(observer => {
       this.subscribe(destination, (data) => {
-        console.log("received:" + JSON.stringify(data));
+        console.log("received to ("+ destination +"):" + JSON.stringify(data));
         observer.next(data);
       });
     });
@@ -86,18 +86,20 @@ export class SocketService {
     const roomId = this.getCookie('roomId')
     const playerId = this.getCookie('playerId')
     if (roomId && playerId) {
-      this.send('/app/restore-session', { roomId , playerId });
 
-      this.subscribe('/topic/' + playerId + '/session-restored', (data) => {
+      this.on('/topic/' + playerId + '/session-restored').subscribe((data) => {
         console.log('Session restored successfully', data);
         this.handleRestoredSession(data);
-      });
+      })
 
-      this.subscribe('topic/' + playerId +'/session-not-found', () => {
+      this.on('/topic/' + playerId +'/session-not-found').subscribe(_ => {
         console.log('Session not found, creating new session');
         this.deleteCookie('playerId');
         this.deleteCookie('roomId');
+        this.router.navigate(['/multiplayer']).then();
       });
+
+      this.send('/app/restore-session', { roomId , playerId });
     }
   }
 
@@ -114,16 +116,16 @@ export class SocketService {
   /// Session Management ///
 
   private handleRestoredSession(data: any): void {
-    this.setCookie('roomId', data.roomId, 12);
+    this.setCookie('roomId', data.room.roomId, 8);
 
     this.sessionData$.next({
       self: data.self, //Player
       room: data.room, //GameRoom
       challenge: data.currentChallenge //Challenge
     });
-    if (data.status === 'waiting') {
+    if (data.room.roomState === 'LOBBY') {
       this.router.navigate(['/room']).then();
-    } else if (data.status === 'playing') {
+    } else if (data.room.roomState === 'PLAYING') {
       this.router.navigate(['/game']).then();
     }
   }
@@ -151,13 +153,16 @@ export class SocketService {
     return this.on('/topic/room-created');
   }
 
+  public roomError(): Observable<any> {
+    return this.on('/topic/room-error');
+  }
 
   public joinRoom(roomId: string, playerConfig: PlayerConfig) {
     this.send("/app/join-room", {roomId , playerConfig});
   }
 
   public roomJoined(): Observable<any> {
-    return this.on('/topic/room-joined');
+    return this.on('/user/queue/room-joined');
   }
 
 
@@ -166,12 +171,12 @@ export class SocketService {
   }
 
 
-  public playerJoined(): Observable<any> {
-    return this.on('/topic/player-joined');
+  public playerJoined(roomId: string): Observable<any> {
+    return this.on('/topic/' + roomId + '/player-joined');
   }
 
-  public playerLeft(): Observable<any> {
-    return this.on('/topic/player-left');
+  public playerLeft(roomId: string): Observable<any> {
+    return this.on('/topic/'+ roomId +'/player-left');
   }
 
 
@@ -193,8 +198,8 @@ export class SocketService {
     this.send('/app/player-unready', {roomId, playerId});
   }
 
-  playerStatusUpdate(): Observable<any> {
-    return this.on('/topic/player-status-update');
+  playerStatusUpdate(roomId: string): Observable<any> {
+    return this.on('/topic/'+ roomId +'/player-status-update');
   }
 
   getPlayerDifficulty(id: string): Observable<any> {
@@ -217,8 +222,8 @@ export class SocketService {
       this.send('/app/start-game', { roomId, playerId });
     }
 
-  public gameStarted(): Observable<any> {
-    return this.on('/topic/game-started');
+  public gameStarted(roomId: string): Observable<any> {
+    return this.on('/topic/'+ roomId + '/game-started');
   }
 
 
@@ -235,8 +240,8 @@ export class SocketService {
     this.send('/app/challenge-drunk', {roomId, playerId});
   }
 
-  public randomEvent(): Observable<any> {
-    return this.on('/topic/random-event');
+  public randomEvent(playerId: string): Observable<any> {
+    return this.on('/topic/' + playerId + '/random-event');
   }
 
   public forceSkipChallenge(roomId: string): void {
@@ -261,32 +266,34 @@ export class SocketService {
 
 
   /// Cookies ///
- // this here is for testing, change to cookies again after localstorage testing
+ // TESTING LOCALSTORAGE
   public setCookie(name: string, value: string, hours: number): void {
-    /*
-    const expires = new Date();
-    expires.setTime(expires.getTime() + hours * 60 * 60 * 1000);
-    const encodedName = encodeURIComponent(name);
-    const encodedValue = encodeURIComponent(value);
-    let cookie = `${encodedName}=${encodedValue};expires=${expires.toUTCString()};path=/`;
-    if (location.protocol === 'https:') cookie += ';Secure';
-    document.cookie = cookie;
-    */
-     localStorage.setItem(name, value);
+     const expires = new Date(Date.now() + hours * 60 * 60 * 1000).toUTCString();
+     /*
+    // store the raw value – encodeURIComponent keeps it cookie-safe
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+     */
+    localStorage.setItem(name, value);
   }
+
+
 
   public getCookie(name: string): string | null {
     /*
-    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const match = RegExp(new RegExp(`(^| )${escapedName}=([^;]+)`)).exec(document.cookie);
-    return match ? decodeURIComponent(match[2]) : null;
-    */
+    const match = document.cookie.match(
+      new RegExp('(?:^|; )' + name + '=([^;]*)')
+    );
+    return match ? decodeURIComponent(match[1]) : undefined;
+     */
     return localStorage.getItem(name);
   }
 
+
   deleteCookie(name: string): void {
+
     /*
     const encodedName = encodeURIComponent(name);
+
     let cookie = `${encodedName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
 
     // Only add Secure if the current connection is HTTPS
@@ -295,8 +302,8 @@ export class SocketService {
     }
 
     document.cookie = cookie;
+    */
 
-     */
     localStorage.removeItem(name);
   }
 

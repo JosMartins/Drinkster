@@ -22,7 +22,7 @@ public class GameRoom {
     private boolean isPrivate;
     private String password;
     private Player admin;
-    private List<Player> players;
+    private ArrayList<Player> players;
     private RoomState state;
     private RoomMode mode;
     private int rememberedChallenges;
@@ -51,7 +51,8 @@ public class GameRoom {
         this.isPrivate = isPrivate;
         this.password = isPrivate ? password : null;
         this.admin = admin;
-        this.players = List.of(admin);
+        this.players = new ArrayList<>();
+        this.players.add(admin);
         this.state = RoomState.LOBBY;
         this.mode = mode;
         this.rememberedChallenges = rememberedChallenges;

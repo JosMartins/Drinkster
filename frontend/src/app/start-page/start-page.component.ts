@@ -15,11 +15,11 @@ export class StartPageComponent {
 
   singleplayer() {
     // Navigate to the game configuration page
-    this.router.navigate(['/singleplayer']);
+    this.router.navigate(['/singleplayer']).then();
   }
 
   multiplayer() {
     // Navigate to the multiplayer page
-    this.router.navigate(['/multiplayer']);
+    this.router.navigate(['/multiplayer']).then();
   }
 }
