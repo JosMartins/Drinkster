@@ -1,11 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { CreateRoomDialogComponent } from '../create-room-dialog/create-room-dialog.component';
 import {SocketService} from "../socket.service";
 import {PlayerConfigComponent} from "../player-config/player-config.component";
-import {filter, switchMap, take} from "rxjs";
+import {filter, Subject, switchMap, take, takeUntil} from "rxjs";
 
 interface Room {
   id: string;
@@ -27,8 +27,9 @@ interface RoomListResponse {
   templateUrl: './multiplayer.component.html',
   styleUrls: ['./multiplayer.component.css']
 })
-export class MultiplayerComponent implements OnInit {
+export class MultiplayerComponent implements OnInit, OnDestroy {
   rooms: Room[] = [];
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
     private readonly router: Router,
@@ -44,10 +45,16 @@ export class MultiplayerComponent implements OnInit {
         const rooms$ = this.socketService.listRooms();
         this.socketService.getRooms();
         return rooms$;
-      })
+      }),
+      takeUntil(this.destroy$)
     ).subscribe((response: RoomListResponse) => {
       this.rooms = response.rooms;
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
 

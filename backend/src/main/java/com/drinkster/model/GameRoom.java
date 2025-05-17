@@ -1,5 +1,6 @@
 package com.drinkster.model;
 
+import com.drinkster.dto.PenaltyDto;
 import com.drinkster.exception.IncompatibleSexException;
 import com.drinkster.model.enums.*;
 import com.drinkster.utils.FixedSizeQueue;
@@ -29,6 +30,7 @@ public class GameRoom {
     private boolean showChallenges;
     private int currentPlayerIndex;
     private PlayerTurn currentTurn = null;
+    private int roundNumber = 0;
 
     //challenge tracker
     private FixedSizeQueue<UUID> usedUUIDS;
@@ -89,8 +91,7 @@ public class GameRoom {
     public void startGame() {
         if (players.size() >= 2 && state == RoomState.LOBBY) {
             state = RoomState.PLAYING;
-
-            this.currentTurn = null;
+            this.currentTurn = new PlayerTurn(getCurrentPlayer(), null, new ArrayList<>());
 
         } else {
             throw new IllegalStateException("Cannot start game from current state: " + state);
@@ -188,6 +189,7 @@ public class GameRoom {
         if (advance) nextPlayer();
         try {
             this.currentTurn = processChallenge(challenge);
+            this.roundNumber++;
             this.usedUUIDS.add(this.currentTurn.getChallenge().getId());
             return true;
         } catch (IncompatibleSexException e) {
@@ -208,12 +210,14 @@ public class GameRoom {
     private PlayerTurn processChallenge(Challenge challenge) throws IncompatibleSexException {
 
         String text = challenge.getText();
+        Penalty newPenalty = null;
+
         //Sex needs to be either the player sex or All
         ArrayList<Player> affectedPlayers = new ArrayList<>();
          if (challenge.getPlayers() == 1) {
                 affectedPlayers.add(getCurrentPlayer());
              Sex challengeSex = challenge.getSexes().getFirst();
-             if (currentTurn.getPlayer().getSex() != challengeSex) {
+             if (challengeSex != Sex.ALL && currentTurn.getPlayer().getSex() != challengeSex) {
                     throw new IncompatibleSexException();
              }
 
@@ -225,12 +229,26 @@ public class GameRoom {
             affectedPlayers.add(getCurrentPlayer());
             affectedPlayers.add(player2);
 
-            if (getCurrentPlayer().getSex() != challengeSex || player2.getSex() != secondChallengeSex) {
+            if ((challengeSex != Sex.ALL && getCurrentPlayer().getSex() != challengeSex) ||
+                    (secondChallengeSex != Sex.ALL && player2.getSex() != secondChallengeSex)) {
                 throw new IncompatibleSexException();
             }
 
             text = text.replace("{Player}", getCurrentPlayer().getName());
             text = text.replace("{Player2}", player2.getName());
+
+            if (challenge.getPenalty() != null) {
+                String penaltyText = challenge.getPenalty().getText();
+                if (penaltyText.contains("{Player}")) {
+                    penaltyText = penaltyText.replace("{Player}", getCurrentPlayer().getName());
+                }
+                if (penaltyText.contains("{Player2}")) {
+                    penaltyText = penaltyText.replace("{Player2}", player2.getName());
+                }
+                newPenalty = new Penalty();
+                newPenalty.setRounds(challenge.getPenalty().getRounds());
+                newPenalty.setText(penaltyText);
+            }
          }
 
          text = text.replace("{sips}", String.valueOf(challenge.getSips()));
@@ -242,6 +260,8 @@ public class GameRoom {
         processedChallenge.setDifficulty(challenge.getDifficulty());
         processedChallenge.setSips(challenge.getSips());
         processedChallenge.setType(challenge.getType());
+        processedChallenge.setPenalty(newPenalty);
+
 
         return new PlayerTurn(currentTurn.getPlayer(), processedChallenge, affectedPlayers);
     }
@@ -275,5 +295,11 @@ public class GameRoom {
             p.processPenalties();
         }
 
+    }
+
+    public void handlePenalties() {
+        for (Player p : players) {
+            p.processPenalties();
+        }
     }
 }

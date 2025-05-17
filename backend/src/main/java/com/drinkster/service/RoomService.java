@@ -1,14 +1,12 @@
 package com.drinkster.service;
 
-import com.drinkster.dto.DifficultyDto;
-import com.drinkster.dto.GameRoomDto;
-import com.drinkster.dto.PlayerDto;
-import com.drinkster.dto.ChallengeDto;
+import com.drinkster.dto.*;
 import com.drinkster.dto.response.SessionRestoreResponse;
 import com.drinkster.model.*;
 import com.drinkster.model.enums.Difficulty;
 import com.drinkster.model.enums.RoomMode;
 import com.drinkster.model.enums.RoomState;
+import org.springframework.messaging.MessageHeaders;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -459,20 +457,15 @@ public class RoomService {
 
         PlayerDto self = PlayerDto.fromPlayer(player);
         GameRoomDto room = GameRoomDto.fromGameRoom(gameRoom);
-        ChallengeDto currentChallenge = null;
-
-        //TODO see this, maybe send the challenge to the player even if it is not their turn.
+        PlayerTurnDto currentTurn = null;
+        PenaltyDto[] penalties = null;
         if (gameRoom.getState() == RoomState.PLAYING) {
-            if (gameRoom.getCurrentPlayer().equals(player)) {
-                currentChallenge = ChallengeDto.fromChallenge(gameRoom.getCurrentTurn().getChallenge());
-            } else {
-                currentChallenge = new ChallengeDto(
-                        gameRoom.getCurrentPlayer().getName() + "is performing a challenge or drinking " + gameRoom.getCurrentTurn().getChallenge().getSips() + "sips.",
-                        gameRoom.getCurrentTurn().getChallenge().getDifficulty().toString(),
-                        gameRoom.getCurrentTurn().getChallenge().getType().toString());
-            }
+            currentTurn = PlayerTurnDto.fromPlayerTurn(gameRoom.getCurrentTurn());
+            penalties = player.getPenalties().stream()
+                    .map(PenaltyDto::fromPenalty)
+                    .toArray(PenaltyDto[]::new);
         }
-        return new SessionRestoreResponse(self, room, currentChallenge);
+        return new SessionRestoreResponse(self, room, penalties, currentTurn);
     }
 
 
@@ -489,7 +482,6 @@ public class RoomService {
         if (gameRoom == null) {
             throw new IllegalArgumentException("Room does not exist");
         }
-
         // we peek first so we can use the player that the challenge is for
         Player nextPlayer = gameRoom.peekNextPlayer();
         Difficulty challengeDifficulty = challengeService.getRandomWeightedDifficulty(nextPlayer.getDifficultyValues());
@@ -505,5 +497,12 @@ public class RoomService {
 
     }
 
+    public Player getAdmin(UUID roomUUID) {
+        GameRoom gameRoom = gameRooms.get(roomUUID);
+        if (gameRoom == null) {
+            throw new IllegalArgumentException("Room does not exist");
+        }
+        return gameRoom.getAdmin();
+    }
 }
 

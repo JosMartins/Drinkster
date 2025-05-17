@@ -116,12 +116,14 @@ export class SocketService {
   /// Session Management ///
 
   private handleRestoredSession(data: any): void {
+    this.setCookie('playerId', data.self.id, 8);
     this.setCookie('roomId', data.room.roomId, 8);
 
     this.sessionData$.next({
       self: data.self, //Player
       room: data.room, //GameRoom
-      challenge: data.currentChallenge //Challenge
+      penalties: data.penalties, //Penalty[]
+      playerTurn: data.playerTurn //Challenge
     });
     if (data.room.roomState === 'LOBBY') {
       this.router.navigate(['/room']).then();
@@ -176,7 +178,7 @@ export class SocketService {
   }
 
   public playerLeft(roomId: string): Observable<any> {
-    return this.on('/topic/'+ roomId +'/player-left');
+    return this.on('/topic/'+ roomId + '/player-left');
   }
 
 
@@ -202,13 +204,13 @@ export class SocketService {
     return this.on('/topic/'+ roomId +'/player-status-update');
   }
 
-  getPlayerDifficulty(id: string): Observable<any> {
-    this.send('/app/get-player-difficulty', id);
-    return this.on('/topic/difficulty'+ id);
+  getPlayerDifficulty(roomId:string, playerId: string, adminId: string): Observable<any> {
+    this.send('/app/get-player-difficulty', {roomId, playerId});
+    return this.on('/topic/' + adminId +'/difficulty');
   }
 
-  public updatePlayerDifficulty(roomId: string, playerId: string, difficulty: any): void {
-    this.send('app/change-difficulty', { roomId, playerId, difficulty });
+  public updatePlayerDifficulty(roomId: string, playerId: string, difficulty_values: any): void {
+    this.send('/app/change-difficulty', { roomId, playerId, difficulty_values });
   }
 
   public kickPlayer(roomId: string, playerId: string): void {
@@ -218,8 +220,8 @@ export class SocketService {
 
   /// Game Management ///
 
-  public startGame(roomId: string, playerId: string): void {
-      this.send('/app/start-game', { roomId, playerId });
+  public startGame(roomId: string): void {
+      this.send('/app/start-game', roomId);
     }
 
   public gameStarted(roomId: string): Observable<any> {
@@ -257,6 +259,10 @@ export class SocketService {
   // Session Data
   public getSessionData(): Observable<any> {
     return this.sessionData$.asObservable();
+  }
+
+  public setSessionData(data: any): void {
+    this.sessionData$.next(data);
   }
 
   // Connection Status

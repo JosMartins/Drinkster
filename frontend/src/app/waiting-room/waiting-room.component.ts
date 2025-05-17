@@ -79,19 +79,23 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       }),
 
       //Player Left
-      this.io.playerLeft(this.roomId).subscribe((leftPlayer) => {
-        this.players = this.players.filter(p => p.name !== leftPlayer.name);
+      this.io.playerLeft(this.roomId).subscribe((leftId: string) => {
+        debugger
+        this.players = this.players.filter(p => p.id !== leftId);
       }),
 
       //Game Start
       this.io.gameStarted(this.roomId).subscribe(() => {
-        this.router.navigate(['/game'], {
-          state: {
-            self: this.self,
-            players: this.players,
-            roomId: this.roomId
-          }
-        }).then();
+        this.io.setSessionData({
+          self: this.self,
+          room: {
+            roomId: this.roomId,
+            players: this.players
+          },
+          playerTurn: null
+        });
+        this.router.navigate(['/game'], {}).then();
+
       })
     );
 
@@ -133,17 +137,16 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.io.startGame(this.roomId, this.currentPlayerId);
-      this.router.navigate(['/game']).then();
+      this.io.startGame(this.roomId);
     }
   }
 
   async openDifficultyModal(player: Player) {
-    if (!this.isPlayerAdmin()) {
+    if (!this.self || !this.isPlayerAdmin()) {
       return;
     }
 
-    const playerDifficulty = await firstValueFrom(this.io.getPlayerDifficulty(player.id));
+    const playerDifficulty = await firstValueFrom(this.io.getPlayerDifficulty(this.roomId, player.id, this.self.id));
 
     const dialogRef = this.dialog.open(DifficultyDialogComponent, {
       data: {
@@ -152,7 +155,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     });
 
     dialogRef.afterClosed().subscribe( async (difficulty) => {
-      if (player.id) {
+      if (player.id && difficulty) {
          this.io.updatePlayerDifficulty(this.roomId, player.id, difficulty);
       }
     })
@@ -161,6 +164,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
   kickPlayer(player: Player): void {
     if (this.isPlayerAdmin() && player.id) {
+      debugger
       if (confirm(`Are you sure you want to kick ${player.name}?`)) {
         this.io.kickPlayer(this.roomId, player.id);
       }

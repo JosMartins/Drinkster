@@ -50,7 +50,6 @@ export class PlayerConfigComponent implements OnInit {
 
   onSave(): void {
     if (this.playerForm.valid) {
-      debugger
       const roomJoinedSubscription = this.io.playerJoined(this.roomId).subscribe(
         (player) => {
           debugger

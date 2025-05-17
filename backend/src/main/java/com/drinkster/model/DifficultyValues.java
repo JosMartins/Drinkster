@@ -1,5 +1,6 @@
 package com.drinkster.model;
 
+import com.drinkster.dto.DifficultyDto;
 import com.drinkster.model.enums.Difficulty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -25,5 +26,13 @@ public class DifficultyValues {
                 Difficulty.HARD, hard,
                 Difficulty.EXTREME, extreme
         );
+    }
+
+    public DifficultyValues fromDto(DifficultyDto difficultyDto) {
+        this.easy = difficultyDto.easy();
+        this.medium = difficultyDto.medium();
+        this.hard = difficultyDto.hard();
+        this.extreme = difficultyDto.extreme();
+        return this;
     }
 }

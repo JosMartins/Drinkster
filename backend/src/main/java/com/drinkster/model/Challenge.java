@@ -27,7 +27,7 @@ public class Challenge extends BaseEntity {
     @Column(nullable = false)
     private Difficulty difficulty;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "challenge_sexes",
                         joinColumns = @JoinColumn(name = "challenge_id"))
     @OrderColumn(name = "player_index")
@@ -44,7 +44,7 @@ public class Challenge extends BaseEntity {
     @Column(nullable = false)
     private ChallengeType type;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "penalty_id")
     private Penalty penalty;
 

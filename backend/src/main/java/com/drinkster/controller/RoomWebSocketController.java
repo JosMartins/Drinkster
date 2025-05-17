@@ -64,6 +64,14 @@ public class RoomWebSocketController {
                             e.getMessage()
                     )
             );
+        } catch (NullPointerException e) {
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + roomId + "/error",
+                    new ErrorResponse(
+                            "404", // Not Found
+                            "Room not found"
+                    )
+            );
         }
     }
 
@@ -147,7 +155,8 @@ public class RoomWebSocketController {
             UUID playerUUID = UUID.fromString(request.playerId());
             roomService.leaveRoom(roomUUID, playerUUID, headerAccessor.getSessionId());
 
-            this.messagingTemplate.convertAndSend("/topic/" + request.roomId() + "/player-left",
+            this.messagingTemplate.convertAndSend(
+                    "/topic/" + request.roomId() + "/player-left",
                     request.playerId()
             );
         } catch (IllegalArgumentException e) {
@@ -209,7 +218,7 @@ public class RoomWebSocketController {
 
     }
 
-    @MessageMapping("/kick-player")
+    @MessageMapping("/admin-remove-player")
     public void handleAdminKickPlayer(LeaveRequest request,
                                               SimpMessageHeaderAccessor headerAccessor) {
         try {
@@ -231,7 +240,7 @@ public class RoomWebSocketController {
             );
         }
     }
-    //TODO: change this method. admin should receive the difficulty, not the player with the id
+
     @MessageMapping("/get-player-difficulty")
     public void handleGetPlayerDifficulty(PlayerDifficultyRequest request,
                                           SimpMessageHeaderAccessor headerAccessor) {
@@ -241,7 +250,7 @@ public class RoomWebSocketController {
 
             DifficultyDto diff = roomService.getPlayerDifficulty(roomUUID, playerUUID, headerAccessor.getSessionId());
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + request.playerId() + "/difficulty-changed",
+                    "/topic/" + roomService.getAdmin(roomUUID).getId().toString() + "/difficulty",
                     diff
             );
         } catch (IllegalArgumentException e) {
@@ -256,16 +265,15 @@ public class RoomWebSocketController {
     }
 
     @MessageMapping("/change-difficulty")
-    public void handleChangeDifficulty(PlayerDifficultyRequest request,
-                                               CreateRoomRequest.PlayerConfig playerConfig,
+    public void handleChangeDifficulty(PlayerDifficultyUpdateRequest request,
                                                SimpMessageHeaderAccessor headerAccessor) {
         try {
             UUID roomUUID = UUID.fromString(request.roomId());
             UUID playerUUID = UUID.fromString(request.playerId());
-            DifficultyValues newDiff =  roomService.changePlayerDifficulty(roomUUID, playerUUID, playerConfig.difficulty_values(), headerAccessor.getSessionId());
+            DifficultyValues newDiff =  roomService.changePlayerDifficulty(roomUUID, playerUUID, new DifficultyValues().fromDto(request.difficulty_values()), headerAccessor.getSessionId());
 
             this.messagingTemplate.convertAndSend(
-                    "/topic/" + request.roomId() + "/difficulty-changed",
+                    "/topic/" + roomService.getAdmin(roomUUID).getId().toString() + "/difficulty-changed",
                     DifficultyDto.fromDifficultyValues(newDiff)
             );
         } catch (IllegalArgumentException e) {

@@ -1,9 +1,8 @@
 package com.drinkster.dto.response;
 
-import com.drinkster.dto.ChallengeDto;
-import com.drinkster.dto.PlayerDto;
-import com.drinkster.dto.GameRoomDto;
+import com.drinkster.dto.*;
 
 public record SessionRestoreResponse(PlayerDto self,
                                      GameRoomDto room,
-                                     ChallengeDto currentChallenge) implements BaseResponse { }
+                                     PenaltyDto[] penalties,
+                                     PlayerTurnDto playerTurn) implements BaseResponse { }

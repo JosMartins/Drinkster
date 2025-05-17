@@ -49,34 +49,30 @@ export class GameplayComponent implements OnInit, OnDestroy {
 
     this.subscriptions.push(
       this.io.getSessionData().subscribe(sesData => {
-        console.log("Session data:", sesData);
-        if (sesData && sesData.status === 'playing') {
+        if (sesData) {
           this.self = sesData.self;
           this.roomId = sesData.room.roomId;
           this.players = sesData.room.players
           this.penalties = sesData.penalties;
           this.currentChallenge = {
-            text: sesData.text,
-            difficulty: sesData.difficulty,
-            type: sesData.type,
-            affectedPlayers: sesData.affectedPlayers.map((p: Player) => p.id),
+            text: sesData.playerTurn.challenge.text,
+            difficulty: sesData.playerTurn.challenge.difficulty,
+            type: sesData.playerTurn.challenge.type,
+            affectedPlayers: sesData.playerTurn.affectedPlayers.map((p: Player) => p.id)
           };
 
+          this.myChallenge = sesData.playerTurn.playerId === this.self?.id;
+          if (this.self?.isAdmin) {
+            this.adminText = this.currentChallenge.text;
+          }
+
+          this.handleRandomEvents();
+          this.listenForChallenges();
         }
       }),
     );
 
-    const navigationData = this.router.getCurrentNavigation();
 
-    if (navigationData?.extras.state) {
-      this.roomId = navigationData.extras.state['roomId'];
-      this.players = navigationData.extras.state['players'];
-      this.self = navigationData.extras.state['self'];
-
-    }
-
-    this.handleRandomEvents();
-    this.listenForChallenges();
   }
 
 
@@ -97,7 +93,7 @@ export class GameplayComponent implements OnInit, OnDestroy {
           text: data.challenge.text,
           difficulty: data.challenge.difficulty,
           type: data.challenge.type,
-          affectedPlayers: data.challenge.affectedPlayers.map((p: Player) => p.id),
+          affectedPlayers: data.affectedPlayers.map((p: Player) => p.id),
         };
         this.currentRound = data.round;
         this.penalties = data.penaltyList;
@@ -139,5 +135,32 @@ export class GameplayComponent implements OnInit, OnDestroy {
         });
       })
     );
+  }
+
+  protected showButton(): boolean {
+    switch (this.currentChallenge?.type) {
+      case 'EVERYONE_DRINK': return true
+      case "CHOSEN_DRINK": return true
+      case "YOU_DRINK": return this.currentChallenge.affectedPlayers.includes(this.self?.id ?? '');
+      case "BOTH_DRINK": return this.currentChallenge.affectedPlayers.includes(this.self?.id ?? '');
+      default: return false;
+    }
+  }
+
+  displayChallengeText(): string {
+    if (this.currentChallenge?.type == "EVERYONE_DRINK" || this.currentChallenge?.affectedPlayers.includes(this.self?.id ?? '')) {
+      return this.currentChallenge.text;
+    } else {
+      //player 1 and player 2 are playing, or drinking X
+      const playing = this.players?.filter(p => this.currentChallenge?.affectedPlayers.includes(p.id));
+      if (playing?.length === 2) {
+        return `${playing[0].name} and ${playing[1].name} are playing or drinking!`;
+      } else if (playing?.length === 1) {
+        return `${playing[0].name} is playing or drinking!`;
+      } else {
+        return "No one is playing!";
+      }
+
+    }
   }
 }

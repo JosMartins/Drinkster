@@ -1,4 +1,4 @@
-# backend/Dockerfile
+    # backend/Dockerfile
 # Stage 1: Build the JAR
 FROM maven:3.8.6-eclipse-temurin-17 AS build
 WORKDIR /app

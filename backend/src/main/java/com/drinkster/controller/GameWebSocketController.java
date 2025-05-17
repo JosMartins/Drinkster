@@ -45,9 +45,11 @@ public class GameWebSocketController {
         try {
             UUID roomUUID = UUID.fromString(roomId);
             roomService.startGame(roomUUID, headerAccessor.getSessionId());
-            this.sendNextChallenge(roomUUID);
+
             this.messagingTemplate.convertAndSend("/topic/" + roomId + "/game-started",
                     new StartGameResponse());
+
+            this.sendNextChallenge(roomUUID);
         } catch (IllegalArgumentException e) {
             this.messagingTemplate.convertAndSend("/topic/" + roomId + "/error",
                     new ErrorResponse("400", e.getMessage()));
@@ -78,8 +80,8 @@ public class GameWebSocketController {
                 throw new IllegalArgumentException("No current turn found");
             }
 
-            //if player is affected by the challenge & if the player's socketId is the same as the one in the payload
-            if (currentTurn.getAffectedPlayers().stream().noneMatch(p -> p.getId().equals(playerUUID) && p.getSocketId().equals(sessionId))) {
+            //if the player is affected by the challenge, and if the player's socketId is the same as the one in the payload
+            if (!currentTurn.getAffectedPlayers().isEmpty() && currentTurn.getAffectedPlayers().stream().noneMatch(p -> p.getId().equals(playerUUID) && p.getSocketId().equals(sessionId))) {
                 throw new IllegalArgumentException("Player not affected by the challenge");
             }
 
@@ -99,15 +101,15 @@ public class GameWebSocketController {
             }
 
             if (currentTurn.allResponded()) {
-                currentTurn.playersDrunk()
-                        .forEach(p -> p.addSips(currentTurn.getChallenge().getSips()));
-                currentTurn.playersCompleted()
-                        .forEach(p -> {
+                currentTurn.playersDrunk().forEach(p -> p.addSips(currentTurn.getChallenge().getSips()));
+
+                currentTurn.playersCompleted().forEach(p -> {
                             var penalty = currentTurn.getChallenge().getPenalty();
                             if (penalty != null) p.addPenalty(penalty);
                         });
 
                 sendNextChallenge(roomId);
+
             }
 
 
@@ -153,17 +155,21 @@ public class GameWebSocketController {
      */
     private void sendNextChallenge(UUID roomID) {
         GameRoom room = roomService.getRoom(roomID);
-        roomService.startNextTurn(roomID);
+
         if (room == null) {
             return;
         }
+        //shouldnt be here...
+        room.handlePenalties();
+        roomService.startNextTurn(roomID);
+
 
         for (Player player : room.getPlayers()) {
             if (player.getSocketId() != null) {
                 ChallengeResponse response = new ChallengeResponse(
                         ChallengeDto.fromChallenge(room.getCurrentTurn().getChallenge()), //challenge
                         room.getCurrentTurn().getAffectedPlayers().stream().map(PlayerDto::fromPlayer).toList(), //affected players
-                        1, //round
+                        room.getRoundNumber(), //round
                         player.getPenalties().stream().map(PenaltyDto::fromPenalty).toList() //penalties
                 );
                 messagingTemplate.convertAndSend("/topic/" + player.getId() +  "/challenge", response);
