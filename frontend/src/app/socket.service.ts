@@ -13,16 +13,12 @@ export class SocketService {
   public isConnected$ = new BehaviorSubject<boolean>(false);
   private stompClient!: Client;
   private pendingSubscriptions: Array<{ destination: string, callback: (payload: any) => void }> = [];
-  private readonly serverUrl = 'http://localhost:8000/ws';
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 5;
-
-  /*private readonly serverUrl = ((): string => {
+  private readonly serverUrl = ((): string => {
     const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    return `${proto}://${window.location.host}/ws`;   // e.g. wss://localhost:8443/ws
+    return `${proto}://localhost:8000/ws`;   // e.g. wss://localhost:8443/ws
   })();
-*/
-
   constructor(private readonly router: Router) {
     this.initializeConnection();
   }
