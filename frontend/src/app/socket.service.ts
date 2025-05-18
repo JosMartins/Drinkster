@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject } from 'rxjs';
 import SockJS from 'sockjs-client';
-import { Client, over } from 'stompjs';
+import { Client, Stomp } from '@stomp/stompjs';
 import { Router } from "@angular/router";
 import {PlayerConfig, RoomConfig} from "./models/RoomConfig";
 
@@ -17,6 +17,12 @@ export class SocketService {
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 5;
 
+  /*private readonly serverUrl = ((): string => {
+    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    return `${proto}://${window.location.host}/ws`;   // e.g. wss://localhost:8443/ws
+  })();
+*/
+
   constructor(private readonly router: Router) {
     this.initializeConnection();
   }
@@ -25,7 +31,10 @@ export class SocketService {
 
   private send(destination: string, body: any): void {
     if (this.stompClient?.connected) {
-      this.stompClient.send(destination, {}, (typeof body === "string") ? body : JSON.stringify(body));
+      this.stompClient.publish({
+        destination: destination,
+        body: typeof body === "string" ? body : JSON.stringify(body)
+      });
     }
   }
 
@@ -53,22 +62,33 @@ export class SocketService {
 
   private initializeConnection(): void {
     const socket = new SockJS(this.serverUrl);
-    this.stompClient = over(socket);
+    this.stompClient = Stomp.over(() => socket);
 
-    this.stompClient.connect({}, (frame) => {
-      console.log('Connected: ' + frame);
+    this.stompClient.onConnect = (frame) => {
       this.isConnected$.next(true);
       this.reconnectAttempts = 0;
-      this.setupReconnection();
-      this.pendingSubscriptions.forEach(sub => {
-        this.subscribe(sub.destination, sub.callback);
+
+      this.pendingSubscriptions.forEach(({ destination, callback }) => {
+        this.subscribe(destination, callback);
       });
       this.pendingSubscriptions = [];
-    }, (error) => {
-      console.log('Connection error: ', error);
+    };
+
+    this.stompClient.onStompError = (error) => {
+      console.error('STOMP error:', error);
+    };
+
+    this.stompClient.onWebSocketClose = () => {
       this.isConnected$.next(false);
-      this.handleReconnection();
-    });
+      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        setTimeout(() => {
+          this.reconnectAttempts++;
+          this.initializeConnection();
+        }, 2000);
+      }
+    };
+
+    this.stompClient.activate();
   }
 
 
@@ -104,14 +124,11 @@ export class SocketService {
   }
 
   public disconnect(): void {
-    if (this.stompClient?.connected) {
-      this.stompClient.disconnect(() => {});
+    if (this.stompClient && this.stompClient.connected) {
+      this.stompClient.deactivate();
     }
-    //remove playerId and roomId from cookies
-    this.deleteCookie('playerId');
-    this.deleteCookie('roomId');
-
   }
+
 
   /// Session Management ///
 
