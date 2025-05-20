@@ -15,10 +15,10 @@ export class SocketService {
   private pendingSubscriptions: Array<{ destination: string, callback: (payload: any) => void }> = [];
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 5;
-  private readonly serverUrl = ((): string => {
-    const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    return `${proto}://localhost:8000/ws`;   // e.g. wss://localhost:8443/ws
-  })();
+private readonly serverUrl = ((): string => {
+  const proto = window.location.protocol === 'https:' ? 'https' : 'http';
+  return `${proto}://localhost:8000/ws`;
+})();
   constructor(private readonly router: Router) {
     this.initializeConnection();
   }
