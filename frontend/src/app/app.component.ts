@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {Router, RouterModule} from '@angular/router';
+import {RouterModule} from '@angular/router';
+import { SocketService } from './socket.service';
 
 @Component({
   selector: 'app-root',
@@ -9,8 +10,13 @@ import {Router, RouterModule} from '@angular/router';
   styleUrls: ['./app.component.css'],
   imports: [RouterModule, FormsModule]
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'Drinkster';
 
-  constructor(private router: Router) {}
+  constructor(private readonly socketService: SocketService) {}
+
+  ngOnInit(): void {
+    this.socketService.setupReconnection();
+  }
+  
 }

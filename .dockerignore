@@ -1,3 +1,9 @@
 **/target/
 **/.git
 **/.idea
+node_modules
+**/node_modules
+**/dist
+**/.vscode
+**/.DS_Store
+*.log

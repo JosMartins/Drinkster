@@ -54,16 +54,28 @@ export class GameplayComponent implements OnInit, OnDestroy {
           this.roomId = sesData.room.roomId;
           this.players = sesData.room.players
           this.penalties = sesData.penalties;
-          this.currentChallenge = {
-            text: sesData.playerTurn.challenge.text,
-            difficulty: sesData.playerTurn.challenge.difficulty,
-            type: sesData.playerTurn.challenge.type,
-            affectedPlayers: sesData.playerTurn.affectedPlayers.map((p: Player) => p.id)
-          };
 
-          this.myChallenge = sesData.playerTurn.playerId === this.self?.id;
-          if (this.self?.isAdmin) {
-            this.adminText = this.currentChallenge.text;
+          if (sesData.playerTurn) {
+            this.currentChallenge = {
+                        text: sesData.playerTurn.challenge.text,
+                        difficulty: sesData.playerTurn.challenge.difficulty,
+                        type: sesData.playerTurn.challenge.type,
+                        affectedPlayers: sesData.playerTurn.affectedPlayers.map((p: Player) => p.id)
+                      };
+
+            this.myChallenge = sesData.playerTurn.playerId === this.self?.id;
+
+            if (this.self?.isAdmin) {
+              this.adminText = this.currentChallenge.text;
+            }
+
+          } else {
+            this.currentChallenge = {
+              text: "Waiting for the next challenge... DRINK!",
+              difficulty: "easy",
+              type: "EVERYONE_DRINK",
+              affectedPlayers: []
+            }
           }
 
           this.handleRandomEvents();
@@ -77,7 +89,11 @@ export class GameplayComponent implements OnInit, OnDestroy {
 
 
   ngOnDestroy(): void {
-    this.subscriptions.forEach(s => s.unsubscribe())
+    this.subscriptions.forEach(s => s.unsubscribe());
+    if (this.self && this.roomId) {
+      this.io.leaveRoom(this.roomId, this.self?.id);
+    }
+    this.io.disconnect();
   }
 
   private listenForChallenges(): void {
@@ -89,14 +105,15 @@ export class GameplayComponent implements OnInit, OnDestroy {
 
     this.subscriptions.push(
       this.io.onChallenge(this.self.id).subscribe((data) => {
+        console.log("Challenge received:", data);
         this.currentChallenge = {
           text: data.challenge.text,
           difficulty: data.challenge.difficulty,
           type: data.challenge.type,
           affectedPlayers: data.affectedPlayers.map((p: Player) => p.id),
         };
-        this.currentRound = data.round;
         this.penalties = data.penaltyList;
+        this.currentRound = data.round;
         this.adminText = (this.self?.isAdmin) ? data.challenge.text : '';
       }),
     );
@@ -148,7 +165,7 @@ export class GameplayComponent implements OnInit, OnDestroy {
   }
 
   displayChallengeText(): string {
-    if (this.currentChallenge?.type == "EVERYONE_DRINK" || this.currentChallenge?.affectedPlayers.includes(this.self?.id ?? '')) {
+    if (this.currentChallenge?.type == "EVERYONE_DRINK" || this.currentChallenge?.type == "CHOSEN_DRINK" || this.currentChallenge?.affectedPlayers.includes(this.self?.id ?? '')) {
       return this.currentChallenge.text;
     } else {
       //player 1 and player 2 are playing, or drinking X

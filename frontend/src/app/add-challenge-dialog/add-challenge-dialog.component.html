@@ -1,0 +1,97 @@
+<h2 mat-dialog-title class="dialog-title">Add New Challenge</h2>
+
+<div mat-dialog-content class="dialog-content">
+  <form [formGroup]="challengeForm" class="add-challenge-form">
+
+    <!-- Challenge text ---------------------------------------------------->
+    <mat-form-field appearance="fill" class="form-field">
+      <mat-label>Challenge Text</mat-label>
+      <input matInput
+             formControlName="text"
+             class="field-input"
+             placeholder="Include {sips} and {Player#} references">
+      <!-- custom error message -->
+      <mat-error class="field-error"
+                 *ngIf="challengeForm.get('text')?.hasError('noSipsReference')">
+        Must include {{ '{' }}sips{{ '}' }} when sips are required
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Difficulty -------------------------------------------------------->
+    <mat-form-field appearance="fill" class="form-field">
+      <mat-label>Difficulty</mat-label>
+      <mat-select formControlName="difficulty" class="field-select">
+        <mat-option *ngFor="let diff of difficultyOptions" [value]="diff">{{ diff }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <!-- Player-reference block ------------------------------------------->
+    <div formArrayName="playerReferences"
+         *ngIf="playerReferences.controls.length > 0"
+         class="player-ref-section">
+
+      <h3 class="player-ref-header">Player References</h3>
+
+      <div *ngFor="let ref of playerReferences.controls; let i = index"
+           [formGroupName]="i"
+           class="player-ref-row">
+
+        <mat-form-field appearance="fill" class="form-field">
+          <mat-label>Sex for {{ ref.get('reference')?.value }}</mat-label>
+          <mat-select formControlName="sex" class="field-select">
+            <mat-option *ngFor="let sex of sexOptions" [value]="sex">{{ sex }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <!-- Remaining plain fields ------------------------------------------->
+    <mat-form-field appearance="fill" class="form-field">
+      <mat-label>Number of Players</mat-label>
+      <input matInput type="number" min="0"
+             formControlName="players" class="field-input no-spin">
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="form-field">
+      <mat-label>Sips</mat-label>
+      <input matInput type="number" min="0"
+             formControlName="sips" class="field-input no-spin">
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="form-field">
+      <mat-label>Type</mat-label>
+      <mat-select formControlName="type" class="field-select">
+        <mat-option *ngFor="let type of typeOptions" [value]="type">{{ type }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <!-- Penalty toggle & block ------------------------------------------->
+    <mat-checkbox formControlName="hasPenalty" class="penalty-toggle">
+      Has Penalty
+    </mat-checkbox>
+
+    <div *ngIf="showPenalty" class="penalty-section">
+      <mat-form-field appearance="fill" class="form-field">
+        <mat-label>Penalty Text</mat-label>
+        <input matInput formControlName="penaltyText" class="field-input">
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" class="form-field">
+        <mat-label>Penalty Rounds</mat-label>
+        <input matInput type="number" min="1"
+               formControlName="penaltyRounds" class="field-input no-spin">
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="fill" class="form-field">
+      <mat-label>API Key</mat-label>
+      <input matInput formControlName="apiKey" class="field-input">
+    </mat-form-field>
+  </form>
+
+</div>
+
+<div mat-dialog-actions class="dialog-actions">
+  <button mat-button class="btn cancel-btn" (click)="cancel()">Cancel</button>
+  <button mat-button color="primary" class="btn submit-btn" (click)="submit()">Submit</button>
+</div>

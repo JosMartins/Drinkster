@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,7 +18,7 @@ public class Player {
     private Sex sex;
     private String socketId;
     private DifficultyValues difficultyValues;
-    private List<Penalty> penalties = new ArrayList<>();
+    private List<Penalty> penalties;
     private int drinks = 0;
     private boolean isAdmin = false;
     private boolean isReady = false;
@@ -27,6 +28,7 @@ public class Player {
     public Player() {
         this.id = UUID.randomUUID();
         this.difficultyValues = new DifficultyValues();
+        this.penalties = new ArrayList<>();
     }
 
     public Player(String name, Sex sex, DifficultyValues difficultyValues, boolean admin, String socket) {
@@ -34,11 +36,13 @@ public class Player {
         this.name = name;
         this.sex = sex;
         this.difficultyValues = difficultyValues;
+        this.penalties = new ArrayList<>();
         this.socketId = socket;
         this.isAdmin = admin;
     }
 
     public void addPenalty(Penalty penalty) {
+        penalty.incrementRound();
         this.penalties.add(penalty);
     }
 
@@ -50,15 +54,15 @@ public class Player {
         this.drinks += sips;
     }
 
-    public void processPenalties() {
-        for (Penalty penalty : penalties) {
-            if (penalty.getRounds() > 0) {
-                penalty.decrementRound();
-            } else {
-                penalties.remove(penalty);
+    public synchronized void processPenalties() {
+        Iterator<Penalty> it = penalties.iterator();
+        while (it.hasNext()) {
+            Penalty p = it.next();
+            p.decrementRound();
+            if (p.getRounds() <= 0) {
+                it.remove();
             }
-
         }
-        penalties.clear();
     }
+
 }

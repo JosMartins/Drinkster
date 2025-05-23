@@ -43,13 +43,13 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   ) {   }
 
   ngOnInit() {
-    const storedId = this.io.getCookie('roomId');
-    const playerId = this.io.getCookie('playerId');
+    const storedId = this.io.getData('roomId');
+    const playerId = this.io.getData('playerId');
 
-    if (!storedId || !playerId) { //if there isn't a roomId/playerId stored in cookies, redirect the user.
+    if (!storedId || !playerId) {
       console.log("No room ID found/ player ID, redirecting to multiplayer");
-      this.io.deleteCookie('roomId'); //safety
-      this.io.deleteCookie('playerId');
+      this.io.deleteData('roomId'); //safety
+      this.io.deleteData('playerId');
       this.router.navigate(['/multiplayer']).then();
       return
     }
@@ -60,13 +60,14 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     //Player Status Update (ready/unready)
     this.subscriptions.push(
       this.io.playerStatusUpdate(this.roomId).subscribe(({playerId, isReady}) => {
+        console.log('Player status update:', playerId, isReady);
         const player = this.players.find((p) => p.id === playerId);
         if (player) player.isReady = isReady;
       }),
 
       //Player Joined
       this.io.playerJoined(this.roomId).subscribe((newPlayer) => {
-
+        console.log('New player joined:', newPlayer);
         if (!this.players.some(p => p.id === newPlayer.id)) {
           this.players.push({
             id: newPlayer.id,
@@ -80,12 +81,13 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
       //Player Left
       this.io.playerLeft(this.roomId).subscribe((leftId: string) => {
-        debugger
+        console.log('Player left:', leftId);
         this.players = this.players.filter(p => p.id !== leftId);
       }),
 
       //Game Start
       this.io.gameStarted(this.roomId).subscribe(() => {
+        console.log('Game started');
         this.io.setSessionData({
           self: this.self,
           room: {
@@ -103,7 +105,6 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       .pipe(filter(Boolean), take(1))
       .subscribe(() => {
         this.initAsync().then();
-
         this.io.getRoom(this.roomId);
 
       });
@@ -163,8 +164,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   }
 
   kickPlayer(player: Player): void {
-    if (this.isPlayerAdmin() && player.id) {
-      debugger
+    if (this.isPlayerAdmin() && player.id && player.id !== this.currentPlayerId) {
       if (confirm(`Are you sure you want to kick ${player.name}?`)) {
         this.io.kickPlayer(this.roomId, player.id);
       }
@@ -179,11 +179,11 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
 
   private async initAsync() {
-    const roomInfo = await firstValueFrom(this.io.roomInfo(this.roomId));
+    const roomInfo = await firstValueFrom(this.io.getRoom(this.roomId));
     if (roomInfo.roomId !== this.roomId) {
       this.roomId = roomInfo.roomId;
-      this.io.deleteCookie('roomId');
-      this.io.setCookie('roomId', this.roomId, 8);
+      this.io.deleteData('roomId');
+      this.io.saveData('roomId', this.roomId);
     }
     this.roomName = roomInfo.roomName;
     this.gameMode = roomInfo.roomMode;

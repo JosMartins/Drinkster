@@ -2,18 +2,23 @@
 FROM node:18 AS build-env
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /app/frontend
 
 # Copy and install frontend dependencies
-COPY ./package*.json ./frontend/
-RUN cd frontend && npm install
+COPY ./package*.json ./
+RUN npm install
 
 # Build the frontend
-COPY . ./frontend/
-RUN cd frontend && npm run build --omit dev
+COPY ./src ./src
+COPY ./angular.json ./
+COPY ./tsconfig*.json ./
+COPY ./*.config.js ./
+
+# Build the frontend
+RUN npm run build --omit dev
 
 # Final base image with Nginx
-FROM nginx:latest
+FROM nginx:1.28
 
 # Copy the frontend build output
 COPY --from=build-env /app/frontend/dist/drinkster /usr/share/nginx/html

@@ -93,36 +93,21 @@ export class CreateRoomDialogComponent {
       };
 
       // Set up an event listener first
-      const errorSubscription = this.socketService.roomError().subscribe(
-        (errorMessage) => {
-          console.error('Error creating room:', errorMessage);
 
-          // Cleanup subscriptions
-          errorSubscription.unsubscribe();
-          roomCreatedSubscription.unsubscribe();
 
-          // Close dialog with error
-          this.dialogRef.close({
-            success: false,
-            error: errorMessage
-          });
-        }
-      );
-
-      const roomCreatedSubscription = this.socketService.roomCreated().subscribe(
-        ({roomId, playerId}) => {
-          console.log('Room created:', roomId, '\nPlayer ID:', playerId);
+      const roomCreatedSubscription = this.socketService.createRoom(roomConfig).subscribe(
+        (result) => {
+          console.log('Room created:', result.roomId, '\nPlayer ID:', result.playerId);
 
           // Store player ID for session restoration
-          this.socketService.setCookie('playerId', playerId, 12)
-          this.socketService.setCookie('roomId', roomId, 12)
+          this.socketService.saveData('playerId', result.playerId)
+          this.socketService.saveData('roomId', result.roomId)
           roomCreatedSubscription.unsubscribe();
-          errorSubscription.unsubscribe();
 
           this.dialogRef.close({
             success: true,
-            roomId: roomId,
-            playerId: playerId
+            roomId: result.roomId,
+            playerId: result.playerId
           });
 
           this.router.navigate(['/room']).then(_ => null);

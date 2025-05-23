@@ -1,0 +1,58 @@
+:root {
+  --main-bg-color: transparent;
+}
+
+
+/* Force content transparency */
+.mdc-dialog__surface {
+  background: rgba(0, 0, 0, 80%) !important;
+  box-shadow: none !important;
+}
+
+.add-challenge-dialog {
+  color: #ffff;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Form fields                                                       */
+/* ------------------------------------------------------------------ */
+.form-field           { width: 100%; margin-bottom: 16px; }
+.field-input,
+.field-select         { color: #fff; }
+.field-error          { color: #ff4081; font-size: 12px; }
+
+/* remove number spinners */
+.no-spin::-webkit-outer-spin-button,
+.no-spin::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Player-reference section                                          */
+/* ------------------------------------------------------------------ */
+.player-ref-section   { margin: 20px 0; }
+.player-ref-header    { margin: 0 0 12px; color: #fff; }
+.player-ref-row       { margin-bottom: 12px; }
+
+/* ------------------------------------------------------------------ */
+/*  Penalty block                                                     */
+/* ------------------------------------------------------------------ */
+.penalty-toggle       { margin: 16px 0; color:#fff; }
+.penalty-section      { margin-top: 12px; }
+
+/* ------------------------------------------------------------------ */
+/*  Buttons                                                           */
+/* ------------------------------------------------------------------ */
+.btn                  { min-width: 90px; }
+.cancel-btn           { color: #ffffff; }
+.submit-btn           { color: #4caf50; }
+
+/* ------------------------------------------------------------------ */
+/*  Optional custom scrollbar                                         */
+/* ------------------------------------------------------------------ */
+.add-challenge-dialog ::-webkit-scrollbar       { width: 8px; }
+.add-challenge-dialog ::-webkit-scrollbar-track { background: transparent; }
+.add-challenge-dialog ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.2); border-radius: 4px;
+}

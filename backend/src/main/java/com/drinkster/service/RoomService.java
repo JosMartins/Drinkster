@@ -6,7 +6,6 @@ import com.drinkster.model.*;
 import com.drinkster.model.enums.Difficulty;
 import com.drinkster.model.enums.RoomMode;
 import com.drinkster.model.enums.RoomState;
-import org.springframework.messaging.MessageHeaders;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;

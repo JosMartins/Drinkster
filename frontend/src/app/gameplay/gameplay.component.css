@@ -154,3 +154,13 @@
 .force-skip-btn:hover {
   background-color: #f57c00;
 }
+
+.round-number {
+  color: #fefefe;
+  text-align: center;
+}
+
+.box-subtitle {
+  color: #ff4081;
+  font-size: 1.2em;
+}

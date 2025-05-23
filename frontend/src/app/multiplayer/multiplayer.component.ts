@@ -5,7 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { CreateRoomDialogComponent } from '../create-room-dialog/create-room-dialog.component';
 import {SocketService} from "../socket.service";
 import {PlayerConfigComponent} from "../player-config/player-config.component";
-import {filter, Subject, switchMap, take, takeUntil} from "rxjs";
+import {filter, Subscription, switchMap, take} from "rxjs";
 
 interface Room {
   id: string;
@@ -29,7 +29,7 @@ interface RoomListResponse {
 })
 export class MultiplayerComponent implements OnInit, OnDestroy {
   rooms: Room[] = [];
-  private readonly destroy$ = new Subject<void>();
+  private readonly roomListSubscription?: Subscription;
 
   constructor(
     private readonly router: Router,
@@ -42,19 +42,21 @@ export class MultiplayerComponent implements OnInit, OnDestroy {
       filter(Boolean),      // only TRUE values
       take(1),
       switchMap(() => {
-        const rooms$ = this.socketService.listRooms();
-        this.socketService.getRooms();
-        return rooms$;
-      }),
-      takeUntil(this.destroy$)
-    ).subscribe((response: RoomListResponse) => {
-      this.rooms = response.rooms;
-    });
+      // Subscribe to room list updates
+      this.socketService.listRooms()
+        .subscribe((response: RoomListResponse) => {
+          this.rooms = response.rooms;
+        });
+      return [];
+    }),
+  ).subscribe();
   }
 
   ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+    // Unsubscribe from the room list subscription if it exists
+    if (this.roomListSubscription) {
+      this.roomListSubscription.unsubscribe();
+    }
   }
 
 
@@ -62,14 +64,14 @@ export class MultiplayerComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(CreateRoomDialogComponent, {
       width: '800px',
       panelClass: ['custom-dialog', 'transparent-overlay'],
-      //hasBackdrop: false,
-      data: {} // You can pass initial data here if needed
+      data: {}
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        // Handle the result data from the dialog
+        console.log('Room created');
       }
+      
     });
   }
 
@@ -88,7 +90,6 @@ export class MultiplayerComponent implements OnInit, OnDestroy {
         this.router.navigate(['/room']).then();
       }
     })
-
 
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, BehaviorSubject } from 'rxjs';
+import {Observable, BehaviorSubject, switchMap, first, filter} from 'rxjs';
 import SockJS from 'sockjs-client';
 import { Client, Stomp } from '@stomp/stompjs';
 import { Router } from "@angular/router";
@@ -15,10 +15,7 @@ export class SocketService {
   private pendingSubscriptions: Array<{ destination: string, callback: (payload: any) => void }> = [];
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 5;
-private readonly serverUrl = ((): string => {
-  const proto = window.location.protocol === 'https:' ? 'https' : 'http';
-  return `${proto}://localhost:8000/ws`;
-})();
+  private readonly serverUrl = `${window.location.origin}/ws`;
   constructor(private readonly router: Router) {
     this.initializeConnection();
   }
@@ -34,25 +31,55 @@ private readonly serverUrl = ((): string => {
     }
   }
 
-  public subscribe(destination: string, callback: (payload: any) => void): void {
+public subscribe(destination: string, callback: (payload: any) => void): void {
     if (this.stompClient?.connected) {
-      this.stompClient.subscribe(destination, (message) => {
-        callback(JSON.parse(message.body));
-      });
+        this.stompClient.subscribe(destination, (message) => {
+            console.log('Received message:', JSON.stringify(message.body));
+            let payload;
+            try {
+                payload = JSON.parse(message.body);
+            } catch (e) {
+                payload = message.body;
+            }
+            callback(payload);
+        });
     } else {
-      // Queue the subscription if not connected
-      this.pendingSubscriptions.push({ destination, callback });
+        this.pendingSubscriptions.push({ destination, callback });
     }
+}
+
+  public on(destination: string): Promise<Observable<any>> {
+    return new Promise((resolve) => {
+      const observable = new Observable(observer => {
+        this.subscribe(destination, (data) => {
+          observer.next(data);
+        });
+      });
+      resolve(observable);
+    });
   }
 
-  public on(destination: string): Observable<any> {
-    return new Observable(observer => {
-      this.subscribe(destination, (data) => {
-        console.log("received to ("+ destination +"):" + JSON.stringify(data));
-        observer.next(data);
+
+  public sendAndSubscribe(destination: string,body: any, ...topics: string[] ): Observable<any> {
+    return new Observable((observer) => {
+    // Wait for all topics to be subscribed
+      const topicSubscriptions = topics.map((topic) => this.on(topic));
+
+      Promise.all(topicSubscriptions).then((observables) => {
+      // Subscribe to all topics and forward data to the observer
+        const subscriptions = observables.map((observable$) =>
+          observable$.subscribe((data) => observer.next(data))
+        );
+
+        // Send the message after all subscriptions are ready
+        this.send(destination, body);
+
+        // Cleanup: Unsubscribe from all topics when the observer unsubscribes
+        return () => subscriptions.forEach((sub) => sub.unsubscribe());
       });
     });
   }
+
 
   /// Connection ///
 
@@ -88,40 +115,37 @@ private readonly serverUrl = ((): string => {
   }
 
 
-  private handleReconnection(): void {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      setTimeout(() => {
-        this.reconnectAttempts++;
-        console.log(`Reconnection attempt ${this.reconnectAttempts}`);
-        this.initializeConnection();
-      }, 1000);
-    }
-  }
-
-  private setupReconnection(): void {
-    const roomId = this.getCookie('roomId')
-    const playerId = this.getCookie('playerId')
+  setupReconnection(): void {
+    const roomId = this.getData('roomId')
+    const playerId = this.getData('playerId')
     if (roomId && playerId) {
 
-      this.on('/topic/' + playerId + '/session-restored').subscribe((data) => {
-        console.log('Session restored successfully', data);
-        this.handleRestoredSession(data);
-      })
+      this.connectionStatus()
+        .pipe(
+          filter(connected => connected),
+          first(),
+          switchMap(() => Promise.all([
+            this.on(`/topic/${playerId}/session-restored`),
+            this.on(`/topic/${playerId}/session-not-found`)
+          ]))
+        ).subscribe(([sessionRestored$, sessionNotFound$]) => {
+        sessionRestored$.subscribe(data => this.handleRestoredSession(data));
 
-      this.on('/topic/' + playerId +'/session-not-found').subscribe(_ => {
-        console.log('Session not found, creating new session');
-        this.deleteCookie('playerId');
-        this.deleteCookie('roomId');
-        this.router.navigate(['/multiplayer']).then();
+        sessionNotFound$.subscribe(() => {
+          this.deleteData('playerId');
+          this.deleteData('roomId');
+          this.router.navigate(['/']).then();
+        });
+
+        // Now it's safe to send the frame
+        this.send('/app/restore-session', { roomId, playerId });
       });
-
-      this.send('/app/restore-session', { roomId , playerId });
     }
   }
 
   public disconnect(): void {
-    if (this.stompClient && this.stompClient.connected) {
-      this.stompClient.deactivate();
+    if (this.stompClient?.connected) {
+      this.stompClient.deactivate().then();
     }
   }
 
@@ -129,8 +153,9 @@ private readonly serverUrl = ((): string => {
   /// Session Management ///
 
   private handleRestoredSession(data: any): void {
-    this.setCookie('playerId', data.self.id, 8);
-    this.setCookie('roomId', data.room.roomId, 8);
+
+    this.saveData('playerId', data.self.id);
+    this.saveData('roomId', data.room.roomId);
 
     this.sessionData$.next({
       self: data.self, //Player
@@ -147,37 +172,22 @@ private readonly serverUrl = ((): string => {
 
   /// Room Management ///
 
-  public getRooms() {
-    this.send("/app/list-rooms", {});
-  }
-
   public listRooms(): Observable<any> {
-    return this.on('/topic/rooms-list');
+    return this.sendAndSubscribe('/app/list-rooms', {}, '/topic/rooms-list');
   }
 
 
-  public createRoom(room: RoomConfig) {
-    this.send("/app/create-room", room);
+  public createRoom(room: RoomConfig): Observable<any> {
+    return this.sendAndSubscribe('/app/create-room',room, '/topic/room-created', '/topic/room-error');
   }
 
-  public createSingleplayer(room: RoomConfig) {
-    this.send("/app/create-single-player", room);
+  public createSingleplayer(room: RoomConfig): Observable<any> {
+    return this.sendAndSubscribe('/app/create-singleplayer',room, '/topic/room-created', '/topic/room-error');
   }
 
-  public roomCreated(): Observable<any> {
-    return this.on('/topic/room-created');
-  }
-
-  public roomError(): Observable<any> {
-    return this.on('/topic/room-error');
-  }
 
   public joinRoom(roomId: string, playerConfig: PlayerConfig) {
-    this.send("/app/join-room", {roomId , playerConfig});
-  }
-
-  public roomJoined(): Observable<any> {
-    return this.on('/user/queue/room-joined');
+    return this.sendAndSubscribe("/app/join-room", {roomId , playerConfig}, "/topic/" + roomId + "/player-joined", "/topic/" + roomId + "/room-error");
   }
 
 
@@ -186,23 +196,27 @@ private readonly serverUrl = ((): string => {
   }
 
 
-  public playerJoined(roomId: string): Observable<any> {
-    return this.on('/topic/' + roomId + '/player-joined');
+public playerJoined(roomId: string): Observable<any> {
+    return new Observable(observer => {
+        this.on('/topic/' + roomId + '/player-joined').then(observable => {
+            const subscription = observable.subscribe(data => observer.next(data));
+            return () => subscription.unsubscribe();
+        });
+    });
+}
+
+public playerLeft(roomId: string): Observable<any> {
+    return new Observable(observer => {
+        this.on('/topic/' + roomId + '/player-left').then(observable => {
+            const subscription = observable.subscribe(data => observer.next(data));
+            return () => subscription.unsubscribe();
+        });
+    });
+}
+
+  public getRoom(roomId: string): Observable<any> {
+    return this.sendAndSubscribe("/app/get-room", roomId, "/topic/" + roomId + "/room-info", "/topic/" + roomId + "/error");
   }
-
-  public playerLeft(roomId: string): Observable<any> {
-    return this.on('/topic/'+ roomId + '/player-left');
-  }
-
-
-  public getRoom(roomId: string) {
-    this.send("/app/get-room", roomId);
-  }
-
-  public roomInfo(roomId: string): Observable<any> {
-    return this.on("/topic/" + roomId + "/room-info");
-  }
-
 
   // Player Management
   public playerReady(roomId: string, playerId: string) {
@@ -214,12 +228,16 @@ private readonly serverUrl = ((): string => {
   }
 
   playerStatusUpdate(roomId: string): Observable<any> {
-    return this.on('/topic/'+ roomId +'/player-status-update');
+    return new Observable(observer => {
+      this.on('/topic/' + roomId + '/player-status-update').then(observable => {
+        const subscription = observable.subscribe(data => observer.next(data));
+        return () => subscription.unsubscribe();
+      });
+    });
   }
 
   getPlayerDifficulty(roomId:string, playerId: string, adminId: string): Observable<any> {
-    this.send('/app/get-player-difficulty', {roomId, playerId});
-    return this.on('/topic/' + adminId +'/difficulty');
+    return this.sendAndSubscribe('/app/get-player-difficulty', {roomId, playerId}, '/topic/' + adminId +'/difficulty');
   }
 
   public updatePlayerDifficulty(roomId: string, playerId: string, difficulty_values: any): void {
@@ -235,16 +253,30 @@ private readonly serverUrl = ((): string => {
 
   public startGame(roomId: string): void {
       this.send('/app/start-game', roomId);
-    }
+  }
 
   public gameStarted(roomId: string): Observable<any> {
-    return this.on('/topic/'+ roomId + '/game-started');
+    return new Observable(observer => {
+      this.on('/topic/' + roomId + '/game-started').then(observable => {
+        const subscription = observable.subscribe(data => observer.next(data));
+        return () => subscription.unsubscribe();
+      });
+    });
   }
-
 
   public onChallenge(playerId: string): Observable<any> {
-    return this.on('/topic/'+ playerId + '/challenge');
+    return new Observable(observer => {
+      this.on(`/topic/${playerId}/challenge`).then(observable$ => {
+        observable$.subscribe(data => {
+          console.log('Challenge received:', data);   // <- log to console
+          observer.next(data);                        // forward to caller
+        });
+        // NOTE: intentionally no teardown function returned – the inner
+        // subscription stays alive until the outer subscription is disposed.
+      });
+    });
   }
+
 
 
   public challengeCompleted(roomId: string, playerId: string): void {
@@ -256,7 +288,12 @@ private readonly serverUrl = ((): string => {
   }
 
   public randomEvent(playerId: string): Observable<any> {
-    return this.on('/topic/' + playerId + '/random-event');
+    return new Observable(observer => {
+      this.on('/topic/' + playerId + '/random-event').then(observable => {
+        const subscription = observable.subscribe(data => observer.next(data));
+        return () => subscription.unsubscribe();
+      });
+    });
   }
 
   public forceSkipChallenge(roomId: string): void {
@@ -264,10 +301,6 @@ private readonly serverUrl = ((): string => {
   }
 
 
-  // ERROR
-  public error(id: string): Observable<any> {
-    return this.on('/topic/' + id + '/error');
-  }
 
   // Session Data
   public getSessionData(): Observable<any> {
@@ -284,45 +317,20 @@ private readonly serverUrl = ((): string => {
   }
 
 
-  /// Cookies ///
- // TESTING LOCALSTORAGE
-  public setCookie(name: string, value: string, hours: number): void {
-     const expires = new Date(Date.now() + hours * 60 * 60 * 1000).toUTCString();
-     /*
-    // store the raw value – encodeURIComponent keeps it cookie-safe
-    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
-     */
+  /// Local Storage ///
+
+  public saveData(name: string, value: string): void {
     localStorage.setItem(name, value);
   }
 
 
 
-  public getCookie(name: string): string | null {
-    /*
-    const match = document.cookie.match(
-      new RegExp('(?:^|; )' + name + '=([^;]*)')
-    );
-    return match ? decodeURIComponent(match[1]) : undefined;
-     */
+  public getData(name: string): string | null {
     return localStorage.getItem(name);
   }
 
 
-  deleteCookie(name: string): void {
-
-    /*
-    const encodedName = encodeURIComponent(name);
-
-    let cookie = `${encodedName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
-
-    // Only add Secure if the current connection is HTTPS
-    if (location.protocol === 'https:') {
-      cookie += '; Secure';
-    }
-
-    document.cookie = cookie;
-    */
-
+  deleteData(name: string): void {
     localStorage.removeItem(name);
   }
 

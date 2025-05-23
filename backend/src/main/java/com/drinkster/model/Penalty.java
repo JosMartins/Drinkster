@@ -46,4 +46,8 @@ public class Penalty extends BaseEntity {
             rounds--;
         }
     }
+
+    public void incrementRound() {
+        rounds++;
+    }
 }

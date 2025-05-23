@@ -1,6 +1,5 @@
 package com.drinkster.model;
 
-import com.drinkster.dto.PenaltyDto;
 import com.drinkster.exception.IncompatibleSexException;
 import com.drinkster.model.enums.*;
 import com.drinkster.utils.FixedSizeQueue;
@@ -15,7 +14,6 @@ import java.util.*;
 @Getter
 @Setter
 public class GameRoom {
-    private static final int SIPS_PER_GLASS = 20;
     private Random random = new Random();
 
     private UUID id;

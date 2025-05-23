@@ -9,7 +9,7 @@
   <div class="game-boxes">
     <!-- Left Column -->
     <div class="left-column">
-      <div class="penalty-box" *ngIf="penalties.length > 0">
+      <div class="penalty-box" *ngIf="penalties && penalties.length > 0">
         <h2 class="box-title">Penalties</h2>
         <div class="content-box penalty-content">
           <div *ngFor="let penalty of penalties" class="penalty-item">
