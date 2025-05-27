@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit, AfterViewInit, ViewChild, ElementRef} from '@angular/core';
+import {Component, OnDestroy, OnInit } from '@angular/core';
 import { SocketService} from "../socket.service";
 import {NgForOf, NgIf} from "@angular/common";
 import {Subscription} from "rxjs";
@@ -38,12 +38,6 @@ export class GameplayComponent implements OnInit, OnDestroy {
   };
   penalties: Penalty[] = [];
   myChallenge: boolean = false;
-
-  @ViewChild('gameContainer') private gameContainer!: ElementRef<HTMLElement>;
-  showAdminPullUp: boolean = false;
-  lastScrollTop = 0;
-  private scrollThreshold = 40; // Minimum pixels to consider as a scroll
-  private isScrolling = false;
 
   constructor(
     private readonly io: SocketService,
@@ -209,30 +203,6 @@ export class GameplayComponent implements OnInit, OnDestroy {
 
     }
   }
-
-  ngAfterViewInit(): void {
-    // Start at bottom so “pull up” works
-    const el = this.gameContainer.nativeElement;
-    el.scrollTop = el.scrollHeight;
-    this.lastScrollTop = el.scrollTop;
-  }
-
-  onScroll(event: Event) {
-  if (this.isScrolling) return;
-  this.isScrolling = true;
-  
-  const scrollTop = (event.target as HTMLElement).scrollTop;
-  const scrollDiff = scrollTop - this.lastScrollTop;
-
-  if (Math.abs(scrollDiff) > this.scrollThreshold) {
-    this.showAdminPullUp = scrollDiff < 0;
-    this.lastScrollTop = scrollTop;
-  }
-
-  requestAnimationFrame(() => {
-    this.isScrolling = false;
-  });
-}
 
 }
 
