@@ -44,7 +44,7 @@ export class GameplayComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly dialog: MatDialog
   ) { }
-/*
+
   ngOnInit(): void {
 
     this.subscriptions.push(
@@ -86,9 +86,9 @@ export class GameplayComponent implements OnInit, OnDestroy {
 
 
   }
-*/
+
   //DEVVVV
-  ngOnInit(): void {
+  ngOnInitDev(): void {
       //POPulate with mock data
     this.self = { id: '1', name: 'Player 1', sex:'M', isAdmin: true, isReady: true };
     this.roomId = 'room1';
