@@ -42,6 +42,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     private readonly dialog: MatDialog
   ) {   }
 
+  
   ngOnInit() {
     const storedId = this.io.getData('roomId');
     const playerId = this.io.getData('playerId');

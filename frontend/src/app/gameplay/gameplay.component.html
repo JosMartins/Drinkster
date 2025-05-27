@@ -1,6 +1,6 @@
-<div class="game-container">
+<div class="game-container" (scroll)="onScroll($event)">
 
-  <div *ngIf="self?.isAdmin" class="admin-box">
+  <div *ngIf="self?.isAdmin && showAdminPullUp" class="admin-box" [class.pull-up]="showAdminPullUp">
     <h3>Admin Challenge View</h3>
     <div class="admin-challenge">{{ adminText }}</div>
     <button class="force-skip-btn" (click)="forceSkip()">Force Skip</button>
@@ -10,7 +10,7 @@
     <!-- Left Column -->
     <div class="left-column">
       <div class="penalty-box" *ngIf="penalties && penalties.length > 0">
-        <h2 class="box-title">Penalties</h2>
+        <h2 class="box-title">Your Penalties</h2>
         <div class="content-box penalty-content">
           <div *ngFor="let penalty of penalties" class="penalty-item">
             {{ penalty.text }} ({{ penalty.rounds }} rounds)
@@ -24,7 +24,7 @@
           <div *ngFor="let player of players"
                class="player-item"
                [class.current-player]="(currentChallenge?.affectedPlayers ?? []).includes(player.id)">
-            {{ player.name }}
+            {{player.name }}
           </div>
 
         </div>

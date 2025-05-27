@@ -13,8 +13,9 @@
            [class.current-player]="player.id === currentPlayerId">
         <div class="player-info">
           <span class="player-name">{{player.name}}</span>
-          <div>
-            <span *ngIf="player.isAdmin" class="admin-badge">Admin</span>
+          <span *ngIf="player.isAdmin" class="admin-badge">Admin</span>
+          <div class="admin-options">
+            
             <button *ngIf="self?.isAdmin"
                     class="admin-options-button"
                     (click)="kickPlayer(player)">

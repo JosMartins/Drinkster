@@ -2,9 +2,9 @@
   --main-bg-color: transparent;
 }
 
-/* Force content transparency */
+
 .mdc-dialog__surface {
-  background: rgba(155, 219, 253, 0.6) !important;
+  background: rgba(0, 0, 0, 80%) !important;
   box-shadow: none !important;
 }
 

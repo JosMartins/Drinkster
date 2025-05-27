@@ -4,17 +4,18 @@ body, html {
   padding: 0;
   height: 100%;
   font-family: 'Fredoka One', sans-serif;
+  
+
 }
 
 /* Container to center content and set background */
 .container {
+  box-sizing: border-box;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
   background-image: url('/assets/background.png');
   background-position: center;
-  background-size: cover;
-
 }
 

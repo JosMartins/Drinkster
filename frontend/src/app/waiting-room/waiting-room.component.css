@@ -1,10 +1,10 @@
 .waiting-room-container {
-  max-width: 1200px;
-  margin: 0 auto;
   padding: 20px;
   font-family: Roboto, "Helvetica Neue", sans-serif;
-  background-color: rgba(0, 0, 0, 50%);
+  background-color: rgba(0, 0, 0, 0.5);
   border-radius: 8px;
+  box-sizing: border-box;
+
 }
 
 .player-count {
@@ -30,7 +30,6 @@
 }
 
 .players-container {
-  width: 500px;
   background-color: rgba(0, 0, 0, 50%);
   border-radius: 8px;
   padding: 16px;
@@ -86,7 +85,10 @@
 }
 
 .player-status {
-  display: flex;
+  display: flex;  
+  font-size: 0.8rem;
+  color: #f44336; /* material red */
+  text-align: right;
 }
 
 .admin-badge {
@@ -95,14 +97,9 @@
   font-size: 0.7rem;
   padding: 2px 6px;
   border-radius: 10px;
+  margin-left: 18px;
 }
 
-.player-status {
-  font-size: 0.8rem;
-  color: #f44336; /* material red */
-  text-align: right;
-  padding: 4px 0;
-}
 
 .player-status.ready {
   color: #4caf50; /* material green */
@@ -140,7 +137,7 @@
 }
 
 button {
-  padding: 10px 20px;
+  padding: 10px;
   border: none;
   border-radius: 4px;
   font-weight: 500;
@@ -188,22 +185,22 @@ button:active {
   }
 
   button {
-    width: 100%;
-    max-width: 200px;
+    width: 60%;
   }
 }
 
 /* waiting-room.component.css */
 .admin-options-button {
-  background: none;
-  border: none;
-  color: #3f51b5;
-  cursor: pointer;
-  padding: 4px;
-  margin-left: 8px;
-  transition: transform 0.2s;
+  padding: 5px 10px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: blue;
+  margin-left: auto;
 }
 
 .admin-options-button:hover {
   transform: scale(1.2);
 }
+ 

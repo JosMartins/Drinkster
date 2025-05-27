@@ -1,4 +1,4 @@
-import {Component, OnDestroy, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit, AfterViewInit, ViewChild, ElementRef} from '@angular/core';
 import { SocketService} from "../socket.service";
 import {NgForOf, NgIf} from "@angular/common";
 import {Subscription} from "rxjs";
@@ -39,12 +39,18 @@ export class GameplayComponent implements OnInit, OnDestroy {
   penalties: Penalty[] = [];
   myChallenge: boolean = false;
 
+  @ViewChild('gameContainer') private gameContainer!: ElementRef<HTMLElement>;
+  showAdminPullUp: boolean = false;
+  lastScrollTop = 0;
+  private scrollThreshold = 40; // Minimum pixels to consider as a scroll
+  private isScrolling = false;
+
   constructor(
     private readonly io: SocketService,
     private readonly router: Router,
     private readonly dialog: MatDialog
   ) { }
-
+/*
   ngOnInit(): void {
 
     this.subscriptions.push(
@@ -86,7 +92,30 @@ export class GameplayComponent implements OnInit, OnDestroy {
 
 
   }
-
+*/
+  //DEVVVV
+  ngOnInit(): void {
+      //POPulate with mock data
+    this.self = { id: '1', name: 'Player 1', sex:'M', isAdmin: true, isReady: true };
+    this.roomId = 'room1';
+    this.players = [
+      { id: '1', name: 'Player 1', sex: 'M', isAdmin: true, isReady: true },
+      { id: '2', name: 'Player 2', sex: 'F', isAdmin: false, isReady: true },
+    ]
+    this.penalties = [
+      { text: 'Test penalty 123', rounds: 2 },
+      { text: 'WEFLKNwejfnWEJOFN', rounds: 3 }
+    ];
+    this.currentChallenge = {
+      text: "Player 1 and Player 2, do a handstand and drink! then Player 1, drink 2 sips! then Player 2, drink 1 sip!",
+      difficulty: "EASY",
+      type: "YOU_DRINK",
+      affectedPlayers: ['1']
+    };
+    this.currentRound = 1;
+    this.myChallenge = true; // For testing purposes
+    this.adminText = this.self?.isAdmin ? this.currentChallenge.text : '';
+  }
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(s => s.unsubscribe());
@@ -180,4 +209,30 @@ export class GameplayComponent implements OnInit, OnDestroy {
 
     }
   }
+
+  ngAfterViewInit(): void {
+    // Start at bottom so “pull up” works
+    const el = this.gameContainer.nativeElement;
+    el.scrollTop = el.scrollHeight;
+    this.lastScrollTop = el.scrollTop;
+  }
+
+  onScroll(event: Event) {
+  if (this.isScrolling) return;
+  this.isScrolling = true;
+  
+  const scrollTop = (event.target as HTMLElement).scrollTop;
+  const scrollDiff = scrollTop - this.lastScrollTop;
+
+  if (Math.abs(scrollDiff) > this.scrollThreshold) {
+    this.showAdminPullUp = scrollDiff < 0;
+    this.lastScrollTop = scrollTop;
+  }
+
+  requestAnimationFrame(() => {
+    this.isScrolling = false;
+  });
 }
+
+}
+

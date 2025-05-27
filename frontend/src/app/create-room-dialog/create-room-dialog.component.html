@@ -8,18 +8,16 @@
       <mat-form-field class="full-width">
         <mat-label>Room Name</mat-label>
         <input matInput formControlName="name" required>
-      </mat-form-field>
-      <div class="error-message">
         <mat-error *ngIf="roomForm.get('name')?.hasError('required')">Room name is required.</mat-error>
         <mat-error *ngIf="roomForm.get('name')?.hasError('minlength')">Room name must be at least 3 characters long.</mat-error>
-      </div>
+      </mat-form-field>
     </div>
 
     <div class="checkbox-field">
       <mat-checkbox formControlName="isPrivate">Private Room</mat-checkbox>
     </div>
 
-    <mat-form-field class="full-width" *ngIf="roomForm.get('isPrivate')?.value">
+    <mat-form-field *ngIf="roomForm.get('isPrivate')?.value">
       <mat-label>Password</mat-label>
       <input matInput type="password" formControlName="password">
     </mat-form-field>

@@ -1,22 +1,28 @@
-/* gameplay.component.css */
 .game-container {
-  padding: 20px;
-  max-width: 800px;
-  margin: 0 auto;
-}
+    padding: 20px;
+    max-width: 98%;
+    margin: 0 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: 100vh;
+  }
+  
+  .game-boxes {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+  }
+  
+  .players-box, .penalty-box  {
+    max-width: 95%;
+  }
 
-.game-boxes {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 30px;
-}
 
 .challenge-box, .penalty-box {
   flex: 1;
   background-color: rgba(0, 0, 0, 0.5);
   border-radius: 15px;
   padding: 20px;
-  min-height: 250px;
 }
 
 .box-title {
@@ -25,6 +31,7 @@
   margin-bottom: 15px;
   border-bottom: 2px solid #e91e63;
   padding-bottom: 10px;
+  text-align: center;
 }
 
 .content-box {
@@ -35,7 +42,6 @@
 
 .challenge-content {
   font-size: 1.4em;
-  min-height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -43,9 +49,10 @@
 }
 
 .penalty-content {
-  max-height: 180px;
   overflow-y: auto;
+  text-align: start;
 }
+
 
 .penalty-item {
   padding: 8px 0;
@@ -86,7 +93,6 @@
   background-color: #da190b;
 }
 
-/* Additional CSS */
 .left-column {
   flex: 1;
   display: flex;
@@ -102,15 +108,15 @@
 }
 
 .players-content {
-  max-height: 200px;
   overflow-y: auto;
 }
 
 .player-item {
-  padding: 10px;
-  margin: 5px 0;
+  padding: 8px;
+  margin: 3px;
   background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
+  border-radius: 6px;
+  text-align: center;
 }
 
 .current-player {
@@ -160,7 +166,76 @@
   text-align: center;
 }
 
+
 .box-subtitle {
   color: #ff4081;
   font-size: 1.2em;
+}
+
+
+@media (orientation: portrait) {
+
+  .game-container {
+    padding: 20px;
+    height: auto;
+    min-height: 100vh;
+    margin-top: 50px;
+  }
+  
+  .admin-box {
+    position: fixed;
+    top: -100px;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+    margin: 0 15px;
+    width: calc(100% - 30px);
+  }
+  .game-boxes {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .left-column {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .penalty-box, .players-box {
+    max-width: 48%;
+    max-height: 40vh;
+    margin-bottom: 10px;
+  }
+
+  .players-box {
+    font-size: 90%;
+  }
+  .challenge-box {
+    order: 2;
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+  
+  
+  .box-title {
+    font-size: 1em;
+    margin-bottom: 8px;
+  }
+  .round-number,
+  .box-subtitle {
+    font-size: 0.9em;
+  }
+  .content-box {
+    font-size: 1em;
+  }
+  .player-item {
+    font-size: 0.85em;
+    padding: 6px 0;
+  }
+  .admin-challenge {
+    font-size: 0.9em;
+  }
 }

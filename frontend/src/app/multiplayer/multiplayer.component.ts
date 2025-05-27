@@ -81,7 +81,6 @@ export class MultiplayerComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(PlayerConfigComponent, {
       width: '800px',
       panelClass: ['custom-dialog', 'transparent-overlay'],
-      hasBackdrop: false,
       data: roomId
     });
 
