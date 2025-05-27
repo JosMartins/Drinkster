@@ -14,12 +14,41 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+      - "5005:5005"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/drinkster
       SPRING_DATASOURCE_USERNAME: drinkster
       SPRING_DATASOURCE_PASSWORD: drinkster
     depends_on:
       - postgres
-
+    volumes:
+    # Change both these values to the path of your ssl certificates on your host machine
+      - type: bind
+        source: /etc/letsencrypt/live/zescripts.dev/fullchain.pem #1
+        target: /conf/ssl/fullchain.pem
+        read_only: true
+      - type: bind
+        source: /etc/letsencrypt/live/zescripts.dev/privkey.pem #2
+        target: /conf/ssl/privkey.pem
+        read_only: true
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+    # Change the port here if you want to run the frontend on a different port. it should be <port>:443
+      - "6090:443"
+    depends_on:
+      - backend
+    volumes:
+    # Change both these values to the path of your ssl certificates on your host machine
+      - type: bind
+        source: /etc/letsencrypt/live/zescripts.dev/fullchain.pem #1
+        target: /conf/ssl/fullchain.pem
+        read_only: true
+      - type: bind
+        source: /etc/letsencrypt/live/zescripts.dev/privkey.pem #2
+        target: /conf/ssl/privkey.pem
+        read_only: true
 volumes:
   pg_data:    
