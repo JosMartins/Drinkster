@@ -225,7 +225,11 @@ public class GameRoom {
              Sex secondChallengeSex = challenge.getSexes().get(1);
             Player player2 = this.getRandomPlayer(List.of(getCurrentPlayer()));
             affectedPlayers.add(getCurrentPlayer());
-            affectedPlayers.add(player2);
+            
+            if (this.showChallenges) {
+                affectedPlayers.add(player2);
+            }
+            
 
             if ((challengeSex != Sex.ALL && getCurrentPlayer().getSex() != challengeSex) ||
                     (secondChallengeSex != Sex.ALL && player2.getSex() != secondChallengeSex)) {
