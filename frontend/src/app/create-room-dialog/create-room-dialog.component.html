@@ -1,6 +1,9 @@
 <div class="create-room-dialog">
   <h2>Room Information</h2>
   <form [formGroup]="roomForm" (ngSubmit)="onSubmit()">
+    <div class="scrollable-content">
+
+
     <div class="room-name-container">
       <mat-form-field class="full-width">
         <mat-label>Room Name</mat-label>
@@ -30,7 +33,7 @@
           <mat-error *ngIf="roomForm.get('player')?.get('name')?.hasError('required')">Admin name is required.</mat-error>
           <mat-error *ngIf="roomForm.get('player')?.get('name')?.hasError('minlength')">Admin name must be at least 3 characters long.</mat-error>
         </mat-form-field>
-    
+
         <div class="player-sex">
           <label class="sex-label">Sex:</label>
           <mat-radio-group formControlName="sex" class="sex-radio-group">
@@ -38,7 +41,7 @@
             <mat-radio-button value="F">F</mat-radio-button>
           </mat-radio-group>
         </div>
-    
+
         <button mat-stroked-button type="button" (click)="openDifficultyDialog()" class="difficulty-button">
           Set Difficulty
         </button>
@@ -56,14 +59,15 @@
 
     <mat-form-field class="full-width no-spinners">
       <mat-label>Remembered Challenges</mat-label>
-      <input matInput 
-             type="number" 
-             formControlName="rememberedChallenges" 
+      <input matInput
+             type="number"
+             formControlName="rememberedChallenges"
              min="0">
     </mat-form-field>
 
     <mat-checkbox formControlName="showChallenges" class="full-width">Show Challenges to All Players</mat-checkbox>
 
+</div>
     <div class="button-row">
       <button mat-raised-button color="primary" type="submit">Create Room</button>
       <button mat-button type="button" (click)="onCancel()" style="color: white">Cancel</button>

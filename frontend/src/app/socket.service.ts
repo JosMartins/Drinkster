@@ -87,7 +87,7 @@ public subscribe(destination: string, callback: (payload: any) => void): void {
     const socket = new SockJS(this.serverUrl);
     this.stompClient = Stomp.over(() => socket);
 
-    this.stompClient.onConnect = (frame) => {
+    this.stompClient.onConnect = () => {
       this.isConnected$.next(true);
       this.reconnectAttempts = 0;
 
@@ -272,7 +272,7 @@ public playerLeft(roomId: string): Observable<any> {
           observer.next(data);                        // forward to caller
         });
         // NOTE: intentionally no teardown function returned – the inner
-        // subscription stays alive until the outer subscription is disposed.
+        // subscription stays alive until the outer subscription is disposed of.
       });
     });
   }

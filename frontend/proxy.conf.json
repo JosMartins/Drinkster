@@ -1,0 +1,12 @@
+{
+  "/app": {
+    "target": "http://localhost:<backend_port>",
+    "secure": false,
+    "logLevel": "debug"
+  },
+  "/topic": {
+    "target": "http://localhost:<backend_port>",
+    "secure": false,
+    "logLevel": "debug"
+  }
+}

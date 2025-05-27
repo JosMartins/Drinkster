@@ -37,7 +37,12 @@
     <div class="challenge-box">
       <h2 class="round-number">Round {{ currentRound }}</h2>
       <h2 class="box-title">Current Challenge</h2>
-      <h4 class="box-subtitle">Difficulty: {{ currentChallenge?.difficulty }}</h4>
+      <h4 class="box-subtitle">
+        Difficulty:
+        <span class="difficulty-badge difficulty-{{currentChallenge?.difficulty}}">
+          {{ currentChallenge?.difficulty }}
+        </span>
+      </h4>
       <div class="content-box challenge-content">
         <div *ngIf="currentChallenge">
           <div class="challenge-text">{{ displayChallengeText() }}</div>
