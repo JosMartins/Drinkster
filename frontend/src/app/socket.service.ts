@@ -1,21 +1,35 @@
 import { Injectable } from '@angular/core';
-import {Observable, BehaviorSubject, switchMap, first, filter} from 'rxjs';
+import {
+  Observable,
+  BehaviorSubject,
+  switchMap,
+  first,
+  filter,
+  catchError,
+  EMPTY,
+  merge,
+  takeUntil,
+  throwError, Subject
+} from 'rxjs';
 import SockJS from 'sockjs-client';
 import { Client, Stomp } from '@stomp/stompjs';
 import { Router } from "@angular/router";
 import {PlayerConfig, RoomConfig} from "./models/RoomConfig";
+import { SessionData, SessionError } from "./models/dto/SessionInterfaces";
 
 @Injectable({
   providedIn: 'root'
 })
 export class SocketService {
   private readonly sessionData$ = new BehaviorSubject<any>(null);
+  private destroy$ = new Subject<void>();
   public isConnected$ = new BehaviorSubject<boolean>(false);
   private stompClient!: Client;
   private pendingSubscriptions: Array<{ destination: string, callback: (payload: any) => void }> = [];
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 5;
   private readonly serverUrl = `${window.location.origin}/ws`;
+
   constructor(private readonly router: Router) {
     this.initializeConnection();
   }
@@ -23,61 +37,80 @@ export class SocketService {
   // base methods
 
   private send(destination: string, body: any): void {
-    if (this.stompClient?.connected) {
-      this.stompClient.publish({
-        destination: destination,
-        body: typeof body === "string" ? body : JSON.stringify(body)
-      });
-    }
+      if (!this.stompClient?.connected) {
+        console.warn('STOMP client is not connected. Cannot send message to destination:', destination);
+        return;
+      }
+      //If body is not a string, convert it to JSON
+      const payload = typeof body === 'string' ? body : JSON.stringify(body);
+
+      this.stompClient.publish({ destination, body: payload });
+      console.debug('Published message to destination:', destination, 'with body:', payload);
   }
 
-public subscribe(destination: string, callback: (payload: any) => void): void {
-    if (this.stompClient?.connected) {
-        this.stompClient.subscribe(destination, (message) => {
-            console.log('Received message:', JSON.stringify(message.body));
-            let payload;
-            try {
-                payload = JSON.parse(message.body);
-            } catch (e) {
-                payload = message.body;
-            }
-            callback(payload);
-        });
+private subscribe(destination: string, callback: (payload: any) => void): () => void {
+    if (!this.stompClient?.connected) {
+      const sub = this.stompClient.subscribe(destination, (message) => {
+        try {
+          const payload = JSON.parse(message.body);
+        } catch {
+          callback(message.body);
+        }
+      });
+      return () => sub.unsubscribe();
     } else {
-        this.pendingSubscriptions.push({ destination, callback });
+      const pendingSub = {destination, callback};
+      this.pendingSubscriptions.push(pendingSub);
+
+      return () => {
+        const index = this.pendingSubscriptions.indexOf(pendingSub);
+        if (index > -1) {
+          this.pendingSubscriptions.splice(index, 1);
+        }
+      };
     }
 }
 
-  public on(destination: string): Promise<Observable<any>> {
-    return new Promise((resolve) => {
-      const observable = new Observable(observer => {
-        this.subscribe(destination, (data) => {
-          observer.next(data);
-        });
+  private observe<T>(destination: string): Observable<T> {
+    return new Observable<T>(observer => {
+      const subscription = this.subscribe(destination, (data: T) => {
+        observer.next(data);
       });
-      resolve(observable);
+
+      return () => subscription();
     });
   }
 
 
-  public sendAndSubscribe(destination: string,body: any, ...topics: string[] ): Observable<any> {
-    return new Observable((observer) => {
-    // Wait for all topics to be subscribed
-      const topicSubscriptions = topics.map((topic) => this.on(topic));
+  public sendAndObserve<T>(
+    sendDestination: string,
+    body: any,
+    observerDestinations: string[]
+  ): Observable<T> {
+    return this.connectionStatus().pipe(
+      filter(connected => connected),                                               // check if connected/ wait for connection
+      first(),
+      switchMap((): Observable<T> => {                                                      // setup subscription and send
+        // observables for each observer destination
+        const observables = observerDestinations.map(dest =>         // create an observable for each destination
+          this.observe<T>(dest).pipe(
+            catchError(err => {
+              console.error(`Error in observer for ${dest}:`, err);
+              return EMPTY;
+            })
+          ));
 
-      Promise.all(topicSubscriptions).then((observables) => {
-      // Subscribe to all topics and forward data to the observer
-        const subscriptions = observables.map((observable$) =>
-          observable$.subscribe((data) => observer.next(data))
+        queueMicrotask(() => this.send(sendDestination, body));                       // send message after subscription is set up
+
+        return merge(...observables).pipe(                                                  // combine all observables
+          takeUntil(this.destroy$),
         );
-
-        // Send the message after all subscriptions are ready
-        this.send(destination, body);
-
-        // Cleanup: Unsubscribe from all topics when the observer unsubscribes
-        return () => subscriptions.forEach((sub) => sub.unsubscribe());
-      });
-    });
+      }),
+      catchError(error => {                                                           //Error handling
+        console.error('Connection error during sendAndObserve:', error);
+        return throwError(() => new Error('Connection failed'));
+      })
+    );
   }
 
 
@@ -118,29 +151,31 @@ public subscribe(destination: string, callback: (payload: any) => void): void {
   setupReconnection(): void {
     const roomId = this.getData('roomId')
     const playerId = this.getData('playerId')
-    if (roomId && playerId) {
+    if (!roomId || !playerId) { return; }
 
-      this.connectionStatus()
-        .pipe(
-          filter(connected => connected),
-          first(),
-          switchMap(() => Promise.all([
-            this.on(`/topic/${playerId}/session-restored`),
-            this.on(`/topic/${playerId}/session-not-found`)
-          ]))
-        ).subscribe(([sessionRestored$, sessionNotFound$]) => {
-        sessionRestored$.subscribe(data => this.handleRestoredSession(data));
-
-        sessionNotFound$.subscribe(() => {
-          this.deleteData('playerId');
-          this.deleteData('roomId');
-          this.router.navigate(['/']).then();
-        });
-
-        // Now it's safe to send the frame
-        this.send('/app/restore-session', { roomId, playerId });
-      });
-    }
+    this.sendAndObserve<SessionData | SessionError>(
+      'app/restore-session',
+      { roomId, playerId },
+      [
+        '/user/queue/session-restored',
+        '/user/queue/session-error'
+      ]
+    ).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (data) => {
+        if ('room' in data) {
+          this.handleRestoredSession(data);
+        } else {
+          this.clearSessionData();
+          this.router.navigate(['/']).then(null);
+        }
+      },
+      error: (err) => {
+        console.error('Error restoring session:', err);
+        this.clearSessionData();
+      }
+    });
   }
 
   public disconnect(): void {

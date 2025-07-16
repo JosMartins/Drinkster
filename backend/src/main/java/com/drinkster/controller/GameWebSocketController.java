@@ -186,7 +186,6 @@ public class GameWebSocketController {
                         */
                         logger.info("{} {} - (processing) [challenge-{}] CHOSEN_DRINK not implemented yet", 
                                 getCurrentTime(), sessionId, action);
-                        break;
                 }
         
                 default -> logger.info("{} {} - (processing) [challenge-{}] Unhandled challenge type: {}",
@@ -295,7 +294,7 @@ public class GameWebSocketController {
             return;
         }
         
-        //shouldnt be here...
+        //shouldn't be here...
         room.handlePenalties();
         logger.info("{} - (processing) [sendNextChallenge] Handled penalties for room: {}", getCurrentTime(), roomID);
         
@@ -314,10 +313,6 @@ public class GameWebSocketController {
                 PenaltyDto[] penalties = player.getPenalties().stream()
                         .map(PenaltyDto::fromPenalty)
                         .toArray(PenaltyDto[]::new);
-
-                //debbugging penalties - log all penalties
-                logger.info("{} - (PENALTIES) [sendNextChallenge] Player: {}, penalties: {}",
-                        getCurrentTime(), player.getId(), penalties.length);
 
 
                 ChallengeResponse response = new ChallengeResponse(
