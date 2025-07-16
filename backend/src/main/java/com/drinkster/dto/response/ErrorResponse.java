@@ -1,3 +1,3 @@
 package com.drinkster.dto.response;
 
-public record ErrorResponse (String code, String message) implements BaseResponse { }
+public record ErrorResponse (int code, String message) implements BaseResponse { }

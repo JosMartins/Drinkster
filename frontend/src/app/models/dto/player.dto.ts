@@ -1,3 +1,5 @@
+import {ChallengeDto} from "./Challenge.dto";
+
 export interface PlayerDto {
   id: string;
   name: string;
@@ -6,4 +8,10 @@ export interface PlayerDto {
   isReady: boolean;
   isPlaying?: boolean
 
+}
+
+export interface PlayerTurnDto {
+  player: PlayerDto;
+  challenge: ChallengeDto
+  affectedPlayers: PlayerDto[];
 }
