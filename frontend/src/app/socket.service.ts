@@ -16,6 +16,7 @@ import { Client, Stomp } from '@stomp/stompjs';
 import { Router } from "@angular/router";
 import {PlayerConfig, RoomConfig} from "./models/RoomConfig";
 import { SessionData, SessionError } from "./models/dto/SessionInterfaces";
+import {PlayerDto} from "./models/dto/player.dto";
 
 @Injectable({
   providedIn: 'root'
@@ -208,21 +209,21 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
   /// Room Management ///
 
   public listRooms(): Observable<any> {
-    return this.sendAndSubscribe('/app/list-rooms', {}, '/topic/rooms-list');
+    return this.sendAndObserve('/app/list-rooms', {}, ['/topic/rooms-list']);
   }
 
 
   public createRoom(room: RoomConfig): Observable<any> {
-    return this.sendAndSubscribe('/app/create-room',room, '/topic/room-created', '/topic/room-error');
+    return this.sendAndObserve('/app/create-room',room, ['/user/queue/room-created', '/user/queue/room-error']);
   }
 
   public createSingleplayer(room: RoomConfig): Observable<any> {
-    return this.sendAndSubscribe('/app/create-singleplayer',room, '/topic/room-created', '/topic/room-error');
+    return this.sendAndObserve('/app/create-singleplayer',room, ['/user/queue/room-created', '/user/queue/room-error']);
   }
 
 
   public joinRoom(roomId: string, playerConfig: PlayerConfig) {
-    return this.sendAndSubscribe("/app/join-room", {roomId , playerConfig}, "/topic/" + roomId + "/player-joined", "/topic/" + roomId + "/room-error");
+    return this.sendAndObserve("/app/join-room", {roomId , playerConfig}, ['/user/queue/join-confirm']);
   }
 
 
@@ -230,36 +231,30 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
     this.send("/app/leave-room", { roomId, playerId });
   }
 
-
-public playerJoined(roomId: string): Observable<any> {
-    return new Observable(observer => {
-        this.on('/topic/' + roomId + '/player-joined').then(observable => {
-            const subscription = observable.subscribe(data => observer.next(data));
-            return () => subscription.unsubscribe();
-        });
-    });
-}
-
-public playerLeft(roomId: string): Observable<any> {
-    return new Observable(observer => {
-        this.on('/topic/' + roomId + '/player-left').then(observable => {
-            const subscription = observable.subscribe(data => observer.next(data));
-            return () => subscription.unsubscribe();
-        });
-    });
-}
-
-  public getRoom(roomId: string): Observable<any> {
-    return this.sendAndSubscribe("/app/get-room", roomId, "/topic/" + roomId + "/room-info", "/topic/" + roomId + "/error");
+  public playerJoined(roomId: string): Observable<PlayerDto> {
+    return this.observe('/topic/' + roomId + '/player-joined')
+  }
+                                    // receives only the id
+  public playerLeft(roomId: string): Observable<String> {
+    return this.observe('/topic/' + roomId + '/player-left')
   }
 
-  // Player Management
+  public getRoom(roomId: string): Observable<any> {
+    return this.sendAndObserve('/app/get-room', roomId, ['/user/queue/room-info'])
+  }
+
+  // Player Management //
+
   public playerReady(roomId: string, playerId: string) {
     this.send('/app/player-ready', {roomId, playerId});
   }
 
   public playerUnready(roomId: string, playerId: string) {
     this.send('/app/player-unready', {roomId, playerId});
+  }
+
+  public playerKicked(): Observable<void> {
+    return this.observe('/user/queue/kicked')
   }
 
   playerStatusUpdate(roomId: string): Observable<any> {

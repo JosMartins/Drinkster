@@ -1,9 +1,9 @@
-
-export interface Player {
+export interface PlayerDto {
   id: string;
   name: string;
-  sex: 'M' | 'F';
+  sex: string;
   isAdmin: boolean;
   isReady: boolean;
-  isPlaying: boolean;
+  isPlaying?: boolean
+
 }
