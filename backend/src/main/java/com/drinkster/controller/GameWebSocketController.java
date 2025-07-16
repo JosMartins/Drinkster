@@ -186,13 +186,12 @@ public class GameWebSocketController {
                         */
                         logger.info("{} {} - (processing) [challenge-{}] CHOSEN_DRINK not implemented yet", 
                                 getCurrentTime(), sessionId, action);
+                        break;
                 }
         
-                default -> { 
-                    logger.info("{} {} - (processing) [challenge-{}] Unhandled challenge type: {}", 
+                default -> logger.info("{} {} - (processing) [challenge-{}] Unhandled challenge type: {}",
                             getCurrentTime(), sessionId, action, currentTurn.getChallenge().getType());
-                    /*do nothing*/ 
-                }
+                            /*do nothing*/
             }
         
             if (currentTurn.allResponded()) {
@@ -279,7 +278,7 @@ public class GameWebSocketController {
         }
     }
 
-    /// HELPER ///
+    // HELPERS //
 
     /**
      * Sends the next challenge to all players in the specified game room and schedules a timeout event.
@@ -346,7 +345,8 @@ public class GameWebSocketController {
                 getCurrentTime(), roomID);
     }
 
-        /// TIMERS ///
+
+    // TIMERS //
 
     /**
      * Handles the timeout event for a challenge.
