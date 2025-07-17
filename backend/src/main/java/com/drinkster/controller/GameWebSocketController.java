@@ -105,7 +105,7 @@ public class GameWebSocketController {
                     getCurrentTime(), sessionId, roomId, e.getMessage());
                     
             this.messagingTemplate.convertAndSend("/topic/" + roomId + "/error",
-                    new ErrorResponse("400", e.getMessage()));
+                    new ErrorResponse(400, e.getMessage()));
         }
     }
 
@@ -207,7 +207,7 @@ public class GameWebSocketController {
                     boolean crossed = before / RandomEventService.SIPS_PER_GLASS < after / RandomEventService.SIPS_PER_GLASS;
 
                     if (crossed) {
-                        randomEventService.startGlassWindow(p.getId());
+                        randomEventService.startGlassWindow(p);
                     }
 
                 });

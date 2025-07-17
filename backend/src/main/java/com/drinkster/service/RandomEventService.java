@@ -1,5 +1,6 @@
 package com.drinkster.service;
 
+import com.drinkster.model.Player;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -11,7 +12,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -20,7 +20,7 @@ public class RandomEventService {
     public static final int SIPS_PER_GLASS = 20;
     private static final Duration GLASS_WINDOW         = Duration.ofMinutes(3);
     private static final Duration GLASS_POLL_INTERVAL  = Duration.ofSeconds(30);
-    private static final double   GLASS_REMINDER_CHANCE = 0.15;
+    private static final double   GLASS_REMINDER_CHANCE = 0.20;
 
 
     private static final String HOURLY_MSG = "It's been an hour! Drink a shot.";
@@ -29,7 +29,7 @@ public class RandomEventService {
             "Touch the floor and drink 2 sips!",
             "Everyone swap seats and drink 2 sip."
     );
-    private final Map<UUID, Instant> glassWindows = new ConcurrentHashMap<>();
+    private final Map<Player, Instant> glassWindows = new ConcurrentHashMap<>();
 
 
     private final RoomService roomService;
@@ -40,8 +40,8 @@ public class RandomEventService {
 
     @PostConstruct
     public void init() {
-        /* 1 ─ Hourly “drink a shot” event */
-        taskScheduler.scheduleAtFixedRate(this::sendHourlyEvent, Duration.ofHours(1));
+        /* 1 ─ 45min “drink a shot” event */
+        taskScheduler.scheduleAtFixedRate(this::sendHourlyEvent, Duration.ofMinutes(45));
 
         /* 2 ─ 3 % broadcast event every minute */
         taskScheduler.scheduleAtFixedRate(this::maybeBroadcastRandomEvent, Duration.ofMinutes(1));
@@ -51,15 +51,15 @@ public class RandomEventService {
 
     }
 
-    public void startGlassWindow(UUID playerId) {
-        glassWindows.put(playerId, Instant.now().plus(GLASS_WINDOW));
+    public void startGlassWindow(Player player) {
+        glassWindows.put(player, Instant.now().plus(GLASS_WINDOW));
     }
 
 
     private void sendHourlyEvent() {
         roomService.getRooms().forEach(room ->
                 room.getPlayers().forEach(player ->
-                        sendToPlayer(player.getId(), HOURLY_MSG)));
+                        sendToPlayer(player.getSocketId(), HOURLY_MSG)));
     }
 
     private void maybeBroadcastRandomEvent() {
@@ -67,24 +67,22 @@ public class RandomEventService {
             String text = RANDOM_BROADCASTS.get(rng.nextInt(RANDOM_BROADCASTS.size()));
             roomService.getRooms().forEach(room ->
                     room.getPlayers().forEach(player ->
-                            sendToPlayer(player.getId(), text)));
+                            sendToPlayer(player.getSocketId(), text)));
         }
     }
 
-    private void sendToPlayer(UUID playerId, String text) {
-        messagingTemplate.convertAndSend(
-                "/topic/" + playerId + "/random-event",
-                new EventPayload(text)
-        );
+    private void sendToPlayer(String sessionId, String text) {
+        messagingTemplate.convertAndSendToUser(sessionId, "/queue/random-event",
+                new EventPayload(text));
     }
 
     private void maybeSendGlassReminders() {
         Instant now = Instant.now();
-        glassWindows.forEach((playerId, expiresAt) -> {
+        glassWindows.forEach((player, expiresAt) -> {
             if (expiresAt.isBefore(now)) {
-                glassWindows.remove(playerId);              // window closed
+                glassWindows.remove(player);              // window closed
             } else if (rng.nextDouble() < GLASS_REMINDER_CHANCE) {
-                sendToPlayer(playerId,
+                sendToPlayer(player.getSocketId(),
                         "Your glass should be empty! If it isn't, drink it and refill.");
             }
         });

@@ -14,7 +14,6 @@ import com.drinkster.service.RoomService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -48,40 +47,45 @@ public class RoomWebSocketController {
 
     /**
      * Handles the request to get the list of rooms.
-     *
-     * @return a list of rooms.
      */
     @MessageMapping("/list-rooms")
-    @SendTo("/topic/rooms-list")
-    public RoomListResponse listRooms(SimpMessageHeaderAccessor headerAccessor) {
+    public void listRooms(SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor != null ? headerAccessor.getSessionId() : "unknown";
+        if (sessionId == null) {
+            logger.warn("{} - (warning) [listRooms] sessionId is null, cannot process request", getCurrentTime());
+            return; // Cannot proceed without a valid session ID
+        }
+
         logger.info("{} {} - (requested) [listRooms]", getCurrentTime(), sessionId);
-        
+
         RoomListResponse response = new RoomListResponse(
                 roomService.getRooms().stream()
                         .map(RoomListItemDto::fromGameRoom)
-                        .toList()
+                        .toArray(RoomListItemDto[]::new)
         );
         
         logger.info("{} {} - (response) [listRooms] returned {} rooms", 
-                getCurrentTime(), sessionId, response.rooms().size());
-        return response;
+                getCurrentTime(), sessionId, response.rooms().length);
+
+        messagingTemplate.convertAndSendToUser(sessionId, "/queue/room-list", response);
     }
 
     @MessageMapping("/get-room")
     public void getRoom(String roomId,
                         SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
+        if (sessionId == null) {
+            logger.warn("{} - (warning) [getRoom] sessionId is null, cannot process request", getCurrentTime());
+            return; // Cannot proceed without a valid session ID
+        }
+
         logger.info("{} {} - (requested) [getRoom] roomId: {}", getCurrentTime(), sessionId, roomId);
         
         try {
             UUID roomUUID = UUID.fromString(roomId);
             GameRoom room = roomService.getRoom(roomUUID);
-            
-            this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/room-info",
-                    GameRoomDto.fromGameRoom(room)
-            );
+
+            this.messagingTemplate.convertAndSendToUser(sessionId, "/queue/room-info", GameRoomDto.fromGameRoom(room));
             
             logger.info("{} {} - (response) [getRoom] sent room info for roomId: {}, players: {}", 
                     getCurrentTime(), sessionId, roomId, room.getPlayers().size());
@@ -89,21 +93,23 @@ public class RoomWebSocketController {
             logger.error("{} {} - (error) [getRoom] invalid roomId: {} - {}", 
                     getCurrentTime(), sessionId, roomId, e.getMessage());
             
-            this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/error",
+            this.messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    "/queue/room-error",
                     new ErrorResponse(
-                            "400", // Bad Request
-                            e.getMessage()
+                            400, // Bad Request
+                            "Invalid room ID format"
                     )
             );
-        } catch (NullPointerException e) {
+        } catch (NullPointerException _) {
             logger.error("{} {} - (error) [getRoom] room not found: {}", 
                     getCurrentTime(), sessionId, roomId);
             
-            this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomId + "/error",
+            this.messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    "/queue/room-error",
                     new ErrorResponse(
-                            "404", // Not Found
+                            404, // Not Found
                             "Room not found"
                     )
             );
@@ -115,9 +121,16 @@ public class RoomWebSocketController {
                                                 SimpMessageHeaderAccessor headerAccessor) {
 
         String sessionId = headerAccessor.getSessionId();
+
+        if (sessionId == null) {
+            logger.warn("{} - (warning) [createRoom] sessionId is null, cannot process request", getCurrentTime());
+            return; // Cannot proceed without a valid session ID
+        }
+
         logger.info("{} {} - (requested) [createRoom] name: {}, mode: {}, private: {}, player: {}", 
                 getCurrentTime(), sessionId, request.name(), request.mode(), request.isPrivate(), request.player().name());
-    
+
+
         try {
             Player admin = new Player(
                 request.player().name(),
@@ -138,17 +151,19 @@ public class RoomWebSocketController {
             logger.info("{} {} - (response) [createRoom] room created with id: {}, admin player id: {}", 
                     getCurrentTime(), sessionId, room.getId(), admin.getId());
     
-            messagingTemplate.convertAndSend("/topic/room-created", 
+            messagingTemplate.convertAndSendToUser(sessionId, "/queue/room-created",
                     new RoomCreatedResponse(room.getId().toString(), admin.getId().toString()));
-            this.listRooms(headerAccessor); // notify all clients about the new room
         } catch (IllegalArgumentException e) {
             logger.error("{} {} - (error) [createRoom] IllegalArgumentException: {}", 
                     getCurrentTime(), sessionId, e.getMessage());
-            messagingTemplate.convertAndSend("/topic/room-error", new ErrorResponse("400", e.getMessage()));
+            messagingTemplate.convertAndSendToUser(sessionId,"/queue/room-error" ,new ErrorResponse(400, e.getMessage()));
         } catch (NullPointerException e) {
             logger.error("{} {} - (error) [createRoom] NullPointerException: {}", 
                     getCurrentTime(), sessionId, e.getMessage());
-            messagingTemplate.convertAndSend("/topic/room-error", new ErrorResponse("400", "Missing required parameters"));
+            messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    "/queue/room-error",
+                    new ErrorResponse(404, "Missing required parameters"));
         }
     }
 
@@ -158,6 +173,11 @@ public class RoomWebSocketController {
                                SimpMessageHeaderAccessor headerAccessor) {
 
         String sessionId = headerAccessor.getSessionId();
+        if (sessionId == null) {
+            logger.warn("{} - (warning) [joinRoom] sessionId is null, cannot process request", getCurrentTime());
+            return; // Cannot proceed without a valid session ID
+        }
+
         logger.info("{} {} - (requested) [joinRoom] roomId: {}, player: {}", 
                 getCurrentTime(), sessionId, request.roomId(), request.playerConfig().name());
     
@@ -180,15 +200,25 @@ public class RoomWebSocketController {
                     "/topic/" + request.roomId() + "/player-joined",
                     PlayerDto.fromPlayer(joiner)
             );
+
+            this.messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    "/queue/join-confirm",
+                    new JoinResponse(
+                            "Successfully joined room",
+                            joiner.getId().toString()
+                    )
+            );
     
         } catch (IllegalArgumentException e) {
             logger.error("{} {} - (error) [joinRoom] failed to join room: {}, error: {}", 
                     getCurrentTime(), sessionId, request.roomId(), e.getMessage());
 
-            this.messagingTemplate.convertAndSend(
-                    "/topic/" + request.roomId() + "/error",
+            this.messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    "queue/join-error",
                     new ErrorResponse(
-                            "400", // Bad Request
+                            400, // Bad Request
                             e.getMessage()
                     )
             );
@@ -214,7 +244,7 @@ public class RoomWebSocketController {
             this.messagingTemplate.convertAndSend(
                     "/topic/" + request.roomId() + "/error",
                     new ErrorResponse(
-                            "400", // Bad Request
+                            400, // Bad Request
                             e.getMessage()
                     )
             );
@@ -225,6 +255,11 @@ public class RoomWebSocketController {
     public void playerReady(PlayerStatusUpdateRequest request,
                                     SimpMessageHeaderAccessor headerAccessor){
         String sessionId = headerAccessor.getSessionId();
+        if (sessionId == null) {
+            logger.warn("{} - (warning) [playerReady] sessionId is null, cannot process request", getCurrentTime());
+            return; // Cannot proceed without a valid session ID
+        }
+
         logger.info("{} {} - (requested) [playerReady] roomId: {}, playerId: {}", 
                 getCurrentTime(), sessionId, request.roomId(), request.playerId());
                 
@@ -240,14 +275,21 @@ public class RoomWebSocketController {
                     "/topic/" + request.roomId() + "/player-status-update",
                     new PlayerStatusResponse(request.playerId(), true)
             );
+
+            this.messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    "/queue/player-ready",
+                    true
+            );
+
         } catch (IllegalArgumentException e) {
             logger.error("{} {} - (error) [playerReady] failed to set player ready: {}, playerId: {}, error: {}", 
                     getCurrentTime(), sessionId, request.roomId(), request.playerId(), e.getMessage());
                     
-            this.messagingTemplate.convertAndSend(
-                    "/topic/" + request.roomId() + "/error",
+            this.messagingTemplate.convertAndSendToUser(sessionId,
+                    "/queue/player-error",
                     new ErrorResponse(
-                            "400", // Bad Request
+                            400, // Bad Request
                             e.getMessage()
                     )
             );
@@ -257,6 +299,16 @@ public class RoomWebSocketController {
     @MessageMapping("/player-unready")
     public void playerUnready(PlayerStatusUpdateRequest request,
                                     SimpMessageHeaderAccessor headerAccessor){
+        String sessionId = headerAccessor.getSessionId();
+
+        if (sessionId == null) {
+            logger.warn("{} - (warning) [playerUnready] sessionId is null, cannot process request", getCurrentTime());
+            return;
+        }
+
+        logger.info("{} {} - (requested) [playerUnready] roomId: {}, playerId: {}",
+                getCurrentTime(), sessionId, request.roomId(), request.playerId());
+
         try {
             UUID roomUUID = UUID.fromString(request.roomId());
             UUID playerUUID = UUID.fromString(request.playerId());
@@ -266,11 +318,17 @@ public class RoomWebSocketController {
                     "/topic/" + request.roomId() + "/player-status-update",
                     new PlayerStatusResponse(request.playerId(), false)
             );
+
+            this.messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    "/queue/player-status-update",
+                    false
+            );
         } catch (IllegalArgumentException e) {
-            this.messagingTemplate.convertAndSend(
-                    "/topic/" + request.roomId() + "/error",
+            this.messagingTemplate.convertAndSendToUser(sessionId,
+                    "/queue/player-error",
                     new ErrorResponse(
-                            "400", // Bad Request
+                            400, // Bad Request
                             e.getMessage()
                     )
             );
@@ -282,12 +340,18 @@ public class RoomWebSocketController {
     public void handleAdminKickPlayer(LeaveRequest request,
                                               SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
+        if (sessionId == null) {
+            logger.warn("{} - (warning) [adminKickPlayer] sessionId is null, cannot process request", getCurrentTime());
+            return; // Cannot proceed without a valid session ID
+        }
+
         logger.info("{} {} - (requested) [adminKickPlayer] roomId: {}, playerId: {}", 
                 getCurrentTime(), sessionId, request.roomId(), request.playerId());
                 
         try {
             UUID roomUUID = UUID.fromString(request.roomId());
             UUID playerUUID = UUID.fromString(request.playerId());
+            String playerSocket = roomService.getRoom(roomUUID).getPlayer(playerUUID).getSocketId();
             roomService.kickPlayer(roomUUID, playerUUID, sessionId);
     
             logger.info("{} {} - (response) [adminKickPlayer] player kicked from room: playerId: {}, roomId: {}", 
@@ -297,14 +361,19 @@ public class RoomWebSocketController {
                     "/topic/" + request.roomId() + "/player-left",
                     request.playerId()
             );
+
+            this.messagingTemplate.convertAndSendToUser(playerSocket,
+                    "/queue/kicked",
+                    "You have been kicked from the room by the admin."
+            );
         } catch (IllegalArgumentException e) {
             logger.error("{} {} - (error) [adminKickPlayer] failed to kick player: {}, playerId: {}, error: {}", 
                     getCurrentTime(), sessionId, request.roomId(), request.playerId(), e.getMessage());
                     
-            this.messagingTemplate.convertAndSend(
-                    "/topic/" + request.roomId() + "/error",
+            this.messagingTemplate.convertAndSendToUser(sessionId,
+                    "/queue/error",
                     new ErrorResponse(
-                            "400", // Bad Request
+                            400, // Bad Request
                             e.getMessage()
                     )
             );
@@ -314,20 +383,25 @@ public class RoomWebSocketController {
     @MessageMapping("/get-player-difficulty")
     public void handleGetPlayerDifficulty(PlayerDifficultyRequest request,
                                           SimpMessageHeaderAccessor headerAccessor) {
+        String sessionId = headerAccessor.getSessionId();
+        if (sessionId == null) {
+            logger.warn("{} - (warning) [getPlayerDifficulty] sessionId is null, cannot process request", getCurrentTime());
+            return; // Cannot proceed without a valid session ID
+        }
         try {
             UUID roomUUID = UUID.fromString(request.roomId());
             UUID playerUUID = UUID.fromString(request.playerId());
 
             DifficultyDto diff = roomService.getPlayerDifficulty(roomUUID, playerUUID, headerAccessor.getSessionId());
-            this.messagingTemplate.convertAndSend(
-                    "/topic/" + roomService.getAdmin(roomUUID).getId().toString() + "/difficulty",
+            this.messagingTemplate.convertAndSendToUser(sessionId,
+                    "/queue/player-difficulty",
                     diff
             );
         } catch (IllegalArgumentException e) {
-            this.messagingTemplate.convertAndSend(
-                    "/topic/" + request.roomId() + "/error",
+            this.messagingTemplate.convertAndSendToUser(sessionId,
+                    "/queue/player-error",
                     new ErrorResponse(
-                            "400", // Bad Request
+                            400, // Bad Request
                             e.getMessage()
                     )
             );
@@ -340,7 +414,11 @@ public class RoomWebSocketController {
         String sessionId = headerAccessor.getSessionId();
         logger.info("{} {} - (requested) [changeDifficulty] roomId: {}, playerId: {}", 
                 getCurrentTime(), sessionId, request.roomId(), request.playerId());
-                
+
+        if (sessionId == null) {
+            logger.warn("{} - (warning) [changeDifficulty] sessionId is null, cannot process request", getCurrentTime());
+            return; // Cannot proceed without a valid session ID
+        }
         try {
             UUID roomUUID = UUID.fromString(request.roomId());
             UUID playerUUID = UUID.fromString(request.playerId());
@@ -351,22 +429,22 @@ public class RoomWebSocketController {
                     sessionId
             );
             
-            String adminId = roomService.getAdmin(roomUUID).getId().toString();
+            String adminId = roomService.getAdmin(roomUUID).getSocketId();
             logger.info("{} {} - (response) [changeDifficulty] difficulty changed for player: {}, notifying admin: {}", 
                     getCurrentTime(), sessionId, request.playerId(), adminId);
     
-            this.messagingTemplate.convertAndSend(
-                    "/topic/" + adminId + "/difficulty-changed",
+            this.messagingTemplate.convertAndSendToUser(adminId,
+                    "/queue/difficulty-changed",
                     DifficultyDto.fromDifficultyValues(newDiff)
             );
         } catch (IllegalArgumentException e) {
             logger.error("{} {} - (error) [changeDifficulty] failed to change difficulty: {}, playerId: {}, error: {}", 
                     getCurrentTime(), sessionId, request.roomId(), request.playerId(), e.getMessage());
                     
-            this.messagingTemplate.convertAndSend(
+            this.messagingTemplate.convertAndSendToUser(sessionId,
                     "/topic/" + request.roomId() + "/error",
                     new ErrorResponse(
-                            "400", // Bad Request
+                            400, // Bad Request
                             e.getMessage()
                     )
             );
@@ -380,6 +458,11 @@ public class RoomWebSocketController {
     @MessageMapping("/restore-session")
     public void restoreSession(SessionRestoreRequest request, SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
+        if (sessionId == null) {
+            logger.warn("{} - (warning) [restoreSession] sessionId is null, cannot process request", getCurrentTime());
+            return; // Cannot proceed without a valid session ID
+        }
+
         logger.info("{} {} - (requested) [restoreSession] roomId: {}, playerId: {}", 
                 getCurrentTime(), sessionId, request.roomId(), request.playerId());
     
@@ -391,17 +474,17 @@ public class RoomWebSocketController {
             logger.info("{} {} - (response) [restoreSession] session restored successfully for player: {}, room: {}", 
                     getCurrentTime(), sessionId, request.playerId(), request.roomId());
                     
-            this.messagingTemplate.convertAndSend(
-                    "/topic/" + request.playerId() + "/session-restored",
+            this.messagingTemplate.convertAndSendToUser(sessionId,
+                    "/queue/session-restored",
                     resp);
         } catch (IllegalArgumentException | NullPointerException e) {
             logger.error("{} {} - (error) [restoreSession] failed to restore session: roomId: {}, playerId: {}, error: {}", 
                     getCurrentTime(), sessionId, request.roomId(), request.playerId(), e.getMessage());
                     
-            this.messagingTemplate.convertAndSend(
-                    "/topic/" + request.playerId() + "/session-not-found",
+            this.messagingTemplate.convertAndSendToUser(sessionId,
+                    "/queue/session-error",
                     new ErrorResponse(
-                            "404", 
+                            404,
                             "Session not found"
                     )
             );

@@ -5,4 +5,5 @@ export interface Player {
   sex: 'M' | 'F';
   isAdmin: boolean;
   isReady: boolean;
+  isPlaying: boolean;
 }
