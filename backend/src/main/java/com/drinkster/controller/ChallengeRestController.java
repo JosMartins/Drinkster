@@ -7,6 +7,7 @@ import com.drinkster.model.Penalty;
 import com.drinkster.model.enums.ChallengeType;
 import com.drinkster.model.enums.Difficulty;
 import com.drinkster.model.enums.Sex;
+import com.drinkster.service.ApiKeyService;
 import com.drinkster.service.ChallengeService;
 
 import java.net.URI;
@@ -29,16 +30,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/challenges")
 public class ChallengeRestController {
     private static final String API_KEY_HEADER = "X-API-Key";
-    // This is a placeholder for the actual API key validation logic (remove ASAP)
-    private static final String VALID_API_KEY = "secure-api-key";
-
+    private final ApiKeyService apiKeyService;
     private final ChallengeService challengeService;
-
     private final Map<String, Instant> challengeLock = new ConcurrentHashMap<>();
     private final TaskScheduler taskScheduler;
 
 
-    public ChallengeRestController(ChallengeService challengeService, TaskScheduler taskScheduler) {
+    public ChallengeRestController(ApiKeyService apiKeyService,
+                                   ChallengeService challengeService,
+                                   TaskScheduler taskScheduler) {
+        this.apiKeyService = apiKeyService;
         this.challengeService = challengeService;
         this.taskScheduler = taskScheduler;
     }
@@ -55,7 +56,7 @@ public class ChallengeRestController {
         }
 
 
-        if (!VALID_API_KEY.equals(apiKey)) {
+        if (!apiKeyService.isValidApiKey(apiKey)) {
             return ResponseEntity.status(401).body("Invalid API key");
         }
 
@@ -63,7 +64,7 @@ public class ChallengeRestController {
             challengeLock.put(requestFingerprint, Instant.now());
 
             List<Sex> challengeSexes;
-            if (challengeRequest.sexes() == null) {
+            if (challengeRequest.sexes() != null) {
                 challengeSexes = Arrays.stream(challengeRequest.sexes())
                                    .map(Sex::valueOf)
                                    .collect(Collectors.toList());
