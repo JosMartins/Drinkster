@@ -144,7 +144,7 @@ public class GameWebSocketController {
             messagingTemplate.convertAndSendToUser(
                     sessionId,
                     "/queue/" + sessionId + "/error",
-                    new ErrorResponse("429", "Too many actions")
+                    new ErrorResponse(429, "Too many actions")
             );
             return;
         }
@@ -165,7 +165,8 @@ public class GameWebSocketController {
             }
         
             //if the player is affected by the challenge, and if the player's socketId is the same as the one in the payload
-            if (!currentTurn.getAffectedPlayers().isEmpty() && currentTurn.getAffectedPlayers().stream().noneMatch(p -> p.getId().equals(playerUUID) && p.getSocketId().equals(sessionId))) {
+            if (!currentTurn.getAffectedPlayers().isEmpty() &&
+                    currentTurn.getAffectedPlayers().stream().noneMatch(p -> p.getId().equals(playerUUID) && p.getSocketId().equals(sessionId))) {
                 logger.error("{} {} - (error) [challenge-{}] Player not affected by the challenge: playerId: {}, roomId: {}", 
                         getCurrentTime(), sessionId, action, playerUUID, roomUUID);
                 throw new IllegalArgumentException("Player not affected by the challenge");
@@ -232,13 +233,13 @@ public class GameWebSocketController {
                     getCurrentTime(), sessionId, action, e.getMessage());
                     
             messagingTemplate.convertAndSend("/topic/" + playerId + "/error",
-                    new ErrorResponse("400", e.getMessage()));
+                    new ErrorResponse(400, e.getMessage()));
         } catch (NullPointerException e) {
             logger.error("{} {} - (error) [challenge-{}] NullPointerException: {}", 
                     getCurrentTime(), sessionId, action, e.getMessage());
                     
             messagingTemplate.convertAndSend("/topic/" + playerId + "/error",
-                    new ErrorResponse("400", "Missing required parameters"));
+                    new ErrorResponse(400, "Missing required parameters"));
         }
 
     }
@@ -267,13 +268,13 @@ public class GameWebSocketController {
                     getCurrentTime(), sessionId, e.getMessage());
                     
             messagingTemplate.convertAndSend("/topic/" + roomId + "/error",
-                    new ErrorResponse("400", e.getMessage()));
+                    new ErrorResponse(400, e.getMessage()));
         } catch (NullPointerException e) {
             logger.error("{} {} - (error) [adminForceSkip] NullPointerException: {}", 
                     getCurrentTime(), sessionId, e.getMessage());
                     
             messagingTemplate.convertAndSend("/topic/" + roomId + "/error",
-                    new ErrorResponse("400", "Missing required parameters"));
+                    new ErrorResponse(400, "Missing required parameters"));
         }
     }
 
