@@ -27,7 +27,7 @@ class AiRequestServiceTest {
 
     @Test
     void testNsfwChallengeRequest() {
-        String response = aiRequestService.getNsfwChallenge("hard");
+        String response = aiRequestService.getNsfwChallenge(); //can only be extreme
 
         assertNotNull(response);
         assertFalse(response.isEmpty());

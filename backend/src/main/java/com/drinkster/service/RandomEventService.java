@@ -24,7 +24,7 @@ public class RandomEventService {
 
 
     private static final String HOURLY_MSG = "It's been an hour! Drink a shot.";
-    private static final double BROADCAST_CHANCE = 0.03;          // 3 %
+    private static final double BROADCAST_CHANCE = 0.15;          // 15 %
     private static final List<String> RANDOM_BROADCASTS = List.of(
             "Touch the floor and drink 2 sips!",
             "Everyone swap seats and drink 2 sip."

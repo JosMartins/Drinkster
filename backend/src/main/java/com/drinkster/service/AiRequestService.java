@@ -24,7 +24,7 @@ public class AiRequestService {
     private static final String SFW_URL = "https://api.openai.com/v1/chat/completions";
     private static final String NSFW_URL = "https://openrouter.ai/api/v1/chat/completions";
     private static final String SFW_MODEL = "gpt-4.1-mini";
-    private static final String NSFW_MODEL = "gryphe/mythomax-l2-13b";
+    private static final String NSFW_MODEL = "x-ai/grok-4";
 
 
 
@@ -60,14 +60,14 @@ public class AiRequestService {
     }
 
     public String getSfwChallenge(String difficulty) {
-        String apiKey = System.getenv("OPENAI_API_KEY");
+        String apiKey = System.getenv("SFW_API_KEY");
         String prompt = getPrompt(difficulty, false);
         return sendPostRequest(SFW_URL, apiKey, SFW_MODEL, prompt);
     }
 
-    public String getNsfwChallenge(String difficulty) {
-        String apiKey = System.getenv("OPENROUTER_API_KEY");
-        String prompt = getPrompt(difficulty, true);
+    public String getNsfwChallenge() { // can only be extreme, no need for parameter
+        String apiKey = System.getenv("NSFW_API_KEY");
+        String prompt = getPrompt("extreme", true);
         return sendPostRequest(NSFW_URL, apiKey, NSFW_MODEL, prompt);
     }
 
