@@ -31,9 +31,9 @@ Notes:
   - medium: 4–9
   - hard: 7–11
 - "type":
-    - "YOU_DRINK": only 1 player must drink if the challenge was not completed.;
-    - "BOTH_DRINK": both involved players drink if the challenge was not completed.;
-    - "EVERYONE_DRINK": All players drink if the challenge was not completed, but it can be just some players drinking. Only used when players = 0.;
+    - "YOU_DRINK": only the active player drinks.;
+    - "BOTH_DRINK": both involved players drink. Only valid when players = 2.;
+    - "EVERYONE_DRINK": all players drink. Only used when players = 0.;
     - "CHOSEN_DRINK": the player performing the challenge selects someone to drink.
 - "penalty": only include if the challenge has a consequence that lasts multiple rounds (e.g., "draw on face for 3 rounds").
 

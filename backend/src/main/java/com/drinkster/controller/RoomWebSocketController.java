@@ -101,7 +101,7 @@ public class RoomWebSocketController {
                             "Invalid room ID format"
                     )
             );
-        } catch (NullPointerException _) {
+        } catch (NullPointerException e) {
             logger.error("{} {} - (error) [getRoom] room not found: {}", 
                     getCurrentTime(), sessionId, roomId);
             
@@ -452,7 +452,7 @@ public class RoomWebSocketController {
     }
 
 
-    /// SESSION RESTORE ///
+    // SESSION RESTORE //
 
 
     @MessageMapping("/restore-session")

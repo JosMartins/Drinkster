@@ -13,7 +13,7 @@ public class ApiKeyService {
     private final Set<String> validApiKeys;
     private final SecureRandom random = new SecureRandom();
 
-    public ApiKeyService(@Value("${drinkster.api.keys}") String[] keys) {
+    public ApiKeyService(@Value("${DRINKSTER_API_KEYS}") String[] keys) {
         this.validApiKeys = Set.of(keys);
     }
 
