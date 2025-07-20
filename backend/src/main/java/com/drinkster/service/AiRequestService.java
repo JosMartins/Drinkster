@@ -20,8 +20,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class AiRequestService {
-    private static final String SFW_PROMPT_FILE = "classpath:prompts/sfw_prompts.txt";
-    private static final String NSFW_PROMPT_FILE = "classpath:prompts/nsfw_prompts.txt";
 
     private static final String SFW_URL = "https://api.openai.com/v1/chat/completions";
     private static final String NSFW_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -47,7 +45,9 @@ public class AiRequestService {
      * @return a formatted prompt string
      */
     public String getPrompt(String difficulty, boolean nsfw) {
-        String path = nsfw ? NSFW_PROMPT_FILE : SFW_PROMPT_FILE;
+        String path = nsfw ? "classpath:prompts/nsfw_prompt.txt"
+                : "classpath:prompts/sfw_prompt.txt";
+
         Resource resource = resourceLoader.getResource(path);
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
