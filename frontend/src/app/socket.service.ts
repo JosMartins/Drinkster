@@ -9,7 +9,7 @@ import {
   EMPTY,
   merge,
   takeUntil,
-  throwError, Subject
+  throwError, Subject, mergeMap, of
 } from 'rxjs';
 import SockJS from 'sockjs-client';
 import { Client, Stomp } from '@stomp/stompjs';
@@ -24,6 +24,7 @@ import {GameRoomDto} from "./models/dto/GameRoom.dto";
 import {RoomListDto} from "./models/dto/RoomList.dto";
 import {RoomCreateResponseDto} from "./models/dto/RoomCreateResponse.dto";
 import {RoomJoinDto} from "./models/dto/RoomJoin.dto";
+import {AckDto} from "./models/dto/Ack.dto";
 
 @Injectable({
   providedIn: 'root'
@@ -253,8 +254,18 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
     return this.observe('/topic/' + roomId + '/player-left')
   }
 
-  public getRoom(roomId: string): Observable<GameRoomDto | ErrorDto> {
-    return this.sendAndObserve('/app/get-room', roomId, ['/user/queue/room-info', '/user/queue/room-error']);
+  public getRoom(roomId: string): Observable<GameRoomDto> {
+    return this.sendAndObserve<GameRoomDto | ErrorDto>('/app/get-room', roomId, [
+      '/user/queue/room-info',
+      '/user/queue/room-error'
+    ]).pipe(
+      mergeMap(response => {
+        if ('code' in response) {
+          return throwError(() => response);
+        }
+        return of(response as GameRoomDto);
+      })
+    );
   }
 
   // Player Management //
@@ -271,8 +282,7 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
     return this.observe('/user/queue/kicked')
   }
 
-    //TODO check backend
-  public playerStatusUpdate(roomId: string): Observable<{id: string, status: string}> {
+  public playerStatusUpdate(roomId: string): Observable<{id: string, status: boolean}> {
     return this.observe('/topic/' + roomId + '/player-status-update');
 
   }
@@ -305,15 +315,15 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
   }
 
 
-  public challengeCompleted(roomId: string, playerId: string): void {
-    this.send('/app/challenge-completed', {roomId, playerId});
+  public challengeCompleted(roomId: string, playerId: string): Observable<AckDto | ErrorDto> {
+    return this.sendAndObserve('app/challenge-drunk', {roomId , playerId}, ['/user/queue/ack', '/user/queue/challenge-error'])
   }
 
-  public challengeDrunk(roomId: string, playerId: string): void {
-    this.send('/app/challenge-drunk', {roomId, playerId});
+  public challengeDrunk(roomId: string, playerId: string): Observable<AckDto | ErrorDto> {
+    return this.sendAndObserve('app/challenge-drunk', {roomId , playerId}, ['/user/queue/ack', '/user/queue/challenge-error'])
   }
 
-  public randomEvent(playerId: string): Observable<EventDto> {
+  public randomEvent(): Observable<EventDto> {
     return this.observe('/user/queue/random-event');
   }
 
@@ -322,13 +332,9 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
   }
 
   // Error Handling //
-  public handleError() {
-    return this.observe('/user/queue/error').pipe(
-      catchError(err => {
-        console.error('Error received from server:', err);
-        return throwError(() => new Error('Server error'));
-      })
-    );
+  public handleError(error: any): Observable<never> {
+    console.error("Backend error:", error);
+    return throwError(() => error);
   }
 
   // Session Data

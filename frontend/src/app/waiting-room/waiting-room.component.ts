@@ -42,7 +42,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     private readonly dialog: MatDialog
   ) {   }
 
-  
+
   ngOnInit() {
     const storedId = this.io.getData('roomId');
     const playerId = this.io.getData('playerId');
@@ -60,10 +60,10 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
     //Player Status Update (ready/unready)
     this.subscriptions.push(
-      this.io.playerStatusUpdate(this.roomId).subscribe(({playerId, isReady}) => {
-        console.log('Player status update:', playerId, isReady);
-        const player = this.players.find((p) => p.id === playerId);
-        if (player) player.isReady = isReady;
+      this.io.playerStatusUpdate(this.roomId).subscribe(({id, status}) => {
+        console.log('Player status update:', id, status);
+        const player = this.players.find((p) => p.id === id);
+        if (player) player.isReady = status;
       }),
 
       //Player Joined
@@ -81,11 +81,12 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       }),
 
       //Player Left
-      this.io.playerLeft(this.roomId).subscribe((leftId: string) => {
-        console.log('Player left:', leftId);
-        this.players = this.players.filter(p => p.id !== leftId);
-      }),
+      this.io.playerLeft(this.roomId).subscribe(id => this.players.filter(p => p.id !== id)),
 
+      this.io.playerKicked().subscribe(_ => {
+        alert("You Have been Kicked.");
+        this.router.navigate(['/multiplayer']).then()
+      }),
       //Game Start
       this.io.gameStarted(this.roomId).subscribe(() => {
         console.log('Game started');
@@ -148,7 +149,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const playerDifficulty = await firstValueFrom(this.io.getPlayerDifficulty(this.roomId, player.id, this.self.id));
+    const playerDifficulty = await firstValueFrom(this.io.getPlayerDifficulty(this.roomId, player.id));
 
     const dialogRef = this.dialog.open(DifficultyDialogComponent, {
       data: {
@@ -180,18 +181,31 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
 
   private async initAsync() {
-    const roomInfo = await firstValueFrom(this.io.getRoom(this.roomId));
-    if (roomInfo.roomId !== this.roomId) {
-      this.roomId = roomInfo.roomId;
-      this.io.deleteData('roomId');
-      this.io.saveData('roomId', this.roomId);
-    }
-    this.roomName = roomInfo.roomName;
-    this.gameMode = roomInfo.roomMode;
-    this.players = roomInfo.players;
-    this.rememberedChallenges = roomInfo.rememberedChallenges;
-    this.showChallenges = roomInfo.showChallenges;
+    try {
+      const roomInfo = await firstValueFrom(this.io.getRoom(this.roomId));
 
-    this.self = this.players.find(player => player.id === this.currentPlayerId);
+      // Only successful GameRoomDto reaches here
+      if (roomInfo.roomId !== this.roomId) {
+        this.roomId = roomInfo.roomId;
+        this.io.deleteData('roomId');
+        this.io.saveData('roomId', this.roomId);
+      }
+      // ... rest of success logic
+
+    } catch (error: any) {
+      // Handle both backend errors and transport errors
+      console.error('Room fetch failed:', error);
+
+      if (error.code) {
+        // Backend error (ErrorDto)
+        alert(`Error ${error.code}: ${error.message}`);
+      } else {
+        // Transport error
+        alert('Network connection failed');
+      }
+
+      this.router.navigate(['/multiplayer']).then();
+    }
   }
+
 }
