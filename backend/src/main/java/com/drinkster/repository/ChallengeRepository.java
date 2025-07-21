@@ -12,10 +12,8 @@ import java.util.UUID;
 
 public interface ChallengeRepository extends JpaRepository<Challenge, UUID> {
 
-    Challenge findByText(String text);
     List<Challenge> findByDifficulty(Difficulty difficulty);
     void deleteById(@NonNull UUID id);
-    void deleteByText(String text);
     int countByDifficulty(Difficulty difficulty);
 
     @Query(value = "SELECT COUNT(c) FROM Challenge c")

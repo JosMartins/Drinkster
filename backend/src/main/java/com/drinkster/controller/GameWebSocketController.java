@@ -83,8 +83,13 @@ public class GameWebSocketController {
 
     @MessageMapping("/start-game")
     public void handleStartGame(String roomId,
-                                        SimpMessageHeaderAccessor headerAccessor) {
+                                SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
+        if (sessionId == null) {
+            logger.warn("{} unknown - (error) [startGame] No sessionId provided", getCurrentTime());
+            return;
+        }
+
         logger.info("{} {} - (requested) [startGame] roomId: {}", getCurrentTime(), sessionId, roomId);
         
         try {
@@ -104,7 +109,7 @@ public class GameWebSocketController {
             logger.error("{} {} - (error) [startGame] failed to start game for room: {}, error: {}", 
                     getCurrentTime(), sessionId, roomId, e.getMessage());
                     
-            this.messagingTemplate.convertAndSend("/topic/" + roomId + "/error",
+            this.messagingTemplate.convertAndSendToUser(sessionId, "/queue/error",
                     new ErrorResponse(400, e.getMessage()));
         }
     }
