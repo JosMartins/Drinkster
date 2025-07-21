@@ -46,3 +46,6 @@ certbot
 
 # docker-compose (configured for local)
 */docker-compose.yaml
+
+# Env
+**/.env

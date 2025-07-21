@@ -12,6 +12,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ErrorResponse> handleDatabaseError(DataAccessException ex) {
         return ResponseEntity.status(500)
-                .body(new ErrorResponse("DATABASE_ERROR", ex.getLocalizedMessage()));
+                .body(new ErrorResponse(601, ex.getLocalizedMessage()));
     }
 }
