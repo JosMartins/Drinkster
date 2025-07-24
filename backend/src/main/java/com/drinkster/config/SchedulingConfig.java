@@ -8,6 +8,12 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 @Configuration
 public class SchedulingConfig {
 
+    /**
+     * Configures a TaskScheduler bean with a thread pool size of 5.
+     * This scheduler can be used for scheduling tasks asynchronously.
+     *
+     * @return a TaskScheduler instance
+     */
     @Bean
     public TaskScheduler taskScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();

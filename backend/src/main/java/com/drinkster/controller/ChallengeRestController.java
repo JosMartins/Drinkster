@@ -25,6 +25,11 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * ChallengeRestController handles HTTP requests related to challenges.
+ * It provides endpoints for adding new challenges and ensures that requests are authenticated
+ * using an API key.
+ */
 @Validated
 @RestController
 @RequestMapping("/api/challenges")
@@ -36,6 +41,13 @@ public class ChallengeRestController {
     private final TaskScheduler taskScheduler;
 
 
+    /**
+     * Constructs a ChallengeRestController with the required services.
+     *
+     * @param apiKeyService the service for API key validation
+     * @param challengeService the service for managing challenges
+     * @param taskScheduler the scheduler for scheduling tasks
+     */
     public ChallengeRestController(ApiKeyService apiKeyService,
                                    ChallengeService challengeService,
                                    TaskScheduler taskScheduler) {
@@ -44,6 +56,13 @@ public class ChallengeRestController {
         this.taskScheduler = taskScheduler;
     }
 
+    /**
+     * Adds a new challenge to the system.
+     *
+     * @param apiKey the API key for authentication
+     * @param challengeRequest the request body containing challenge details
+     * @return ResponseEntity with the created challenge or an error message
+     */
     @PostMapping
     public ResponseEntity<?> addChallenge(
             @RequestHeader(name = API_KEY_HEADER) String apiKey,

@@ -22,6 +22,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+/**
+ * RoomWebSocketController handles WebSocket messages related to game rooms.
+ * It provides methods for listing rooms, getting room information, creating rooms,
+ * joining and leaving rooms, and managing player statuses.
+ */
 @Controller
 public class RoomWebSocketController {
 
@@ -37,16 +42,23 @@ public class RoomWebSocketController {
         logger.info("{} - (initialized) [RoomWebSocketController]", getCurrentTime());
     }
     
+
     /**
-     * Gets the current time formatted as a string
-     * @return formatted current time
+     * Returns the current time formatted as a string.
+     * This method is used for logging purposes to include timestamps in log messages.
+     *
+     * @return the current time as a formatted string
      */
     private String getCurrentTime() {
         return LocalDateTime.now().format(formatter);
     }
 
+
     /**
-     * Handles the request to get the list of rooms.
+     * Handles the request to list all available rooms.
+     * This method is called when a player requests to see the list of rooms.
+     *
+     * @param headerAccessor the SimpMessageHeaderAccessor to access session information
      */
     @MessageMapping("/list-rooms")
     public void listRooms(SimpMessageHeaderAccessor headerAccessor) {
@@ -70,6 +82,13 @@ public class RoomWebSocketController {
         messagingTemplate.convertAndSendToUser(sessionId, "/queue/room-list", response);
     }
 
+    /**
+     * Handles the request to get information about a specific room.
+     * This method is called when a player requests information about a room by its ID.
+     *
+     * @param roomId the ID of the room to retrieve
+     * @param headerAccessor the SimpMessageHeaderAccessor to access session information
+     */
     @MessageMapping("/get-room")
     public void getRoom(String roomId,
                         SimpMessageHeaderAccessor headerAccessor) {
@@ -116,6 +135,13 @@ public class RoomWebSocketController {
         }
     }
 
+    /**
+     * Handles the request to create a new room.
+     * This method is called when a player requests to create a new game room.
+     *
+     * @param request the create room request containing room details
+     * @param headerAccessor the SimpMessageHeaderAccessor to access session information
+     */
     @MessageMapping("/create-room")
     public void handleCreateRoom(CreateRoomRequest request,
                                                 SimpMessageHeaderAccessor headerAccessor) {
@@ -167,7 +193,13 @@ public class RoomWebSocketController {
         }
     }
 
-
+    /**
+     * Handles the request to join a room.
+     * This method is called when a player requests to join a room.
+     *
+     * @param request the join request containing roomId and playerConfig
+     * @param headerAccessor the SimpMessageHeaderAccessor to access session information
+     */
     @MessageMapping("/join-room")
     public void handleJoinRoom(JoinRequest request,
                                SimpMessageHeaderAccessor headerAccessor) {
@@ -225,13 +257,32 @@ public class RoomWebSocketController {
         }
     }
 
+    /**
+     * Handles the request to leave a room.
+     * This method is called when a player requests to leave a room.
+     *
+     * @param request the leave request containing roomId and playerId
+     * @param headerAccessor the SimpMessageHeaderAccessor to access session information
+     */
     @MessageMapping("/leave-room")
     public void handleLeaveRoom(LeaveRequest request,
                                 SimpMessageHeaderAccessor headerAccessor) {
+        String sessionId = headerAccessor.getSessionId();
+        if (sessionId == null) {
+            logger.warn("{} - (warning) [leaveRoom] sessionId is null, cannot process request", getCurrentTime());
+            return; // Cannot proceed without a valid session ID
+        }
+
         try {
             UUID roomUUID = UUID.fromString(request.roomId());
             UUID playerUUID = UUID.fromString(request.playerId());
             roomService.leaveRoom(roomUUID, playerUUID, headerAccessor.getSessionId());
+
+            this.messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    "/queue/leave-confirm",
+                    true
+            );
 
             this.messagingTemplate.convertAndSend(
                     "/topic/" + request.roomId() + "/player-left",
@@ -241,8 +292,9 @@ public class RoomWebSocketController {
             logger.error("{} {} - (error) [adminKickPlayer] failed to kick player: {}, playerId: {}, error: {}", 
                     getCurrentTime(), headerAccessor.getSessionId(), request.roomId(), request.playerId(), e.getMessage());
                     
-            this.messagingTemplate.convertAndSend(
-                    "/topic/" + request.roomId() + "/error",
+            this.messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    "/queue/leave-error",
                     new ErrorResponse(
                             400, // Bad Request
                             e.getMessage()
@@ -251,6 +303,13 @@ public class RoomWebSocketController {
         }
     }
 
+    /**
+     * Handles the request to mark a player as ready in a room.
+     * This method is called when a player requests to change their status to ready.
+     *
+     * @param request the player status update request containing roomId and playerId
+     * @param headerAccessor the SimpMessageHeaderAccessor to access session information
+     */
     @MessageMapping("/player-ready")
     public void playerReady(PlayerStatusUpdateRequest request,
                                     SimpMessageHeaderAccessor headerAccessor){
@@ -296,6 +355,13 @@ public class RoomWebSocketController {
         }
     }
 
+    /**
+     * Handles the request to mark a player as unready in a room.
+     * This method is called when a player requests to change their status to unready.
+     *
+     * @param request the player status update request containing roomId and playerId
+     * @param headerAccessor the SimpMessageHeaderAccessor to access session information
+     */
     @MessageMapping("/player-unready")
     public void playerUnready(PlayerStatusUpdateRequest request,
                                     SimpMessageHeaderAccessor headerAccessor){
@@ -321,7 +387,7 @@ public class RoomWebSocketController {
 
             this.messagingTemplate.convertAndSendToUser(
                     sessionId,
-                    "/queue/player-status-update",
+                    "/queue/player-unready",
                     false
             );
         } catch (IllegalArgumentException e) {
@@ -336,6 +402,13 @@ public class RoomWebSocketController {
 
     }
 
+    /**
+     * Handles the request to kick a player from a room by an admin.
+     * This method is called when an admin requests to remove a player from a room.
+     *
+     * @param request the leave request containing roomId and playerId
+     * @param headerAccessor the SimpMessageHeaderAccessor to access session information
+     */
     @MessageMapping("/admin-remove-player")
     public void handleAdminKickPlayer(LeaveRequest request,
                                               SimpMessageHeaderAccessor headerAccessor) {
@@ -371,7 +444,7 @@ public class RoomWebSocketController {
                     getCurrentTime(), sessionId, request.roomId(), request.playerId(), e.getMessage());
                     
             this.messagingTemplate.convertAndSendToUser(sessionId,
-                    "/queue/error",
+                    "/queue/kick-error",
                     new ErrorResponse(
                             400, // Bad Request
                             e.getMessage()
@@ -380,6 +453,13 @@ public class RoomWebSocketController {
         }
     }
 
+    /**
+     * Handles the request to get the difficulty of a player in a room.
+     * This method is called when an admin requests the difficulty of a specific player.
+     *
+     * @param request the request containing roomId and playerId
+     * @param headerAccessor the SimpMessageHeaderAccessor to access session information
+     */
     @MessageMapping("/get-player-difficulty")
     public void handleGetPlayerDifficulty(PlayerDifficultyRequest request,
                                           SimpMessageHeaderAccessor headerAccessor) {
@@ -408,6 +488,13 @@ public class RoomWebSocketController {
         }
     }
 
+    /**
+     * Handles the request to change the difficulty of a player in a room.
+     * This method is called when an admin requests to change a player's difficulty.
+     *
+     * @param request the difficulty update request containing roomId, playerId, and new difficulty values
+     * @param headerAccessor the SimpMessageHeaderAccessor to access session information
+     */
     @MessageMapping("/change-difficulty")
     public void handleChangeDifficulty(PlayerDifficultyUpdateRequest request,
                                                SimpMessageHeaderAccessor headerAccessor) {
@@ -433,7 +520,7 @@ public class RoomWebSocketController {
             logger.info("{} {} - (response) [changeDifficulty] difficulty changed for player: {}, notifying admin: {}", 
                     getCurrentTime(), sessionId, request.playerId(), adminId);
     
-            this.messagingTemplate.convertAndSendToUser(adminId,
+            this.messagingTemplate.convertAndSendToUser(sessionId,
                     "/queue/difficulty-changed",
                     DifficultyDto.fromDifficultyValues(newDiff)
             );
@@ -442,7 +529,7 @@ public class RoomWebSocketController {
                     getCurrentTime(), sessionId, request.roomId(), request.playerId(), e.getMessage());
                     
             this.messagingTemplate.convertAndSendToUser(sessionId,
-                    "/topic/" + request.roomId() + "/error",
+                    "/queue/difficulty-change-error",
                     new ErrorResponse(
                             400, // Bad Request
                             e.getMessage()
@@ -454,7 +541,13 @@ public class RoomWebSocketController {
 
     // SESSION RESTORE //
 
-
+    /**
+     * Handles the request to restore a session for a player in a room.
+     * This method is called when a player reconnects to a room after being disconnected.
+     *
+     * @param request the session restore request containing roomId and playerId
+     * @param headerAccessor the SimpMessageHeaderAccessor to access session information
+     */
     @MessageMapping("/restore-session")
     public void restoreSession(SessionRestoreRequest request, SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();

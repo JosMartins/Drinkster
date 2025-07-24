@@ -31,6 +31,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
 
+/**
+ * GameWebSocketController handles WebSocket messages related to game actions.
+ * It manages game state, player actions, and challenges in a multiplayer game environment.
+ */
 @Controller
 public class GameWebSocketController {
 
@@ -44,6 +48,14 @@ public class GameWebSocketController {
     private final Map<UUID, ScheduledFuture<?>> challengeTimeouts = new ConcurrentHashMap<>();
     private final Map<String, Instant> lastActionTimes = new ConcurrentHashMap<>();
 
+    /**
+     * Constructs a GameWebSocketController with the required services.
+     *
+     * @param roomService the service for managing game rooms
+     * @param messagingTemplate the template for sending messages to clients
+     * @param taskScheduler the scheduler for scheduling tasks
+     * @param randomEventService the service for handling random events in the game
+     */
     public GameWebSocketController(RoomService roomService,
                                    SimpMessagingTemplate messagingTemplate,
                                    @Qualifier("taskScheduler") TaskScheduler taskScheduler,
@@ -63,6 +75,10 @@ public class GameWebSocketController {
         return LocalDateTime.now().format(formatter);
     }
 
+    /**
+     * Initializes the controller by setting up a cleanup task for old action timestamps.
+     * This task runs every 4 minutes to remove entries older than 5 minutes from the lastActionTimes map.
+     */
     @PostConstruct
     public void init() {
         logger.info("{} - (initialization) [init] Setting up cleanup task for lastActionTimes", getCurrentTime());
@@ -78,9 +94,15 @@ public class GameWebSocketController {
                 logger.info("{} - (cleanup) [lastActionTimes] Removed {} old entries", 
                         getCurrentTime(), beforeSize - afterSize);
             }
-        }, Duration.ofMinutes(5));
+        }, Duration.ofMinutes(4));
     }
 
+    /**
+     * Handles the start game event.
+     *
+     * @param roomId the ID of the room to start the game in
+     * @param headerAccessor the message header accessor
+     */
     @MessageMapping("/start-game")
     public void handleStartGame(String roomId,
                                 SimpMessageHeaderAccessor headerAccessor) {
@@ -109,7 +131,7 @@ public class GameWebSocketController {
             logger.error("{} {} - (error) [startGame] failed to start game for room: {}, error: {}", 
                     getCurrentTime(), sessionId, roomId, e.getMessage());
                     
-            this.messagingTemplate.convertAndSendToUser(sessionId, "/queue/error",
+            this.messagingTemplate.convertAndSendToUser(sessionId, "/queue/start-error",
                     new ErrorResponse(400, e.getMessage()));
         }
     }
@@ -148,7 +170,7 @@ public class GameWebSocketController {
                     
             messagingTemplate.convertAndSendToUser(
                     sessionId,
-                    "/queue/" + sessionId + "/error",
+                    "/queue/challenge-error",
                     new ErrorResponse(429, "Too many actions")
             );
             return;
@@ -184,15 +206,15 @@ public class GameWebSocketController {
             switch (currentTurn.getChallenge().getType()) {
                     case YOU_DRINK, BOTH_DRINK, EVERYONE_DRINK -> currentTurn.registerResponse(playerUUID, drank);
         
-                case CHOSEN_DRINK -> {
+                case CHOSEN_DRINK -> 
                         /*TODO:
                             Start vote for everyone, when all players vote, send to the chosen player a drinking event.
                             doVote(playerUUID, votedUUID);
-                            for now this will not be implemented. focus on making the game work.
+                            for now this will not be implemented.
                         */
                         logger.info("{} {} - (processing) [challenge-{}] CHOSEN_DRINK not implemented yet", 
                                 getCurrentTime(), sessionId, action);
-                }
+
         
                 default -> logger.info("{} {} - (processing) [challenge-{}] Unhandled challenge type: {}",
                             getCurrentTime(), sessionId, action, currentTurn.getChallenge().getType());
@@ -237,13 +259,13 @@ public class GameWebSocketController {
             logger.error("{} {} - (error) [challenge-{}] IllegalArgumentException: {}", 
                     getCurrentTime(), sessionId, action, e.getMessage());
                     
-            messagingTemplate.convertAndSend("/topic/" + playerId + "/error",
+            messagingTemplate.convertAndSendToUser(sessionId,"/queue/challenge-error",
                     new ErrorResponse(400, e.getMessage()));
         } catch (NullPointerException e) {
             logger.error("{} {} - (error) [challenge-{}] NullPointerException: {}", 
                     getCurrentTime(), sessionId, action, e.getMessage());
                     
-            messagingTemplate.convertAndSend("/topic/" + playerId + "/error",
+            messagingTemplate.convertAndSendToUser(sessionId,"/queue/challenge-error",
                     new ErrorResponse(400, "Missing required parameters"));
         }
 
@@ -327,7 +349,9 @@ public class GameWebSocketController {
                         room.getRoundNumber(), //round
                         penalties //penalties
                 );
-                messagingTemplate.convertAndSend("/topic/" + player.getId() +  "/challenge", response);
+                messagingTemplate.convertAndSendToUser(player.getSocketId(),
+                        "/queue/challenge",
+                        response);;
                 notifiedPlayers++;
             }
         }

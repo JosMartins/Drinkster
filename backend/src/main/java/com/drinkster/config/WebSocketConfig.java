@@ -10,6 +10,12 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    /**
+     * Configures the message broker for WebSocket communication.
+     * This method sets up the message broker to handle messages sent to specific destinations.
+     *
+     * @param registry the MessageBrokerRegistry to configure
+     */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         registry.enableSimpleBroker("/topic"); // Where messages are sent
@@ -18,6 +24,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     }
 
 
+    /**
+     * Registers the STOMP endpoints for WebSocket communication.
+     * This method defines the endpoint that clients will use to connect to the WebSocket server.
+     *
+     * @param registry the StompEndpointRegistry to register endpoints
+     */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")

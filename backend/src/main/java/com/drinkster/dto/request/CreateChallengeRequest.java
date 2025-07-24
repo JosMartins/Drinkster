@@ -4,6 +4,19 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 
+/**
+ * CreateChallengeRequest represents a request to create a new challenge.
+ * It includes fields for the c
+ *
+ * @param text The text of the challenge.
+ * @param difficulty The difficulty level of the challenge.
+ * @param sexes An array of "M" or "F" or "All" representing the player's allowed sexes.
+ * @param players The number of players required for the challenge.
+ * @param sips The number of sips required for the challenge.
+ * @param type The type of the challenge {@link com.drinkster.model.enums.ChallengeType}.
+ * @param penalty The penalty associated with the challenge.
+ *
+ */
 public record CreateChallengeRequest (
         @NotBlank(message = "Text cannot be blank") String text,
         @NotBlank(message = "Difficulty cannot be blank") String difficulty,

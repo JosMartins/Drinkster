@@ -2,6 +2,18 @@ package com.drinkster.dto;
 
 import com.drinkster.model.GameRoom;
 
+/**
+ * GameRoomDto represents a data transfer object for a game room.
+ *
+ * @param roomId
+ * @param roomName
+ * @param isPrivate
+ * @param players
+ * @param roomState
+ * @param roomMode
+ * @param rememberedChallenges
+ * @param adminId
+ */
 public record GameRoomDto(
         String roomId,
         String roomName,
