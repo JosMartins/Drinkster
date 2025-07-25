@@ -1,4 +1,4 @@
 export interface RoomJoinDto {
   message: string;
-  roomId: string;
+  playerId: string;
 }

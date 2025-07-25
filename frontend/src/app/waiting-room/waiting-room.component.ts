@@ -44,7 +44,6 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
 
   ngOnInit() {
-    debugger;
     const storedId = this.io.getData('roomId');
     const playerId = this.io.getData('playerId');
 
@@ -61,10 +60,9 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
     //Player Status Update (ready/unready)
     this.subscriptions.push(
-      this.io.playerStatusUpdate(this.roomId).subscribe(({id, status}) => {
-        console.log('Player status update:', id, status);
-        const player = this.players.find((p) => p.id === id);
-        if (player) player.isReady = status;
+      this.io.playerStatusUpdate(this.roomId).subscribe(data => {
+        const player = this.players.find((p) => p.id === data.playerId);
+        if (player) player.isReady = data.isReady;
       }),
 
       //Player Joined
@@ -120,11 +118,14 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
   toggleReady(): void {
     if (!this.isReady) {
-      this.io.playerReady(this.roomId, this.currentPlayerId);
+      this.io.playerReady(this.roomId, this.currentPlayerId).subscribe( data =>  {
+        if (data) this.isReady = true;
+      });
     } else {
-      this.io.playerUnready(this.roomId, this.currentPlayerId);
+      this.io.playerUnready(this.roomId, this.currentPlayerId).subscribe( data =>{
+        if (data) this.isReady = false;
+      });
     }
-    this.isReady = !this.isReady;
   }
 
 
@@ -160,7 +161,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe( async (difficulty) => {
       if (player.id && difficulty) {
-         this.io.updatePlayerDifficulty(this.roomId, player.id, difficulty);
+        this.io.updatePlayerDifficulty(this.roomId, player.id, difficulty).subscribe();
       }
     })
 
@@ -169,7 +170,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
   kickPlayer(player: Player): void {
     if (this.isPlayerAdmin() && player.id && player.id !== this.currentPlayerId) {
       if (confirm(`Are you sure you want to kick ${player.name}?`)) {
-        this.io.kickPlayer(this.roomId, player.id);
+        this.io.kickPlayer(this.roomId, player.id).subscribe();
       }
     }
   }
@@ -182,31 +183,21 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
 
   private async initAsync() {
-    try {
-      const roomInfo = await firstValueFrom(this.io.getRoom(this.roomId));
+    const roomInfo = await firstValueFrom(this.io.getRoom(this.roomId));
 
-      // Only successful GameRoomDto reaches here
-      if (roomInfo.roomId !== this.roomId) {
-        this.roomId = roomInfo.roomId;
-        this.io.deleteData('roomId');
-        this.io.saveData('roomId', this.roomId);
-      }
-      // ... rest of success logic
-
-    } catch (error: any) {
-      // Handle both backend errors and transport errors
-      console.error('Room fetch failed:', error);
-
-      if (error.code) {
-        // Backend error (ErrorDto)
-        alert(`Error ${error.code}: ${error.message}`);
-      } else {
-        // Transport error
-        alert('Network connection failed');
-      }
-
-      this.router.navigate(['/multiplayer']).then();
+    // Only successful GameRoomDto reaches here
+    if (roomInfo.roomId !== this.roomId) {
+      this.roomId = roomInfo.roomId;
+      this.io.deleteData('roomId');
+      this.io.saveData('roomId', this.roomId);
     }
+
+    this.roomName = roomInfo.roomName;
+    this.players = roomInfo.players;
+    this.gameMode = roomInfo.roomMode;
+    this.rememberedChallenges = roomInfo.rememberedChallenges;
+    this.self = this.players.find(player => player.id === this.currentPlayerId)
+    this.isReady = this.self?.isReady || false;
   }
 
 }
