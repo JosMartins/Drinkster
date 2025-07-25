@@ -388,7 +388,7 @@ public class RoomWebSocketController {
             this.messagingTemplate.convertAndSendToUser(
                     sessionId,
                     "/queue/player-unready",
-                    false
+                    true
             );
         } catch (IllegalArgumentException e) {
             this.messagingTemplate.convertAndSendToUser(sessionId,
@@ -483,6 +483,9 @@ public class RoomWebSocketController {
             UUID playerUUID = UUID.fromString(request.playerId());
 
             DifficultyDto diff = roomService.getPlayerDifficulty(roomUUID, playerUUID, headerAccessor.getSessionId());
+            logger.info("{} {} - (response) [getPlayerDifficulty] difficulty retrieved for player: {}, roomId: {}",
+                    getCurrentTime(), sessionId, request.playerId(), request.roomId());
+
             this.messagingTemplate.convertAndSendToUser(sessionId,
                     "/queue/player-difficulty",
                     diff

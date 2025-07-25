@@ -27,7 +27,7 @@ public class RoomService {
         this.challengeService = challengeService;
     }
 
-    /// ROOM MANAGEMENT ///
+    // ROOM MANAGEMENT //
 
     /**
      * Get a list of all game rooms.
@@ -86,7 +86,7 @@ public class RoomService {
         return gameRoom;
     }
 
-    /// PLAYER MANAGEMENT ///
+    // PLAYER MANAGEMENT //
 
     /**
      * Join a game room.
@@ -340,7 +340,7 @@ public class RoomService {
         gameRoom.setShowChallenges(mode);
     }
 
-    /// GAME MANAGEMENT ///
+    // GAME MANAGEMENT //
 
     /**
      * Start the game in the room.
@@ -352,6 +352,10 @@ public class RoomService {
         GameRoom gameRoom = gameRooms.get(roomId);
         if (gameRoom == null) {
             throw new IllegalArgumentException("Room does not exist");
+        }
+
+        if (gameRoom.getPlayers().size() < 2) {
+            throw new IllegalArgumentException("Not enough players to start the game");
         }
 
         if (!gameRoom.getAdmin().getSocketId().equals(adminSocketId)) {
@@ -430,7 +434,7 @@ public class RoomService {
 
 
 
-    /// SESSION RESTORATION ///
+    // SESSION RESTORATION //
 
     /**
      * Restore the session for a player in the game room.
@@ -468,7 +472,7 @@ public class RoomService {
     }
 
 
-    /// HELPERS ///
+    // HELPERS //
 
     /**
      * Starts the next turn in the game room.
