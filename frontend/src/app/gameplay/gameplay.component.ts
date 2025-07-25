@@ -173,6 +173,8 @@ export class GameplayComponent implements OnInit, OnDestroy {
   }
 
   protected showButton(): boolean {
+    if (this.currentChallenge?.text?.includes("Getting challenge ready...")) return false;
+
     switch (this.currentChallenge?.type) {
       case 'EVERYONE_DRINK': return true
       case "CHOSEN_DRINK": return true
