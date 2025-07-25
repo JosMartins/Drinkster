@@ -283,7 +283,7 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
     this.sendAndObserve<Boolean | ErrorDto>("/app/leave-room", { roomId, playerId }, ["/user/queue/leave-confirm", "/user/queue/leave-error"])
       .pipe(
         mergeMap(response => {
-          if ('code' in response) {
+          if (typeof response === 'object' && response !== null && 'code' in response) {
             return throwError(() => response);
           }
           return of(response as boolean);
@@ -307,7 +307,7 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
     return this.observe('/topic/' + roomId + '/player-joined')
   }
                                     // receives only the id
-  public playerLeft(roomId: string): Observable<String> {
+  public playerLeft(roomId: string): Observable<string> {
     return this.observe('/topic/' + roomId + '/player-left')
   }
 
@@ -318,7 +318,7 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
     return this.sendAndObserve<Boolean | ErrorDto>('/app/player-ready', {roomId, playerId}, ['/user/queue/player-ready', '/user/queue/player-error'])
       .pipe(
         mergeMap(response => {
-          if ('code' in response) {
+          if (typeof response === 'object' && response !== null && 'code' in response) {
             return throwError(() => response);
           }
           return of(response as boolean);
@@ -334,7 +334,7 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
     return this.sendAndObserve<Boolean | ErrorDto>('/app/player-unready', {roomId, playerId}, ['/user/queue/player-unready', '/user/queue/player-error'])
       .pipe(
         mergeMap(response => {
-          if ('code' in response) {
+          if (typeof response === 'object' && response !== null && 'code' in response) {
             return throwError(() => response);
           }
           return of(response as boolean);
@@ -350,13 +350,15 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
     return this.observe('/user/queue/kicked')
   }
 
-  public playerStatusUpdate(roomId: string): Observable<{id: string, status: boolean}> {
+  public playerStatusUpdate(roomId: string): Observable<{playerId: string, isReady: boolean}> {
     return this.observe('/topic/' + roomId + '/player-status-update');
 
   }
 
   public getPlayerDifficulty(roomId:string, playerId: string): Observable<Difficulty> {
-    return this.sendAndObserve<Difficulty | ErrorDto>('/app/get-player-difficulty', {roomId, playerId}, ['/user/queue/player-difficulty', "/user/queue/player-error"])
+    return this.sendAndObserve<Difficulty | ErrorDto>('/app/get-player-difficulty', {roomId, playerId}, [
+      '/user/queue/player-difficulty',
+      '/user/queue/player-error'])
       .pipe(
         mergeMap(response => {
           if ('code' in response) {
@@ -371,11 +373,13 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
       );
   }
 
-  public updatePlayerDifficulty(roomId: string, playerId: string, difficulty_values: any): Observable<Difficulty> {
-    return this.sendAndObserve<Difficulty | ErrorDto>('/app/change-difficulty', { roomId, playerId, difficulty_values }, ['/user/queue/difficulty-changed', 'user/queue/difficulty-change-error'])
+  public updatePlayerDifficulty(roomId: string, playerId: string, difficulty_values: Difficulty): Observable<Difficulty> {
+    return this.sendAndObserve<Difficulty>('/app/change-difficulty', { roomId, playerId, difficulty_values }, [
+      '/user/queue/difficulty-changed',
+      '/user/queue/difficulty-change-error'])
       .pipe(
         mergeMap(response => {
-          if ('code' in response) {
+          if (typeof response === 'object' && response !== null && 'code' in response) {
             return throwError(() => response);
           }
           return of(response as Difficulty);
@@ -388,7 +392,7 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
   }
 
   public kickPlayer(roomId: string, playerId: string): Observable<KickDto> {
-    return this.sendAndObserve<KickDto | ErrorDto>('/app/admin-remove-player', { roomId, playerId }, ['user/queue/kick-confirm', '/user/queue/kick-error'])
+    return this.sendAndObserve<KickDto | ErrorDto>('/app/admin-remove-player', { roomId, playerId }, ['/user/queue/kick-confirm', '/user/queue/kick-error'])
       .pipe(
         mergeMap(response => {
           if ('code' in response) {
@@ -424,11 +428,11 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
 
 
   public challengeCompleted(roomId: string, playerId: string): Observable<AckDto | ErrorDto> {
-    return this.sendAndObserve('app/challenge-drunk', {roomId , playerId}, ['/user/queue/ack', '/user/queue/challenge-error'])
+    return this.sendAndObserve('/app/challenge-completed', {roomId , playerId}, ['/user/queue/ack', '/user/queue/challenge-error'])
   }
 
   public challengeDrunk(roomId: string, playerId: string): Observable<AckDto | ErrorDto> {
-    return this.sendAndObserve('app/challenge-drunk', {roomId , playerId}, ['/user/queue/ack', '/user/queue/challenge-error'])
+    return this.sendAndObserve('/app/challenge-drunk', {roomId , playerId}, ['/user/queue/ack', '/user/queue/challenge-error'])
   }
 
   public randomEvent(): Observable<EventDto> {

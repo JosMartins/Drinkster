@@ -8,7 +8,7 @@ import {SocketService} from "../socket.service";
 import {MatButton} from "@angular/material/button";
 import {NgIf} from "@angular/common";
 import {DEFAULT_DIFFICULTY} from "../models/difficulty";
-import {Player} from "../models/player";
+import {RoomJoinDto} from "../models/dto/RoomJoin.dto";
 
 @Component({
   selector: 'app-player-config',
@@ -52,16 +52,16 @@ export class PlayerConfigComponent implements OnInit {
   onSave(): void {
     if (this.playerForm.valid) {
       const roomJoinedSubscription = this.io.joinRoom(this.roomId, this.playerForm.value).subscribe(
-        (player: any) => {
+        (joinDto: RoomJoinDto) => {
           console.log('Room joined room:', this.roomId);
-          this.io.saveData('playerId', player.id);
+          this.io.saveData('playerId', joinDto.playerId);
           this.io.saveData('roomId', this.roomId);
           roomJoinedSubscription.unsubscribe();
 
           this.dialogRef.close({
             success: true,
             roomId: this.roomId,
-            playerId: player.id
+            playerId: joinDto.playerId
           });
         }
       )
