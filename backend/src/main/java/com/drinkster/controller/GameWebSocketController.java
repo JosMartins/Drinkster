@@ -3,6 +3,7 @@ package com.drinkster.controller;
 import com.drinkster.dto.ChallengeDto;
 import com.drinkster.dto.PenaltyDto;
 import com.drinkster.dto.PlayerDto;
+import com.drinkster.dto.response.AckResponse;
 import com.drinkster.dto.response.ChallengeResponse;
 import com.drinkster.dto.response.ErrorResponse;
 import com.drinkster.dto.response.StartGameResponse;
@@ -225,7 +226,14 @@ public class GameWebSocketController {
                             getCurrentTime(), sessionId, action, currentTurn.getChallenge().getType());
                             /*do nothing*/
             }
-        
+
+            // Send acknowledgment to the player
+            this.messagingTemplate.convertAndSendToUser(sessionId,
+                    "/queue/ack",
+                    new AckResponse("challenge-" + action, true)
+
+            );
+
             if (currentTurn.allResponded()) {
                 logger.info("{} {} - (response) [challenge-{}] All players responded, proceeding to next challenge", 
                         getCurrentTime(), sessionId, action);
@@ -286,6 +294,12 @@ public class GameWebSocketController {
     @MessageMapping("/admin-force-skip")
     public void handleAdminForceSkip(String roomId, SimpMessageHeaderAccessor headerAccessor) {
         String sessionId = headerAccessor.getSessionId();
+
+        if (sessionId == null) {
+            logger.warn("{} unknown - (error) [adminForceSkip] No sessionId provided", getCurrentTime());
+            return;
+        }
+
         logger.info("{} {} - (requested) [adminForceSkip] roomId: {}", getCurrentTime(), sessionId, roomId);
     
         try {
@@ -299,13 +313,13 @@ public class GameWebSocketController {
             logger.error("{} {} - (error) [adminForceSkip] IllegalArgumentException: {}", 
                     getCurrentTime(), sessionId, e.getMessage());
                     
-            messagingTemplate.convertAndSend("/topic/" + roomId + "/error",
+            messagingTemplate.convertAndSendToUser(sessionId, "/user/queue/skip-error",
                     new ErrorResponse(400, e.getMessage()));
         } catch (NullPointerException e) {
             logger.error("{} {} - (error) [adminForceSkip] NullPointerException: {}", 
                     getCurrentTime(), sessionId, e.getMessage());
-                    
-            messagingTemplate.convertAndSend("/topic/" + roomId + "/error",
+
+            messagingTemplate.convertAndSendToUser(sessionId, "/user/queue/skip-error",
                     new ErrorResponse(400, "Missing required parameters"));
         }
     }

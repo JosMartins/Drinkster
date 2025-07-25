@@ -6,6 +6,7 @@ import {Router} from "@angular/router";
 import {Player} from "../models/player";
 import {EventDialogComponent} from "../event-dialog/event-dialog.component";
 import {MatDialog} from "@angular/material/dialog";
+import {PlayerDto} from "../models/dto/player.dto";
 
 interface Penalty {
   text: string;
@@ -38,6 +39,7 @@ export class GameplayComponent implements OnInit, OnDestroy {
   };
   penalties: Penalty[] = [];
   myChallenge: boolean = false;
+  buttonAcked: boolean = false;
 
   constructor(
     private readonly io: SocketService,
@@ -87,30 +89,6 @@ export class GameplayComponent implements OnInit, OnDestroy {
 
   }
 
-  //DEVVVV
-  ngOnInitDev(): void {
-      //POPulate with mock data
-    this.self = { id: '1', name: 'Player 1', sex:'M', isAdmin: true, isReady: true };
-    this.roomId = 'room1';
-    this.players = [
-      { id: '1', name: 'Player 1', sex: 'M', isAdmin: true, isReady: true },
-      { id: '2', name: 'Player 2', sex: 'F', isAdmin: false, isReady: true },
-    ]
-    this.penalties = [
-      { text: 'Test penalty 123', rounds: 2 },
-      { text: 'WEFLKNwejfnWEJOFN', rounds: 3 }
-    ];
-    this.currentChallenge = {
-      text: "Player 1 and Player 2, do a handstand and drink! then Player 1, drink 2 sips! then Player 2, drink 1 sip!",
-      difficulty: "EASY",
-      type: "YOU_DRINK",
-      affectedPlayers: ['1']
-    };
-    this.currentRound = 1;
-    this.myChallenge = true; // For testing purposes
-    this.adminText = this.self?.isAdmin ? this.currentChallenge.text : '';
-  }
-
   ngOnDestroy(): void {
     this.subscriptions.forEach(s => s.unsubscribe());
     if (this.self && this.roomId) {
@@ -127,13 +105,22 @@ export class GameplayComponent implements OnInit, OnDestroy {
     }
 
     this.subscriptions.push(
-      this.io.onChallenge(this.self.id).subscribe((data) => {
-        console.log("Challenge received:", data);
+      this.io.onWait().subscribe(data => {
+        this.currentChallenge = {
+          text: data.text,
+          difficulty: data.difficulty,
+          type: data.type,
+          affectedPlayers: []
+        }
+      }),
+
+      this.io.onChallenge().subscribe((data) => {
+        this.buttonAcked = false;
         this.currentChallenge = {
           text: data.challenge.text,
           difficulty: data.challenge.difficulty,
           type: data.challenge.type,
-          affectedPlayers: data.affectedPlayers.map((p: Player) => p.id),
+          affectedPlayers: data.affectedPlayers.map((p: PlayerDto) => p.id),
         };
         this.penalties = data.penaltyList;
         this.currentRound = data.round;
@@ -145,13 +132,21 @@ export class GameplayComponent implements OnInit, OnDestroy {
   completeChallenge(): void {
     if (!this.currentChallenge) return;
     // @ts-ignore
-    this.io.challengeCompleted(this.roomId, this.self.id);
+    this.io.challengeCompleted(this.roomId, this.self.id).subscribe( ack => {
+      if ('status' in ack && ack.status) {
+        this.changeButtonColors();
+      }
+    });
   }
 
   drunkChallenge(): void {
     if (!this.currentChallenge) return;
     // @ts-ignore
-    this.io.challengeDrunk(this.roomId, this.self.id);
+    this.io.challengeDrunk(this.roomId, this.self.id).subscribe( ack => {
+      if ('status' in ack && ack.status) {
+        this.changeButtonColors();
+      }
+    });
   }
 
   forceSkip(): void {
@@ -165,13 +160,13 @@ export class GameplayComponent implements OnInit, OnDestroy {
       return;
     }
     this.subscriptions.push(
-      this.io.randomEvent(this.self.id).subscribe((data) => {
+      this.io.randomEvent().subscribe((data) => {
         console.log("Random event:", data);
 
         this.dialog.open(EventDialogComponent, {
           width: '400px',
           panelClass: ['custom-dialog', 'transparent-overlay'],
-          data: { message: (data.message ?? data.text) ?? "A random event has occurred!" }
+          data: { message: data.text}
         });
       })
     );
@@ -204,5 +199,9 @@ export class GameplayComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Change buttons color to a color that indicated that the button press was registered/ack by te server.
+  changeButtonColors(): void {
+    this.buttonAcked = true;
+  }
 }
 

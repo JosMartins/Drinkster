@@ -48,6 +48,7 @@ public class Challenge extends BaseEntity {
     @JoinColumn(name = "penalty_id")
     private Penalty penalty;
 
+    @Transient
     private boolean ai = false;
 
     /**

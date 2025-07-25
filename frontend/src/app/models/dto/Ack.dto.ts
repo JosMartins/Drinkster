@@ -1,4 +1,4 @@
 export interface AckDto {
   action: string,
-  status: string
+  status: boolean
 }

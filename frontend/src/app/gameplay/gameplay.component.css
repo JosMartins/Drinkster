@@ -6,13 +6,13 @@
     -webkit-overflow-scrolling: touch;
     max-height: 100vh;
   }
-  
+
   .game-boxes {
     display: flex;
     flex-direction: row;
     gap: 15px;
   }
-  
+
   .players-box, .penalty-box  {
     max-width: 95%;
   }
@@ -73,6 +73,13 @@
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
+}
+
+.action-button.acked {
+  box-shadow: 0 0 10px 2px #ffd700;
+  border: 2px solid #ffd700;
+  background-color: #fff8dc;
+  color: #333;
 }
 
 .complete-btn {
@@ -181,7 +188,7 @@
     min-height: 100vh;
     margin-top: 50px;
   }
-  
+
   .admin-box {
     position: fixed;
     top: -100px;
@@ -203,7 +210,7 @@
     flex-wrap: wrap;
     gap: 10px;
   }
-  
+
   .penalty-box, .players-box {
     max-width: 48%;
     max-height: 40vh;
@@ -218,8 +225,8 @@
     flex: 1 1 100%;
     max-width: 100%;
   }
-  
-  
+
+
   .box-title {
     font-size: 1em;
     margin-bottom: 8px;

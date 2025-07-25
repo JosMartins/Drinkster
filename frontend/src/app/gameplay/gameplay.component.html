@@ -53,10 +53,14 @@
   </div>
 
   <div class="game-controls" *ngIf="showButton()">
-    <button class="action-button complete-btn" (click)="completeChallenge()">
+    <button class="action-button complete-btn"
+            [class.acked]="buttonAcked"
+            (click)="completeChallenge()">
       Challenge Completed
     </button>
-    <button class="action-button drunk-btn" (click)="drunkChallenge()">
+    <button class="action-button drunk-btn"
+            [class.acked]="buttonAcked"
+            (click)="drunkChallenge()">
       Challenge Drunk
     </button>
   </div>

@@ -437,7 +437,17 @@ public class RoomWebSocketController {
 
             this.messagingTemplate.convertAndSendToUser(playerSocket,
                     "/queue/kicked",
-                    "You have been kicked from the room by the admin."
+                    new KickResponse(
+                            "You have been kicked from the room by the admin.",
+                            request.playerId())
+            );
+
+            this.messagingTemplate.convertAndSendToUser(sessionId,
+                    "/queue/kick-confirm",
+                    new KickResponse(
+                            "Player kicked successfully",
+                            request.playerId()
+                    )
             );
         } catch (IllegalArgumentException e) {
             logger.error("{} {} - (error) [adminKickPlayer] failed to kick player: {}, playerId: {}, error: {}", 

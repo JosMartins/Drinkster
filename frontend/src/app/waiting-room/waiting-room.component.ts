@@ -44,6 +44,7 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
 
 
   ngOnInit() {
+    debugger;
     const storedId = this.io.getData('roomId');
     const playerId = this.io.getData('playerId');
 
