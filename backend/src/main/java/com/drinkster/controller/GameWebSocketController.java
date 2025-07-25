@@ -7,6 +7,8 @@ import com.drinkster.dto.response.ChallengeResponse;
 import com.drinkster.dto.response.ErrorResponse;
 import com.drinkster.dto.response.StartGameResponse;
 import com.drinkster.model.*;
+import com.drinkster.model.enums.ChallengeType;
+import com.drinkster.model.enums.Difficulty;
 import com.drinkster.service.RandomEventService;
 import com.drinkster.service.RoomService;
 import jakarta.annotation.PostConstruct;
@@ -29,6 +31,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static com.drinkster.model.enums.ChallengeType.YOU_DRINK;
 
 
 /**
@@ -321,8 +326,23 @@ public class GameWebSocketController {
             logger.error("{} - (error) [sendNextChallenge] Room not found: {}", getCurrentTime(), roomID);
             return;
         }
-        
-        //shouldn't be here...
+        // Send wait message to all players
+
+        for (Player player : room.getPlayers()) {
+            int waitSips = ThreadLocalRandom.current().nextInt(1, 6);
+            ChallengeDto waitChallenge = new ChallengeDto(
+
+                    "Getting challenge ready...  Drink " + waitSips + " sips while you wait!",
+                    "EASY",
+                    "YOU_DRINK",
+                    false);
+
+            messagingTemplate.convertAndSendToUser(
+                    player.getSocketId(),
+                    "/queue/wait-challenge",
+                    waitChallenge
+            );
+        }
         room.handlePenalties();
         logger.info("{} - (processing) [sendNextChallenge] Handled penalties for room: {}", getCurrentTime(), roomID);
         
@@ -351,7 +371,7 @@ public class GameWebSocketController {
                 );
                 messagingTemplate.convertAndSendToUser(player.getSocketId(),
                         "/queue/challenge",
-                        response);;
+                        response);
                 notifiedPlayers++;
             }
         }

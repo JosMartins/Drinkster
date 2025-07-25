@@ -1,5 +1,7 @@
 package com.drinkster.service;
 
+import com.drinkster.model.Challenge;
+import com.drinkster.model.enums.Difficulty;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,22 +19,25 @@ class AiRequestServiceTest {
 
     @Test
     void testSfwChallengeRequest() {
-        String response = aiRequestService.getSfwChallenge("hard");
+        Challenge easyChallenge = aiRequestService.getSfwChallenge(Difficulty.EASY);
+        assertNotNull(easyChallenge);
+        System.out.println("Easy Challenge: " + easyChallenge);
 
-        assertNotNull(response);
-        assertFalse(response.isEmpty());
+        Challenge mediumChallenge = aiRequestService.getSfwChallenge(Difficulty.MEDIUM);
+        assertNotNull(mediumChallenge);
+        System.out.println("Medium Challenge: " + mediumChallenge);
+        Challenge hardChallenge = aiRequestService.getSfwChallenge(Difficulty.HARD);
+        assertNotNull(hardChallenge);
+        System.out.println("Hard Challenge: " + hardChallenge);
 
-        System.out.println("SFW AI Response: " + response);
     }
 
     @Test
     void testNsfwChallengeRequest() {
-        String response = aiRequestService.getNsfwChallenge(); //can only be extreme
+        Challenge extremeChallenge = aiRequestService.getNsfwChallenge(); //can only be extreme
 
-        assertNotNull(response);
-        assertFalse(response.isEmpty());
-
-        System.out.println("NSFW AI Response: " + response);
+        assertNotNull(extremeChallenge);
+        System.out.println("Extreme Challenge: " + extremeChallenge);
     }
 
 }

@@ -8,20 +8,23 @@ import com.drinkster.repository.ChallengeRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Service class for managing challenges.
  */
 @Service
 public class ChallengeService {
-
+    private final double AI_CHALLENGE_PROBABILITY = 0.30; // 30% chance to get an AI challenge
     private final ChallengeRepository challengeRepository;
+    private final AiRequestService aiRequestService;
 
     private ChallengeStats challengeStats;
 
-    public ChallengeService(ChallengeRepository challengeRepository) {
+    public ChallengeService(ChallengeRepository challengeRepository, AiRequestService aiRequestService) {
 
         this.challengeRepository = challengeRepository;
+        this.aiRequestService = aiRequestService;
 
         this.challengeStats = getChallengeStats();
     }
@@ -35,15 +38,22 @@ public class ChallengeService {
      * @return a random challenge.
      */
     public Challenge getRandomChallenge(List<UUID> excludeIds, Difficulty difficulty) {
-        if (excludeIds != null && !excludeIds.isEmpty() && difficulty != null) {
-            return challengeRepository.findRandomChallengeExcludingWithDifficulty(excludeIds, difficulty.toString());
-        } else if (excludeIds != null && !excludeIds.isEmpty()) {
-            return challengeRepository.findRandomChallengeExcluding(excludeIds);
-        } else if (difficulty != null) {
-            return challengeRepository.findRandomChallengeByDifficulty(difficulty.toString());
-        }
 
-        return challengeRepository.findRandomChallenge();
+        if (ThreadLocalRandom.current().nextDouble() < AI_CHALLENGE_PROBABILITY) {
+            return (difficulty == Difficulty.EXTREME) ? aiRequestService.getNsfwChallenge() : aiRequestService.getSfwChallenge(difficulty);
+        } else {
+
+
+            if (excludeIds != null && !excludeIds.isEmpty() && difficulty != null) {
+                return challengeRepository.findRandomChallengeExcludingWithDifficulty(excludeIds, difficulty.toString());
+            } else if (excludeIds != null && !excludeIds.isEmpty()) {
+                return challengeRepository.findRandomChallengeExcluding(excludeIds);
+            } else if (difficulty != null) {
+                return challengeRepository.findRandomChallengeByDifficulty(difficulty.toString());
+            }
+
+            return challengeRepository.findRandomChallenge();
+        }
     }
 
     /**

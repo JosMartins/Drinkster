@@ -9,12 +9,14 @@ import com.drinkster.model.Challenge;
  * @param text The text of the challenge.
  * @param difficulty The difficulty level of the challenge.
  * @param type The type of the challenge.
+ * @param ai Indicates if the challenge is AI-generated.
  */
 public record ChallengeDto(String text,
                            String difficulty,
-                           String type) {
+                           String type,
+                           boolean ai) {
 
     public static ChallengeDto fromChallenge(Challenge challenge) {
-        return new ChallengeDto(challenge.getText(), challenge.getDifficulty().toString(), challenge.getType().toString());
+        return new ChallengeDto(challenge.getText(), challenge.getDifficulty().toString(), challenge.getType().toString(), challenge.isAi());
     }
 }

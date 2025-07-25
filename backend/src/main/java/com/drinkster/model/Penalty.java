@@ -50,4 +50,12 @@ public class Penalty extends BaseEntity {
     public void incrementRound() {
         rounds++;
     }
+
+    @Override
+    public String toString() {
+        return "Penalty{" +
+                "text='" + text + '\'' +
+                ", rounds=" + rounds +
+                '}';
+    }
 }

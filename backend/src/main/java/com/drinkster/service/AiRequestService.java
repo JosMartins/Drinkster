@@ -1,5 +1,11 @@
 package com.drinkster.service;
 
+import com.drinkster.model.Challenge;
+import com.drinkster.model.Penalty;
+import com.drinkster.model.enums.ChallengeType;
+import com.drinkster.model.enums.Difficulty;
+import com.drinkster.model.enums.Sex;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
@@ -16,6 +22,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,7 +32,7 @@ public class AiRequestService {
     private static final String SFW_URL = "https://api.openai.com/v1/chat/completions";
     private static final String NSFW_URL = "https://openrouter.ai/api/v1/chat/completions";
     private static final String SFW_MODEL = "gpt-4.1-mini";
-    private static final String NSFW_MODEL = "x-ai/grok-4";
+    private static final String NSFW_MODEL = "@preset/drinkster-nsfw";
 
 
 
@@ -59,23 +67,23 @@ public class AiRequestService {
         }
     }
 
-    public String getSfwChallenge(String difficulty) {
+    public Challenge getSfwChallenge(Difficulty difficulty) {
         String apiKey = System.getenv("SFW_API_KEY");
-        String prompt = getPrompt(difficulty, false);
-        return sendPostRequest(SFW_URL, apiKey, SFW_MODEL, prompt);
+        String prompt = getPrompt(difficulty.toString(), false);
+        return getChallengeObject(sendPostRequest(SFW_URL, apiKey, SFW_MODEL, prompt));
     }
 
-    public String getNsfwChallenge() { // can only be extreme, no need for parameter
+    public Challenge getNsfwChallenge() { // can only be extreme, no need for parameter
         String apiKey = System.getenv("NSFW_API_KEY");
         String prompt = getPrompt("extreme", true);
-        return sendPostRequest(NSFW_URL, apiKey, NSFW_MODEL, prompt);
+        return getChallengeObject(sendPostRequest(NSFW_URL, apiKey, NSFW_MODEL, prompt));
     }
 
     private String sendPostRequest(String url, String apiKey, String model, String prompt) {
         try (HttpClient client = HttpClient.newHttpClient()) {
             ObjectNode root = objectMapper.createObjectNode();
             root.put("model", model);
-            root.put("temperature", 0.8);
+            root.put("temperature", 1.10);
 
             ObjectNode message = objectMapper.createObjectNode();
             message.put("role", "user");
@@ -100,6 +108,45 @@ public class AiRequestService {
             Thread.currentThread().interrupt();
             return "";
         }
+    }
+
+    public Challenge getChallengeObject(String body) {
+        try {
+            // Parse the overall AI response
+            JsonNode root = objectMapper.readTree(body);
+            String content = root.path("choices").get(0).path("message").path("content").asText();
+
+            // Strip code fences if present
+            String json = content.replaceAll("```json", "").replaceAll("```", "").trim();
+            ObjectNode node = (ObjectNode) objectMapper.readTree(json);
+
+            // Map to Challenge
+            Challenge challenge = new Challenge();
+            challenge.setText(node.path("text").asText());
+            challenge.setDifficulty(Difficulty.valueOf(node.path("difficulty").asText().toUpperCase()));
+            challenge.setPlayers(node.path("players").asInt());
+            //sexes: "All" * number of players
+            challenge.setSexes(Collections.nCopies(challenge.getPlayers(), Sex.ALL));
+            challenge.setSips(node.path("sips").asInt());
+            challenge.setType(ChallengeType.valueOf(node.path("type").asText().toUpperCase()));
+
+            // Handle optional penalty
+            if (node.has("penalty")) {
+                JsonNode pen = node.path("penalty");
+                Penalty penalty = new Penalty();
+                penalty.setText(pen.path("text").asText());
+                penalty.setRounds(pen.path("rounds").asInt());
+                challenge.setPenalty(penalty);
+            }
+
+            // Mark as AI-generated
+            challenge.setAi(true);
+            return challenge;
+        } catch (IOException e) {
+            logger.error("Error parsing AI response: {}", body, e);
+            return null;
+        }
+
     }
 
 }

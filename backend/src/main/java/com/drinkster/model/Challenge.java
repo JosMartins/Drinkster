@@ -48,6 +48,7 @@ public class Challenge extends BaseEntity {
     @JoinColumn(name = "penalty_id")
     private Penalty penalty;
 
+    private boolean ai = false;
 
     /**
      * Constructor for Challenge class.
@@ -87,5 +88,17 @@ public class Challenge extends BaseEntity {
         this.penalty = penalty;
     }
 
+    @Override
+    public String toString() {
+        return "Challenge{" +
+                "text='" + text + '\'' +
+                ", difficulty=" + difficulty +
+                ", sexes=" + sexes.toString() +
+                ", players=" + players +
+                ", sips=" + sips +
+                ", type=" + type +
+                ", penalty=" + (penalty != null ? penalty.toString() : "null") +
+                ", ai=" + ai;
+    }
 
 }
