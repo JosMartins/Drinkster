@@ -8,8 +8,6 @@ import com.drinkster.dto.response.ChallengeResponse;
 import com.drinkster.dto.response.ErrorResponse;
 import com.drinkster.dto.response.StartGameResponse;
 import com.drinkster.model.*;
-import com.drinkster.model.enums.ChallengeType;
-import com.drinkster.model.enums.Difficulty;
 import com.drinkster.service.RandomEventService;
 import com.drinkster.service.RoomService;
 import jakarta.annotation.PostConstruct;
@@ -33,9 +31,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
-
-import static com.drinkster.model.enums.ChallengeType.YOU_DRINK;
-
 
 /**
  * GameWebSocketController handles WebSocket messages related to game actions.
@@ -348,7 +343,7 @@ public class GameWebSocketController {
 
                     "Getting challenge ready...  Drink " + waitSips + " sips while you wait!",
                     "EASY",
-                    "YOU_DRINK",
+                    "EVERYONE_DRINK",
                     false);
 
             messagingTemplate.convertAndSendToUser(
