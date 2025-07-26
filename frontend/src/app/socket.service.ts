@@ -40,8 +40,8 @@ export class SocketService {
   private pendingSubscriptions: Array<{ destination: string, callback: (payload: any) => void }> = [];
   private reconnectAttempts = 0;
   private readonly maxReconnectAttempts = 5;
-  //private readonly serverUrl = `${window.location.origin}/ws`;
-  private readonly serverUrl = `http://localhost:8000/ws`;
+  private readonly serverUrl = `${window.location.origin}/ws`;
+  //private readonly serverUrl = `http://localhost:8000/ws`;
 
 
   constructor(private readonly router: Router) {
@@ -69,8 +69,7 @@ private subscribe(destination: string, callback: (payload: any) => void): () => 
         try {
           const payload = JSON.parse(message.body);
           callback(payload);
-        } catch (e) {
-          console.error("Parsing error. Message body:", message.body);
+        } catch {
           callback(message.body);
         }
       });

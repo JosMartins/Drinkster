@@ -19,6 +19,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/drinkster
       SPRING_DATASOURCE_USERNAME: drinkster
       SPRING_DATASOURCE_PASSWORD: drinkster
+    env_file: ./backend/.env
     depends_on:
       - postgres
     volumes:
