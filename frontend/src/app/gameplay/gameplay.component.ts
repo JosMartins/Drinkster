@@ -36,6 +36,7 @@ export class GameplayComponent implements OnInit, OnDestroy {
     difficulty: string,
     type: string
     affectedPlayers: string[],
+    ai: boolean
   };
   penalties: Penalty[] = [];
   myChallenge: boolean = false;
@@ -111,6 +112,7 @@ export class GameplayComponent implements OnInit, OnDestroy {
           difficulty: data.difficulty,
           type: data.type,
           affectedPlayers: []
+          ai: data.ai
         }
       }),
 
