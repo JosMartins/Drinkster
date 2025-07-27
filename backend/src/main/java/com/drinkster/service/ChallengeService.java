@@ -6,7 +6,8 @@ import com.drinkster.model.DifficultyValues;
 import com.drinkster.model.enums.Difficulty;
 import com.drinkster.repository.ChallengeRepository;
 import org.springframework.stereotype.Service;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -15,6 +16,8 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 @Service
 public class ChallengeService {
+    private static final Logger logger = LoggerFactory.getLogger(ChallengeService.class);
+
     private final double AI_CHALLENGE_PROBABILITY = 0.30; // 30% chance to get an AI challenge
     private final ChallengeRepository challengeRepository;
     private final AiRequestService aiRequestService;
@@ -40,11 +43,18 @@ public class ChallengeService {
     public Challenge getRandomChallenge(List<UUID> excludeIds, Difficulty difficulty) {
 
         if (ThreadLocalRandom.current().nextDouble() < AI_CHALLENGE_PROBABILITY) {
-            return (difficulty == Difficulty.EXTREME) ? aiRequestService.getNsfwChallenge() : aiRequestService.getSfwChallenge(difficulty);
-        } else {
+            Challenge aiChallenge = (difficulty == Difficulty.EXTREME) ? 
+                aiRequestService.getNsfwChallenge() : 
+                aiRequestService.getSfwChallenge(difficulty);
 
+                // If AI challenge failed, fall back to database challenge
+            if (aiChallenge != null) {
+                return aiChallenge;
+            }
+            logger.warn("AI challenge generation failed, falling back to database challenge");
+        } 
 
-            if (excludeIds != null && !excludeIds.isEmpty() && difficulty != null) {
+        if (excludeIds != null && !excludeIds.isEmpty() && difficulty != null) {
                 return challengeRepository.findRandomChallengeExcludingWithDifficulty(excludeIds, difficulty.toString());
             } else if (excludeIds != null && !excludeIds.isEmpty()) {
                 return challengeRepository.findRandomChallengeExcluding(excludeIds);

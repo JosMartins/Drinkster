@@ -40,7 +40,6 @@ public class AiRequestService {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private final ResourceLoader resourceLoader;
 
-
     public AiRequestService(ResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
     }
@@ -112,6 +111,7 @@ public class AiRequestService {
 
     public Challenge getChallengeObject(String body) {
         try {
+            logger.debug("Parsing AI response body: {}", body);
             // Parse the overall AI response
             JsonNode root = objectMapper.readTree(body);
             String content = root.path("choices").get(0).path("message").path("content").asText();
@@ -144,7 +144,16 @@ public class AiRequestService {
             return challenge;
         } catch (IOException e) {
             logger.error("Error parsing AI response: {}", body, e);
-            return null;
+            // Return a fallback challenge instead of null
+            Challenge fallback = new Challenge();
+            fallback.setText("Error loading challenge. Drink 3 sips!");
+            fallback.setDifficulty(Difficulty.EASY);
+            fallback.setPlayers(1);
+            fallback.setSexes(List.of(Sex.ALL));
+            fallback.setSips(3);
+            fallback.setType(ChallengeType.YOU_DRINK);
+            fallback.setAi(true);
+            return fallback;
         }
 
     }

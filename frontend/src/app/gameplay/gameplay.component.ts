@@ -63,7 +63,8 @@ export class GameplayComponent implements OnInit, OnDestroy {
                         text: sesData.playerTurn.challenge.text,
                         difficulty: sesData.playerTurn.challenge.difficulty,
                         type: sesData.playerTurn.challenge.type,
-                        affectedPlayers: sesData.playerTurn.affectedPlayers.map((p: Player) => p.id)
+                        affectedPlayers: sesData.playerTurn.affectedPlayers.map((p: Player) => p.id),
+                        ai: sesData.playerTurn.challenge.ai || false
                       };
 
             this.myChallenge = sesData.playerTurn.playerId === this.self?.id;
@@ -77,7 +78,8 @@ export class GameplayComponent implements OnInit, OnDestroy {
               text: "Waiting for the next challenge... DRINK!",
               difficulty: "easy",
               type: "EVERYONE_DRINK",
-              affectedPlayers: []
+              affectedPlayers: [],
+              ai: false
             }
           }
 
@@ -111,7 +113,7 @@ export class GameplayComponent implements OnInit, OnDestroy {
           text: data.text,
           difficulty: data.difficulty,
           type: data.type,
-          affectedPlayers: []
+          affectedPlayers: [],
           ai: data.ai
         }
       }),
@@ -123,6 +125,7 @@ export class GameplayComponent implements OnInit, OnDestroy {
           difficulty: data.challenge.difficulty,
           type: data.challenge.type,
           affectedPlayers: data.affectedPlayers.map((p: PlayerDto) => p.id),
+          ai: data.challenge.ai
         };
         this.penalties = data.penaltyList;
         this.currentRound = data.round;
