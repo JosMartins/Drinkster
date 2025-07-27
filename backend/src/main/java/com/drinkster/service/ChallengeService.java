@@ -62,8 +62,7 @@ public class ChallengeService {
                 return challengeRepository.findRandomChallengeByDifficulty(difficulty.toString());
             }
 
-            return challengeRepository.findRandomChallenge();
-        }
+        return challengeRepository.findRandomChallenge();
     }
 
     /**

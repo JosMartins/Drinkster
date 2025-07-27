@@ -188,7 +188,10 @@ public class GameRoom {
         try {
             this.currentTurn = processChallenge(challenge);
             this.roundNumber++;
-            this.usedUUIDS.add(this.currentTurn.getChallenge().getId());
+            if (!challenge.isAi()) { //if challenge is ai, we don't want to add it to the usedUUIDS
+                this.usedUUIDS.add(this.currentTurn.getChallenge().getId());
+            }
+
             return true;
         } catch (IncompatibleSexException e) {
             return false;
